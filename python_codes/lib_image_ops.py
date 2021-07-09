@@ -7,53 +7,42 @@ import ffmpeg  # pip install ffmpeg-python
 import shutil
 from PIL import Image
 import xml.etree.ElementTree as ET
+# from xml import etree
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 
-def crop_img_base_label(img, label, save_dir):
+def crop_img_base_label(img_file, xml_file, save_dir, class_file):
     """
     根据标签裁剪图片。
     args:
-        img: jpg图片路径
-        label: 标签路径
+        img_file: jpg图片路径
+        xml_file: 标签路径
         save_dir: 裁剪后图片保存目录
+        class_file: 需要裁剪的目标类型
     """
-    img_name = os.path.basename(img)
-    img_cv = cv2.imread(img) # 读取图片
+    img_name = os.path.basename(img_file)
+    img_cv = cv2.imread(img_file) # 读取图片
     ## 路径中有中文字符是可使用该方法读取图片
-    # img_cv = cv2.imdecode(np.fromfile(img, dtype=np.uint8), -1)  
-    H, W, C = img_cv.shape
-    count = 0
+    # img_cv = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), -1)  
+    f_class = open(class_file, 'r')
+    classes = f_class.read().strip('\n').split('\n')
+    f_class.close()
 
-    if label.endswith(".xml"):
-        root = ET.parse(label).getroot() # 利用ET读取xml文件
-        for obj in root.iter('object'): # 遍历所有目标框
-            name = obj.find('name').text  # 获取目标框名称，即label名
-            xmlbox = obj.find('bndbox')  # 找到框目标
-            xmin = xmlbox.find('xmin').text  # 将框目标的四个顶点坐标取出
+    count = 0
+    # tree = etree.ElementTree()
+    root = ET.parse(xml_file).getroot() #加载xml结构
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    for obj in root.iter('object'):
+        name = obj.find('name').text
+        if name in classes:
+            xmlbox = obj.find('bndbox')
+            xmin = xmlbox.find('xmin').text
             ymin = xmlbox.find('ymin').text
             xmax = xmlbox.find('xmax').text
             ymax = xmlbox.find('ymax').text
-            obj_img = img_cv[int(ymin):int(ymax), int(xmin):int(xmax)]  # cv2裁剪出目标框中的图片
-            save_file = os.path.join(save_dir, img_name[:-4] + "_c" +str(count) + "_l" + name + ".jpg")
-            count += 1
-            cv2.imwrite(save_file ,obj_img)  # 保存裁剪图片
-
-    elif label.endswith(".txt"):
-        for line in open(label, "r", encoding='utf-8'):
-            line_s = line.split(" ")
-            name = line_s[0]
-            box = [float(a) for a in line_s[1:]]
-            ## yolo to voc格式
-            x = box[0] * W
-            w = box[2] * W
-            y = box[1] * H
-            h = box[3] * H
-            xmin = int(x - w/2)
-            xmax = int(x + w/2)
-            ymin = int(y - h/2)
-            ymax = int(y + h/2)
-            obj_img = img_cv[int(ymin):int(ymax), int(xmin):int(xmax)]  # cv2裁剪出目标框中的图片
-            save_file = os.path.join(save_dir, img_name[:-4] + "_c" +str(count) + "_l" + name + ".jpg")
+            obj_img = img_cv[int(ymin):int(ymax), int(xmin):int(xmax)]
+            save_file = os.path.join(save_dir, img_name[:-4] + "_" +str(count) + "_" + name + ".jpg")
             count += 1
             cv2.imwrite(save_file ,obj_img)  # 保存裁剪图片
             
@@ -162,18 +151,8 @@ def video2imgs(video_file, img_dir, stride):
 
 
 if __name__ == '__main__':
-    out_dir = "C:/data/raw_data/images"
-    bmp_list = glob.glob("C:/data/raw_data/images/*.bmp")
-    count = 0
-    for bmp_file in bmp_list:
-        count += 1
-        jpg_name = "002_" + str(count) + ".jpg"
-        jpg_file = os.path.join(out_dir, jpg_name)
-        print(jpg_file)
-        img2jpg(bmp_file, jpg_file)
-        count += 1
-
-    # video_list = glob.glob("C:/data/raw_data/videos/VID*.mp4")
-    # img_dir = "C:/data/raw_data/images"
-    # for video_file in video_list:
-    #     video2imgs(video_file, img_dir, 1000)
+    img_file = "../../data/meter/test1/2021_4_27_meter_122.jpg"
+    xml_file = "../../data/meter/test1/num/2021_4_27_meter_122.xml"
+    class_file = "../../data/meter/test1/classes.txt"
+    save_dir = "../../data/meter/test1/"
+    crop_img_base_label(img_file, xml_file, save_dir, class_file)
