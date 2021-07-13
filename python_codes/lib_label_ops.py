@@ -3,6 +3,7 @@ from label_ops.yolo_io import YoloReader, YOLOWriter
 from PIL import Image
 import os
 from PIL import Image
+import labelme2coco # pip install labelme2coco
 
 
 def yolo2voc(img_file, txt_file, xml_file, class_file):
@@ -95,6 +96,17 @@ def xml_merge(xml_raw, xml_part):
             writer.addBndBox(xmin, ymin, x_max, y_max, label, 0)
 
     writer.save(targetFile=xml_raw)
+
+def labelme_2_coco(labelme_folder, save_json_path):
+    """
+    labelme标注的目标分割数据转为coco格式
+    https://github.com/fcakyon/labelme2coco
+    注意：
+        save_json_path不能在labelme_folder中，
+        最好是labelme_folder和img在同一个目录。
+    """
+    labelme2coco.convert(labelme_folder, save_json_path)
+
 
 if __name__ == '__main__':
     # img_file = "C:/data/meter/test1/2021_4_27_meter_122.jpg"
