@@ -149,10 +149,19 @@ def video2imgs(video_file, img_dir, stride):
         f_count += 1
     videoCapture.release()
 
+def img_rewrite(dir):
+    for root, dirs, files in os.walk(dir):
+        count = 0
+        for file_name in files:
+            if file_name.endswith(".jpg") or file_name.endswith(".JPG"):
+                jpg_file = os.path.join(root, file_name)
+                img = cv2.imread(jpg_file)
+                print(jpg_file)
+                cv2.imwrite(jpg_file, img)
+                count += 1
+                if count % 100 == 0:
+                    print("rewrite", count, "already.")
+
 
 if __name__ == '__main__':
-    img_file = "../../data/meter/test1/2021_4_27_meter_122.jpg"
-    xml_file = "../../data/meter/test1/num/2021_4_27_meter_122.xml"
-    class_file = "../../data/meter/test1/classes.txt"
-    save_dir = "../../data/meter/test1/"
-    crop_img_base_label(img_file, xml_file, save_dir, class_file)
+    img_rewrite("../../data/meter/CheckJpeg/test")
