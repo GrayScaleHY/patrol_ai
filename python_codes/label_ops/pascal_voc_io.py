@@ -15,7 +15,7 @@ class PascalVocWriter:
         self.foldername = foldername
         self.filename = filename
         self.databaseSrc = databaseSrc
-        self.imgSize = imgSize
+        self.imgSize = imgSize  # [h, w, d]
         self.boxlist = []
         self.localImgPath = localImgPath
         self.verified = False
