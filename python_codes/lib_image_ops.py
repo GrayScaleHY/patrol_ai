@@ -6,45 +6,7 @@ import cv2  # conda install opencv || pip install opencv-python
 import ffmpeg  # pip install ffmpeg-python
 import shutil
 from PIL import Image
-import xml.etree.ElementTree as ET
-# from xml import etree
 from moviepy.editor import VideoFileClip, concatenate_videoclips
-
-def crop_img_base_label(img_file, xml_file, save_dir, class_file):
-    """
-    根据标签裁剪图片。
-    args:
-        img_file: jpg图片路径
-        xml_file: 标签路径
-        save_dir: 裁剪后图片保存目录
-        class_file: 需要裁剪的目标类型
-    """
-    img_name = os.path.basename(img_file)
-    img_cv = cv2.imread(img_file) # 读取图片
-    ## 路径中有中文字符是可使用该方法读取图片
-    # img_cv = cv2.imdecode(np.fromfile(img_file, dtype=np.uint8), -1)  
-    f_class = open(class_file, 'r')
-    classes = f_class.read().strip('\n').split('\n')
-    f_class.close()
-
-    count = 0
-    # tree = etree.ElementTree()
-    root = ET.parse(xml_file).getroot() #加载xml结构
-
-    os.makedirs(save_dir, exist_ok=True)
-
-    for obj in root.iter('object'):
-        name = obj.find('name').text
-        if name in classes:
-            xmlbox = obj.find('bndbox')
-            xmin = xmlbox.find('xmin').text
-            ymin = xmlbox.find('ymin').text
-            xmax = xmlbox.find('xmax').text
-            ymax = xmlbox.find('ymax').text
-            obj_img = img_cv[int(ymin):int(ymax), int(xmin):int(xmax)]
-            save_file = os.path.join(save_dir, img_name[:-4] + "_" +str(count) + "_" + name + ".jpg")
-            count += 1
-            cv2.imwrite(save_file ,obj_img)  # 保存裁剪图片
             
 
 def bmp2jpg(bmp_file, jpg_file):
