@@ -104,6 +104,7 @@ def yolo2voc(img_file, txt_file, xml_file, class_file):
     yolo_info = YoloReader(txt_file, img_size, classListPath=class_file)
     shapes = yolo_info.getShapes()  # 获取bbox的信息
 
+    count = 0
     for bbox in shapes:
         label = bbox[0]
         xmin = bbox[1][0][0]
@@ -111,8 +112,10 @@ def yolo2voc(img_file, txt_file, xml_file, class_file):
         xmax = bbox[1][2][0]
         ymax = bbox[1][2][1]
         writer.addBndBox(xmin, ymin, xmax, ymax, label, 0)
-
-    writer.save(targetFile=xml_file)
+        count += 1
+    
+    if count > 0:
+        writer.save(targetFile=xml_file)
 
 def voc2yolo(img_file, xml_file, txt_file, class_file):
     """
@@ -130,6 +133,7 @@ def voc2yolo(img_file, xml_file, txt_file, class_file):
     voc_info = PascalVocReader(xml_file)
     shapes = voc_info.getShapes()
 
+    count = 0
     for bbox in shapes:
         name = bbox[0]
         if name in classes:
@@ -139,10 +143,12 @@ def voc2yolo(img_file, xml_file, txt_file, class_file):
             xmax = bbox[1][2][0]
             ymax = bbox[1][2][1]
             writer.addBndBox(xmin, ymin, xmax, ymax, label, 0)
+            count += 1
         else:
             print("warning:", name, "not in classes")
 
-    writer.save(targetFile=txt_file)
+    if count > 0:
+        writer.save(targetFile=txt_file)
 
 
 def xml_merge(xml_raw, xml_part):
