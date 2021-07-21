@@ -7,7 +7,8 @@ import ffmpeg  # pip install ffmpeg-python
 import shutil
 from PIL import Image
 from moviepy.editor import VideoFileClip, concatenate_videoclips
-            
+import random
+
 
 def bmp2jpg(bmp_file, jpg_file):
     """
@@ -111,19 +112,41 @@ def video2imgs(video_file, img_dir, stride):
         f_count += 1
     videoCapture.release()
 
-def img_rewrite(dir):
-    for root, dirs, files in os.walk(dir):
-        count = 0
-        for file_name in files:
-            if file_name.endswith(".jpg") or file_name.endswith(".JPG"):
-                jpg_file = os.path.join(root, file_name)
-                img = cv2.imread(jpg_file)
-                print(jpg_file)
-                cv2.imwrite(jpg_file, img)
-                count += 1
-                if count % 100 == 0:
-                    print("rewrite", count, "already.")
+
+def draw_bboxs(img_file, bbox_cfg, is_write=False, is_show=False):
+    """
+    在图片上画bbox框
+    args:
+        img_file: 图片路径
+        bbox_cfg: json文件，格式为[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
+    return:
+        img: 图片data
+    """
+
+    img = cv2.imread(img_file)
+    for bbox in bbox_cfg:
+        label = bbox["label"]
+        coor = bbox["coor"]
+
+        ## 画矩形框
+        cv2.rectangle(img, (coor[0], coor[1]),
+                      (coor[2], coor[3]), (0, 0, 255), thickness=2)
+
+        ## 标注lable
+        cv2.putText(img, label, (coor[0]-5, coor[1]-5),
+                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+    if is_show:
+        cv2.imshow('head', img)
+        cv2.waitKey(0)
+    if is_write:
+        save_name = img_file[:-4] + "_bbox" + img_file[-4:]
+        cv2.imwrite(save_name, img)
+    return img
 
 
 if __name__ == '__main__':
-    img_rewrite("../../data/meter/CheckJpeg/test")
+    img_file = "C:/Users/yuanhui/Desktop/hear/test/#0773_org.jpg"
+    bbox_cfg = [{"label": "meter", "coor": [508, 218, 1430, 1080]},
+                {"label": "6", "coor": [908, 919, 947, 974]},
+                {"label": "5", "coor": [988, 918, 1030, 979]}]
+    draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
