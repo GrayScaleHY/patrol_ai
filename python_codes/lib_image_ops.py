@@ -8,6 +8,8 @@ import shutil
 from PIL import Image
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 import random
+import base64
+import numpy as np
 
 
 def bmp2jpg(bmp_file, jpg_file):
@@ -143,6 +145,20 @@ def draw_bboxs(img_file, bbox_cfg, is_write=False, is_show=False):
         cv2.imwrite(save_name, img)
     return img
 
+def img2base64(img):
+    """
+    numpy的int数据转换为base64格式。
+    """
+    return base64.b64encode(img).decode('utf-8')
+
+def base642img(img_base64):
+    """
+    输入base64格式数据，转为numpy的int数据。
+    """
+    img = base64.b64decode(str(img_base64))
+    img = np.fromstring(img, np.uint8)
+    img = cv2.imdecode(img, cv2.IMREAD_COLOR)
+    return img
 
 if __name__ == '__main__':
     img_file = "C:/Users/yuanhui/Desktop/hear/test/#0773_org.jpg"
