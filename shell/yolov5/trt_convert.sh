@@ -10,7 +10,7 @@ batch_size=8
 
 ## 生成onnx模型
 echo "BOX_SCORE=True python export.py --weights $weights --opset 11"
-# BOX_SCORE=True python export.py --weights $weights --opset 11
+BOX_SCORE=True python export.py --weights $weights --opset 11
 
 ## 生成trt模型
 echo """

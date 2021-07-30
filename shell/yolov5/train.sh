@@ -13,7 +13,7 @@ epochs=$3
 device=$4
 
 ## egs:
-#data_path=../data/led
+# data_path=../data/led
 # batch_size=4
 # epochs=300
 # device=0
