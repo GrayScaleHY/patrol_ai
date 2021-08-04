@@ -1,6 +1,6 @@
-if [ $# != 2]; then
+if [ $# != 2 ]; then
     echo "Usage: $0 <pt_model> <gpu>"
-    echo "output contains models"
+    echo "output contains infos of trt models"
     exit 1
 fi
 
