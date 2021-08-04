@@ -16,13 +16,9 @@ iou_thres=0.45
 batch_size=8
 
 ## 生成onnx模型
-<<<<<<< HEAD
 echo "CUDA_VISIBLE_DEVICES=$device BOX_SCORE=True python export.py --weights $weights --opset 11"
 CUDA_VISIBLE_DEVICES=$device BOX_SCORE=True python export.py --weights $weights --opset 11
-=======
-echo "BOX_SCORE=True python export.py --weights $weights --opset 11"
-BOX_SCORE=True python export.py --weights $weights --opset 11
->>>>>>> 7c00cd2bb23b56e0f9c1ebb0d88203b2279a5b44
+
 
 ## 生成trt模型
 echo """
