@@ -5,8 +5,8 @@ import requests
 from flask import request,make_response
 
 # 请求服务器的地址，固定的
-API_recognition = "http://192.168.60.73:5000/meter_recognition/"
-API_location = "http://192.168.60.73:5000/meter_location/"
+API_recognition = "http://192.168.57.159:5000/meter_recognition/"
+API_location = "http://192.168.57.159:5000/meter_location/"
 
 
 input_img = '/home/yh/meter_recognition/test/arrester/07-27-09-07-49/raw_image.jpg'
