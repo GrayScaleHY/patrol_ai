@@ -4,7 +4,6 @@ import numpy as np
 import os
 import math
 from skimage.measure import compare_ssim
-import lib_ssim
 import base64
 from lib_image_ops import base642img
 import time
