@@ -61,11 +61,14 @@ def inference_yolov5(model_yolov5, img, resize=640):
     return bbox_cfg
 
 if __name__ == '__main__':
-    
+    import numpy as np
     # model_file = 'yolov5/runs/best.pt'
-    model_file = '/home/yh/meter_recognition/yolov5/runs_digital/best.pt'
-    img_file = '/home/yh/meter_recognition/test/1_155614_0_meter.jpg'
+    model_file = '/home/yh/app_meter_inference/yolov5/saved_model/best_meter.pt'
+    img_file = 'images/WIN_20210819_15_47_09_Pro.jpg'
     img = cv2.imread(img_file)
     model_yolov5 = load_yolov5_model(model_file)  
     bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
+    c = np.array(bbox_cfg[0]["coor"],dtype=int)
+    img_meter = img[c[1]:c[3], c[0]:c[2]]
+    cv2.imwrite("images/test_4.jpg", img_meter)
     print(bbox_cfg)
