@@ -103,14 +103,18 @@ def inference_maskrcnn(maskrcnn_weights, img):
         mask = np.where(mask == 1, 255, 0).astype(
             np.uint8)  # False, True转为0， 1
 
-        # 转成轮廓格式，contour由多个坐标点组成。
+        ## 转成轮廓格式，contour由多个坐标点组成。
         contour, hierarchy = cv2.findContours(
-            mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+            mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        ## 由于一个mask可能会拟合出多个contour，因此取点数最多的contour
+        contour_shape0 = [c.shape[0] for c in contour]
+        contour = [contour[contour_shape0.index(max(contour_shape0))]]
+
         for c_ in contour:
             contours.append(c_)
 
     # cv2.drawContours(img,contours,-1,(0,0,255),1)
-    # cv2.imwrite(img_file[:-4]+"_contours.jpg", img)
+    # cv2.imwrite("/home/yh/meter_recognition/test/point_two_0_contours.jpg", img)
     return contours, boxes
 
 
@@ -170,12 +174,12 @@ def contour2segment(contours, boxes):
 if __name__ == '__main__':
 
     mask_rcnn_weight = '/home/yh/meter_recognition/detectron2/run/model_final.pth'
-    img_file = "/home/yh/meter_recognition/test/#0294_org.jpg"
+    img_file = "/home/yh/meter_recognition/test/point_two_0.jpg"
 
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)
     img = cv2.imread(img_file)
     contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
-    segments = contour2segment(contours, boxes, img)
+    segments = contour2segment(contours, boxes)
     print(segments)
 
     for segment in segments:
