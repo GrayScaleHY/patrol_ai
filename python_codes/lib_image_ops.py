@@ -131,11 +131,11 @@ def draw_bboxs(img_file, bbox_cfg, is_write=False, is_show=False):
         coor = bbox["coor"]
 
         ## 画矩形框
-        cv2.rectangle(img, (coor[0], coor[1]),
-                      (coor[2], coor[3]), (0, 0, 255), thickness=2)
+        cv2.rectangle(img, (int(coor[0]), int(coor[1])),
+                      (int(coor[2]), int(coor[3])), (0, 0, 255), thickness=2)
 
         ## 标注lable
-        cv2.putText(img, label, (coor[0]-5, coor[1]-5),
+        cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
     if is_show:
         cv2.imshow('head', img)
