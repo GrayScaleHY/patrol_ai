@@ -156,8 +156,8 @@ def rec_pointer(input_data):
         out_cfg = out_cfgs[i]
         
         ## 用maskrcnn检测指针轮廓并且拟合成线段。
-        contours = inference_maskrcnn(maskrcnn_pointer, img_meter)
-        segments = contour2segment(contours, img_meter)
+        contours, boxes = inference_maskrcnn(maskrcnn_pointer, img_meter)
+        segments = contour2segment(contours, boxes)
 
         vals = []
         segs = []
