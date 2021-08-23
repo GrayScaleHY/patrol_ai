@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import os
 import math
-from skimage.measure import compare_ssim
+from skimage import measure # pip install scikit-image
 import base64
 from lib_image_ops import base642img
 import time
@@ -22,18 +22,19 @@ def my_ssim(img1, img2):
         img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
     if len(img2.shape) == 3:
         img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
-    score = compare_ssim(img1, img2) #输入灰度图
+    score = measure.compare_ssim(img1, img2) #输入灰度图
     
     return score
 
 
-def sift_match(ref_img, tag_img, ratio=0.5):
+def sift_match(ref_img, tag_img, ratio=0.5, ops="Affine"):
     """
     使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
     args:
         ref_img: 参考图片data
         tag_img: 变换图片data
         ratio: sift点正匹配的阈值
+        ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
     return:
         M:偏移矩阵, 2*3矩阵，前两列表示仿射变换，后一列表示平移量。
           偏移后的点的计算公式：(x', y') = M * (x, y, 1)
@@ -92,9 +93,14 @@ def sift_match(ref_img, tag_img, ratio=0.5):
         dst_pts = np.float32([kps2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
         ## 根据正匹配点求偏移矩阵
-        M, mask = cv2.estimateAffinePartial2D(src_pts, dst_pts, method=cv2.RANSAC, ransacReprojThreshold=5)
-        # M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0, maxIters=2000, confidence=0.995)
-        # M = cv2.estimateRigidTransform(src_pts, dst_pts, False)  # python bindings removed
+        if ops == "Affine":
+            M, mask = cv2.estimateAffinePartial2D(src_pts, dst_pts, method=cv2.RANSAC, ransacReprojThreshold=5)
+        elif ops == "Perspective":
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0, maxIters=2000, confidence=0.995)
+        else:
+            print("ops is wrong!")
+            M = cv2.estimateRigidTransform(src_pts, dst_pts, False)  # python bindings removed
+
         print("Enough matches are found - {}/{}".format(len(good), min_match_count))
         return M
     else:
@@ -102,15 +108,17 @@ def sift_match(ref_img, tag_img, ratio=0.5):
         return None
 
 
-def correct_offset(ref_img, tag_img, bbox=None):
+def correct_offset(ref_img, tag_img, bbox=None, ops="Affine"):
     """
     根据偏移矩阵矫正图片。
+    args:
+        ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
     return:
         img_tag_warped: 矫正之后的tag_img
         coors_tar: ref_img上的bbox相对与tag_img的bbox。
     """
     ## 使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
-    M = sift_match(ref_img, tag_img).astype(np.float32) # 2*3偏移矩阵
+    M = sift_match(ref_img, tag_img, ops=ops).astype(np.float32) # 2*3偏移矩阵
 
     if M is None:
         return None, None
