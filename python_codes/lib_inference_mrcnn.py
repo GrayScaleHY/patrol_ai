@@ -4,9 +4,92 @@ import numpy as np
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 import sys
+import math
+from lib_analysis_meter import segment2angle
 sys.path.append('./detectron2')
 
-def intersection_point(line, segment):
+def intersection_arc(line, arc):
+    """
+    计算射线line与圆弧arc的交点坐标，最多返回一个坐标值。
+    args:
+        line: [x1, y1, x2, y2]
+        arc: [xc, yc, x1, y1, x2, y2], 注意:半径r取(x1,y1)到圆心的距离。
+    return:
+        (x1, y1): 交点坐标。也可能是None，表示直线与弧线无交点。
+    """
+    ## line = [130, 296, 216, 328] # [x1, y1, x2, y2]
+    ## arc = [398, 417, 116, 413, 229, 174] # [xc, yc, x1, y1, x2, y2]
+
+    line = np.array(line, dtype=float) ## int转float
+    arc = np.array(arc, dtype=float)
+    # 根据线段到圆心的远近，确定坐标的先后
+    if ((line[0]-arc[0])**2 + (line[1]-arc[1])**2) > ((line[2]-arc[0])**2 + (line[3]-arc[1])**2):
+        line = [line[2], line[3], line[0], line[1]]
+
+    ## 定义直线和圆形方程式
+    lx1 = line[0]; ly1 = line[1]; lx2 = line[2]; ly2 = line[3]
+    xc = arc[0]; yc = arc[1]
+    ax1 = arc[2]; ay1 = arc[3]; ax2 = arc[4]; ay2 = arc[5]
+    # 直线: y = a * x + b
+    if lx1 == lx2:
+        a = None
+    else:
+        a = (ly1 - ly2) / (lx1 - lx2)
+        b = (ly1 - a * lx1)
+    # 圆形: (x - xc)^2 + (y - yc)^2 = r2
+    r2 = (yc - ay1) ** 2 + (xc - ax1) ** 2
+
+    ## 线段至少一个点在圆内。
+    if ((lx1 - xc) ** 2 + (ly1 - yc) ** 2) >= r2:
+        return None
+
+    ## 计算直线与圆弧的交点坐标
+    if a is None:
+        ## 直线斜率不存在，线段垂直与x轴
+        x1 = lx1
+        x2 = lx1
+        y1 = math.sqrt(r2 - (x1 - xc) ** 2) - yc
+        y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
+    else:
+        ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
+        A = 1 + a ** 2
+        B = 2 * a * (b - yc) - 2 * xc
+        C = xc ** 2 + (b - yc) ** 2 - r2
+        detl = B ** 2 - 4 * A * C
+        if detl <= 0: # 相切或不相交
+            return None
+        else:
+            ## 二元一次方程组求解公式
+            x1 = (-B - math.sqrt(detl)) / (2 * A)
+            x2 = (-B + math.sqrt(detl)) / (2 * A)
+            y1 = a * x1 + b
+            y2 = a * x2 + b
+    
+    ## 取离线段末端最近的交点坐标作为唯一的交点坐标。
+    if ((lx2-x1)**2+(ly2-y1)**2) <= ((lx2-x2)**2+(ly2-y2)**2):
+        x = x1; y = y1
+    else:
+        x = x2; y = y2
+
+    ## 判断交点坐标是否在圆弧内
+    ang1 = segment2angle((xc, yc), (ax1, ay1))
+    ang2 = segment2angle((xc, yc), (x, y))
+    ang3 = segment2angle((xc, yc), (ax2, ay2))
+    if ang2 <= ang1:
+        ang2_ = ang1 - ang2
+    else:
+        ang2_ = ang1 + (360 - ang2) # 计算圆弧arc的夹角度数
+    if ang3 <= ang1:
+        ang3_ = ang1 - ang3
+    else:
+        ang3_ = ang1 + (360 - ang3) # 计算圆弧arc的夹角度数
+    if ang2_ > ang3_:
+        return None
+    
+    return int(x), int(y)
+
+
+def intersection_segment(line, segment):
     """
     求直线穿过线段的交点坐标。
     agrs:
@@ -160,7 +243,7 @@ def contour2segment(contours, boxes):
         coors = []
         segment = []
         for seg in seg_list:
-            coor = intersection_point(line, seg) # 求直线与线段的交点坐标
+            coor = intersection_segment(line, seg) # 求直线与线段的交点坐标
             if coor is not None and coor not in coors:
                 coors.append(coor)
                 segment = segment + list(coor)
@@ -172,24 +255,29 @@ def contour2segment(contours, boxes):
 
 
 if __name__ == '__main__':
+    import glob
+    import os
 
     mask_rcnn_weight = '/home/yh/meter_recognition/detectron2/run/model_final.pth'
     img_file = "/home/yh/meter_recognition/test/point_two_0.jpg"
 
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)
-    img = cv2.imread(img_file)
-    contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
-    segments = contour2segment(contours, boxes)
-    print(segments)
+    for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test/meter","*.jpg")):
+        img = cv2.imread(img_file)
+        contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
+        segments = contour2segment(contours, boxes)
+        print(segments)
 
-    for segment in segments:
-        cv2.line(img, (segment[0], segment[1]),
-                 (segment[2], segment[3]), (0, 255, 0), 2)  # 图像上画直线
+        for segment in segments:
+            cv2.line(img, (segment[0], segment[1]),
+                    (segment[2], segment[3]), (0, 255, 0), 2)  # 图像上画直线
 
-    out_file = img_file[:-4] + "mrcnn.jpg"
+        out_file = img_file[:-4] + "mrcnn.jpg"
 
-    # cv2.drawContours(img,contours,-1,(0,0,255),1)
-    # cv2.rectangle(img, (int(boxes[0][0]), int(boxes[0][1])), (int(boxes[0][2]), int(boxes[0][3])), (0, 0, 255), thickness=2)
-    cv2.imwrite(out_file, img)
-    # cv2.imwrite(out_file, img)
+        # cv2.drawContours(img,contours,-1,(0,0,255),1)
+        # cv2.rectangle(img, (int(boxes[0][0]), int(boxes[0][1])), (int(boxes[0][2]), int(boxes[0][3])), (0, 0, 255), thickness=2)
+        cv2.imwrite(out_file, img)
+        # cv2.imwrite(out_file, img)
+
+        
 
