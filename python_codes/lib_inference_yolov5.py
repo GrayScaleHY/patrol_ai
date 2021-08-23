@@ -62,13 +62,19 @@ def inference_yolov5(model_yolov5, img, resize=640):
 
 if __name__ == '__main__':
     import numpy as np
+    import os
+    import glob
     # model_file = 'yolov5/runs/best.pt'
+    count = 0
     model_file = '/home/yh/app_meter_inference/yolov5/saved_model/best_meter.pt'
-    img_file = 'images/WIN_20210819_15_47_09_Pro.jpg'
-    img = cv2.imread(img_file)
-    model_yolov5 = load_yolov5_model(model_file)  
-    bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
-    c = np.array(bbox_cfg[0]["coor"],dtype=int)
-    img_meter = img[c[1]:c[3], c[0]:c[2]]
-    cv2.imwrite("images/test_4.jpg", img_meter)
-    print(bbox_cfg)
+    model_yolov5 = load_yolov5_model(model_file)
+    for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test","*.jpg")):
+        # img_file = 'images/WIN_20210819_15_47_09_Pro.jpg'
+        img = cv2.imread(img_file)
+        bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
+        for bbox in bbox_cfg:
+            c = np.array(bbox["coor"],dtype=int)
+            img_meter = img[c[1]:c[3], c[0]:c[2]]
+            cv2.imwrite(os.path.join("/home/yh/meter_recognition/test/test/meter","meter_"+str(count).zfill(2)+".jpg"), img_meter)
+            # print(bbox_cfg)
+            count += 1
