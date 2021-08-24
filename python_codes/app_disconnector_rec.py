@@ -108,7 +108,7 @@ def sift_match(ref_img, tag_img, ratio=0.5, ops="Affine"):
         return None
 
 
-def correct_offset(ref_img, tag_img, bbox=None, ops="Affine"):
+def correct_offset(ref_img, tag_img, ops="Affine"):
     """
     根据偏移矩阵矫正图片。
     args:
@@ -121,7 +121,7 @@ def correct_offset(ref_img, tag_img, bbox=None, ops="Affine"):
     M = sift_match(ref_img, tag_img, ops=ops).astype(np.float32) # 2*3偏移矩阵
 
     if M is None:
-        return None, None
+        return ref_img
     
     ## 矫正图片
     if M.shape == (2, 3):  # warp affine
@@ -129,18 +129,32 @@ def correct_offset(ref_img, tag_img, bbox=None, ops="Affine"):
     elif M.shape == (3, 3):  # warp perspective
         img_tag_warped = cv2.warpPerspective(tag_img, M, (tag_img.shape[1], tag_img.shape[0]), flags=cv2.WARP_INVERSE_MAP)
 
-    if bbox is None:
-        return img_tag_warped, None
+    return img_tag_warped
 
-    ## bbox变换， (x', y') = M * (x, y, 1)
-    coors_ref = np.array([[bbox[0],bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]]])
-    coors_tar = np.c_[coors_ref, np.array([1]*4)] # 添加一列1象量
-    coors_tar = np.transpose(coors_tar)
-    coors_tar = np.dot(M, coors_tar) # 矩阵相乘
-    coors_tar = np.transpose(coors_tar).astype(int)
 
-    return img_tag_warped, coors_tar
+def convert_coor(coor_ref, M):
+    """
+    使用偏移矩阵M计算参考坐标发生偏移后的对应坐标。
+    args:
+        coor_ref: 参考坐标
+        M: 偏移矩阵
+    return: 
+        (x, y): 转换后的坐标
+    """
+    if M is None:
+        return coor_ref
 
+    assert M.shape == (2, 3) or M.shape == (3, 3), "shape of M is not match !"
+
+    coor_ref = np.array(list(coor_ref) + [1], dtype=float)
+    coor_tag = np.dot(M, coor_ref) # (2, 3)的转换矩阵直接通过相乘得到转换后坐标
+
+    if M.shape == (3, 3): # Homo坐标系
+        x = coor_tag[0] / coor_tag[2]; y = coor_tag[1] / coor_tag[2]
+        coor_tag = np.array([x, y], dtype=float)
+
+    return tuple(coor_tag.astype(int))
+        
 
 def disconnector_rec(data):
     """
@@ -161,7 +175,7 @@ def disconnector_rec(data):
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
 
     ## 对图像做矫正偏移
-    img_tag_warped, coors_tar = correct_offset(img_open, img_tag)
+    img_tag_warped = correct_offset(img_open, img_tag)
     if img_tag_warped is None:
         out_data["msg"] = "img_tar is not match img_open!"
         return out_data
