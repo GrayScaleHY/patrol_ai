@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
-from io import BytesIO
-import base64
 import json
+import os
 from app_inspection_pointer import inspection_pointer
 from app_inspection_meter import inspection_meter
 from app_inspection_disconnector import inspection_disconnector

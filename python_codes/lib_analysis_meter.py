@@ -6,8 +6,6 @@ import os
 import json
 from lib_image_ops import base642img
 
-
-
 def segment2angle(base_coor, tar_coor):
     """
     输入线段的两个端点坐标（图像坐标系，y轴朝下），返回该线段斜率转换为0-360度。

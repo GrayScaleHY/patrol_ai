@@ -15,7 +15,7 @@ import lib_image_ops
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
-from app_disconnector_rec import sift_match, convert_coor
+from app_inspection_disconnector import sift_match, convert_coor
 
 
 ## 加载模型
