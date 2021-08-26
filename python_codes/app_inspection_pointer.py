@@ -189,7 +189,7 @@ def inspection_pointer(input_data):
     if len(vals) > 0:
         cfg = {"type": "pointer", "values": vals, "segments": segment_real, "bbox": coor_tag}
 
-        out_data["data"] = [cfg]
+        out_data["data"] = cfg
 
     ## 可视化最终计算结果
     cv2.rectangle(img_tag_, (int(coor_tag[0]), int(coor_tag[1])),
