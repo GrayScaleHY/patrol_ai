@@ -27,7 +27,7 @@ def inference_yolov5(model_yolov5, img, resize=640):
         model_yolov5: 加载后的yolov5模型，使用load_yolov5_model(model_file)加载
         img_file: 需要预测的图片
     return:
-        bbox_cfg: 预测的bbox信息，json文件格式为格式为[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
+        bbox_cfg: 预测的bbox信息，json文件格式为格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
     """
     
     # img = cv2.imread(img_file)
