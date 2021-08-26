@@ -20,9 +20,9 @@ from lib_image_ops import base642img
 import json
 
 
-yolov5_meter = load_yolov5_model("yolov5/saved_model/best_meter.pt") # 加载仪表yolov5模型
-yolov5_counter= load_yolov5_model("yolov5/saved_model/best_digital.pt") # 加载记数yolov5模型
-maskrcnn_pointer = load_maskrcnn_model("detectron2/saved_model/best_pointer.pth") # 加载指针的maskrcnn模型
+yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
+yolov5_counter= load_yolov5_model("/data/inspection/yolov5/counter.pt") # 加载记数yolov5模型
+maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth") # 加载指针的maskrcnn模型
 
 global TIME_START
 TIME_START = time.strftime("%m-%d-%H-%M-%S")
