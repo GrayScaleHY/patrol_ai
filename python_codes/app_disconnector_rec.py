@@ -144,6 +144,8 @@ def convert_coor(coor_ref, M):
     if M is None:
         return coor_ref
 
+    M = np.array(M, dtype=float)
+    
     assert M.shape == (2, 3) or M.shape == (3, 3), "shape of M is not match !"
 
     coor_ref = np.array(list(coor_ref) + [1], dtype=float)
