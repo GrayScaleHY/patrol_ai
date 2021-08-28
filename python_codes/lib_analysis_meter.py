@@ -149,3 +149,4 @@ def draw_result(input_data, out_data, save_img):
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
 
     cv2.imwrite(save_img, img)
+    return img
