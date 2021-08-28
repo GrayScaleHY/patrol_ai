@@ -96,7 +96,7 @@ def requst_inspection_disconnector():
     print("------------------------------")
 
 if __name__ == '__main__':
-    # requst_inspection_pointer()
+    requst_inspection_pointer()
     # requst_inspection_meter()
     # requst_inspection_counter()
-    requst_inspection_disconnector()
+    # requst_inspection_disconnector()
