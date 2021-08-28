@@ -18,6 +18,7 @@ import time
 import os
 from lib_image_ops import base642img
 import json
+import lib_image_ops
 
 
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
@@ -218,10 +219,13 @@ def meter_rec(input_data):
         out_data["msg"] = out_data["msg"] + ";" + out_data_["msg"]
         out_data["data"] = out_data["data"] + out_data_["data"]
 
-    draw_result(input_data, out_data, save_image)
+    img = draw_result(input_data, out_data, save_image)
     print("result draw in",save_image)
     print(out_data)
     print("====================================================")
+
+    cv2.imwrite("test.jpg", img)
+    out_data["image"] = lib_image_ops.img2base64("test.jpg")
     
     return out_data
 
