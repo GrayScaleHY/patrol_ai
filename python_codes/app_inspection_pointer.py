@@ -2,15 +2,7 @@ import os
 import cv2
 import time
 import json
-import numpy as np
-import base64
-import argparse
-import base64
 import json
-import requests
-import torch
-from flask import request,make_response
-from flask import Flask, request, jsonify
 import lib_image_ops
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
@@ -116,7 +108,7 @@ def inspection_pointer(input_data):
     save_path = os.path.join("pointer", TIME_START)
     os.makedirs(save_path, exist_ok=True)
 
-    out_data = {"code":0, "data":[], "msg": "request sucdess; "} #初始化输出信息
+    out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
 
     if input_data["type"] != "pointer":
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
@@ -206,10 +198,11 @@ def inspection_pointer(input_data):
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 2, (255, 0, 0), 8)
         cv2.putText(img_tag_, str(scale), (int(coor[0])-5, int(coor[1])),
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), thickness=2)
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    img_tag_cfg_file = os.path.join(save_path, "img_tag_cfg.jpg")
+    cv2.imwrite(img_tag_cfg_file, img_tag_)
 
-    for i in range(10):
-        torch.cuda.empty_cache()
+    ## 输出可视化结果的图片。
+    out_data["image"] = lib_image_ops.img2base64(img_tag_cfg_file)
 
     return out_data
 
