@@ -18,7 +18,9 @@ def inspection_pointer_server():
     res = inspection_pointer(data)
     print("inspection_pointer result:")
     print("-----------------------------------------------")
-    print(res)
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
     print("----------------------------------------------")
     return jsonify(res)
 
@@ -60,7 +62,9 @@ def inspection_disconnector_server():
     res = inspection_disconnector(data)
     print("inspection_pointer result:")
     print("-----------------------------------------------")
-    print(res)
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
     print("----------------------------------------------")
     return jsonify(res)
 
