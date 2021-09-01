@@ -145,13 +145,14 @@ def draw_bboxs(img_file, bbox_cfg, is_write=False, is_show=False):
         cv2.imwrite(save_name, img)
     return img
 
-def img2base64(img_file):
+def img2base64(img):
     """
     numpy的int数据转换为base64格式。
     """
-    with open(img_file, "rb") as imageFile:
-        img = imageFile.read()
-    return base64.b64encode(img).decode('utf-8')
+    retval, buffer = cv2.imencode('.jpg', img)
+    img_base64 = base64.b64encode(buffer)
+    img_base64 = img_base64.decode()
+    return img_base64
 
 def base642img(img_base64):
     """
