@@ -104,10 +104,6 @@ def cal_base_scale(coordinates, segment):
 def inspection_pointer(input_data):
 
     ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("pointer", TIME_START)
-    os.makedirs(save_path, exist_ok=True)
-
     out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
 
     if input_data["type"] != "pointer":
@@ -122,20 +118,22 @@ def inspection_pointer(input_data):
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_ref_ = img_ref.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag_)
-    cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
+    save_path = os.path.join("pointer", TIME_START)
+    os.makedirs(save_path, exist_ok=True)
     f = open(os.path.join(save_path, "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
+    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
     for scale in coordinates_ref:  # 将坐标点标注在图片上
         coor = coordinates_ref[scale]
         cv2.circle(img_ref_, (coor[0], coor[1]), 2, (255, 0, 0), 8)
         cv2.putText(img_ref_, str(scale), (int(coor[0])-5, int(coor[1])),
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
-
+        
     ## 使用yolov5定位参考图和目标图的表盘。
-    
     bbox_ref = inference_yolov5(yolov5_meter, img_ref, resize=640)
     if len(bbox_ref) > 0:
         coor_ref = bbox_ref[0]["coor"]
@@ -188,30 +186,28 @@ def inspection_pointer(input_data):
                     (int(coor_tag[2]), int(coor_tag[3])), (0, 0, 255), thickness=2)
     cv2.putText(img_tag_, "meter", (int(coor_tag[0])-5, int(coor_tag[1])-5),
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
-    for seg in segments:
+    for seg in segments[:1]:
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
-    for i, val in enumerate(vals):
-        cv2.putText(img_tag_, str(val), (int(segment_real[i][0])-5, int(segment_real[i][1])),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 255, 0), thickness=2)
+    for i, val in enumerate(vals[:1]):
+        cv2.putText(img_tag_, str(val), (int(segment_real[i][2])-5, int(segment_real[i][3])),
+                    cv2.FONT_HERSHEY_COMPLEX, 1.2, (255, 255, 0), thickness=2)
     for scale in coordinates_tag:
         coor = coordinates_tag[scale]
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 2, (255, 0, 0), 8)
         cv2.putText(img_tag_, str(scale), (int(coor[0])-5, int(coor[1])),
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), thickness=2)
-    img_tag_cfg_file = os.path.join(save_path, "img_tag_cfg.jpg")
-    cv2.imwrite(img_tag_cfg_file, img_tag_)
+
+    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
-    out_data["image"] = lib_image_ops.img2base64(img_tag_cfg_file)
+    out_data["img_result"] = lib_image_ops.img2base64(img_tag_)
 
     return out_data
 
-
 def main():
-    img_ref_file = "images/img_ref.jpg"
-    img_tag_file = "/home/yh/app_meter_inference/recognition_resutl/08-24-14-26-06/raw_img.jpg"
-    coordinates = {"center": [1113, 476], "-0.1": [890, 779], "0.1": [740, 479], "0.2": [773, 313], "0.3": [887, 178], 
-                "0.4": [1050, 101], "0.5": [1230, 106], "0.6": [1390, 191], "0.7": [1488, 349], "0.8": [1502, 531], "0.9": [1423, 701]}
+    img_ref_file = "images/test_5.jpg"
+    img_tag_file = "images/test_5.jpg"
+    coordinates = {"center": [1093, 1947], "0": [356, 1939], "150": [450, 1566], "300": [726, 1293], "450": [1093, 1210]}
     
     img_tag = lib_image_ops.img2base64(img_tag_file)
     img_ref = lib_image_ops.img2base64(img_ref_file)
