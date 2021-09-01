@@ -3,6 +3,7 @@ import base64
 import json
 import requests
 import lib_image_ops
+import cv2
 from flask import request,make_response
 
 def requst_inspection_pointer():
@@ -11,25 +12,29 @@ def requst_inspection_pointer():
     """
     API = "http://192.168.57.159:5000/inspection_pointer/"
 
-    img_ref_file = "images/img_ref.jpg"
-    img_tag_file = "images/img_tag.jpg"
-    coordinates = {"center": [1113, 476], "-0.1": [890, 779], "0.1": [740, 479], "0.2": [773, 313], "0.3": [887, 178], 
-                "0.4": [1050, 101], "0.5": [1230, 106], "0.6": [1390, 191], "0.7": [1488, 349], "0.8": [1502, 531], "0.9": [1423, 701]}
-    img_tag = lib_image_ops.img2base64(img_tag_file)
-    img_ref = lib_image_ops.img2base64(img_ref_file)
+    ## 输入参数
+    img_ref_file = "images/pointer/test_4.jpg"
+    img_tag_file = "images/pointer/test_4.jpg"
+    coordinates = {"center": [1093, 1947], "150": [450, 1566], "300": [726, 1293], "450": [1093, 1210]}
+    
+    img_tag = lib_image_ops.img2base64(cv2.imread(img_ref_file))
+    img_ref = lib_image_ops.img2base64(cv2.imread(img_tag_file))
     input_data = {"image": img_tag, "config": {"img_ref": img_ref, "coordinates": coordinates}, "type": "pointer"}
-
     send_data = json.dumps(input_data)
     res = requests.post(url=API, data=send_data).json()
+    print("------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("------------------------------")
 
-    print("------------------------------")
-    print(res)
-    print("------------------------------")
+    img = lib_image_ops.base642img(res["img_result"])
+    cv2.imwrite(img_tag_file[:-4] + "_result.jpg", img)
 
 
 def requst_inspection_meter():
     """
-    智能巡视-指针读数。
+    智能巡视-仪表定位。
     """
     API = "http://192.168.57.159:5000/inspection_meter/"
 
