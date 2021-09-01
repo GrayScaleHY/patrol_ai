@@ -258,26 +258,26 @@ if __name__ == '__main__':
     import glob
     import os
 
-    mask_rcnn_weight = '/home/yh/meter_recognition/detectron2/run/model_final.pth'
-    img_file = "/home/yh/meter_recognition/test/point_two_0.jpg"
+    mask_rcnn_weight = '/data/inspection/maskrcnn/pointer.pth'
+    img_file = "/home/yh/app_inspection/python_codes/recognition_resutl/08-30-16-08-37/raw_img_meter_rec.jpg"
 
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)
-    for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test/meter","*.jpg")):
-        img = cv2.imread(img_file)
-        contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
-        segments = contour2segment(contours, boxes)
-        print(segments)
+    # for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test/meter","*.jpg"))[-1]:
+    img = cv2.imread(img_file)
+    contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
+    segments = contour2segment(contours, boxes)
+    print(segments)
 
-        for segment in segments:
-            cv2.line(img, (segment[0], segment[1]),
-                    (segment[2], segment[3]), (0, 255, 0), 2)  # 图像上画直线
+    for segment in segments:
+        cv2.line(img, (segment[0], segment[1]),
+                (segment[2], segment[3]), (0, 255, 0), 2)  # 图像上画直线
 
-        out_file = img_file[:-4] + "mrcnn.jpg"
+    out_file = img_file[:-4] + "mrcnn.jpg"
 
-        # cv2.drawContours(img,contours,-1,(0,0,255),1)
-        # cv2.rectangle(img, (int(boxes[0][0]), int(boxes[0][1])), (int(boxes[0][2]), int(boxes[0][3])), (0, 0, 255), thickness=2)
-        cv2.imwrite(out_file, img)
-        # cv2.imwrite(out_file, img)
+    # cv2.drawContours(img,contours,-1,(0,0,255),1)
+    # cv2.rectangle(img, (int(boxes[0][0]), int(boxes[0][1])), (int(boxes[0][2]), int(boxes[0][3])), (0, 0, 255), thickness=2)
+    cv2.imwrite(out_file, img)
+    # cv2.imwrite(out_file, img)
 
         
 
