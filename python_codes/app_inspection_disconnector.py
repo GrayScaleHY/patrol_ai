@@ -7,7 +7,7 @@ try:
 except:
     from skimage.metrics import structural_similarity as sk_cpt_ssim
 import base64
-from lib_image_ops import base642img
+from lib_image_ops import base642img, img2base64
 import time
 
 
@@ -110,18 +110,14 @@ def sift_match(ref_img, tag_img, ratio=0.5, ops="Affine"):
         return None
 
 
-def correct_offset(ref_img, tag_img, ops="Affine"):
+def correct_offset(ref_img, tag_img, M):
     """
     根据偏移矩阵矫正图片。
     args:
-        ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
+        M: 偏移矩阵
     return:
         img_tag_warped: 矫正之后的tag_img
-        coors_tar: ref_img上的bbox相对与tag_img的bbox。
     """
-    ## 使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
-    M = sift_match(ref_img, tag_img, ops=ops).astype(np.float32) # 2*3偏移矩阵
-
     if M is None:
         return ref_img
     
@@ -179,8 +175,10 @@ def inspection_disconnector(data):
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
 
     ## 对图像做矫正偏移
-    img_tag_warped = correct_offset(img_open, img_tag)
-    if img_tag_warped is None:
+    ## 使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
+    M = sift_match(img_open, img_tag).astype(np.float32) # 2*3偏移矩阵
+    img_tag_warped = correct_offset(img_open, img_tag, M)
+    if M is None:
         out_data["msg"] = "img_tar is not match img_open!"
         return out_data
 
@@ -196,26 +194,43 @@ def inspection_disconnector(data):
         result = 1
     else:
         result = 0
-    out_data["data"] = {"result": result, "score_open": score_open, "score_close": score_close}
+    out_data["data"] = {"result": result, "score_open": score_open, "score_close": score_close, "img_result": "image"}
 
     label_s = "op : cl = %.3f : %.3f" % (score_open, score_close)
     print(label_s)
 
     ## 画图，将结果用图片的形式展示结果，有利于debug
-    cv2.imwrite(os.path.join(save_dir,"img_op.jpg"), img_op)
-    cv2.imwrite(os.path.join(save_dir,"img_cl.jpg"), img_cl)
-    cv2.imwrite(os.path.join(save_dir,"img_tag_warp.jpg"), img_tag_warp)
+    # cv2.imwrite(os.path.join(save_dir,"img_op.jpg"), img_op)
+    # cv2.imwrite(os.path.join(save_dir,"img_cl.jpg"), img_cl)
+    # cv2.imwrite(os.path.join(save_dir,"img_tag_warp.jpg"), img_tag_warp)
+    # cv2.rectangle(img_tag_warped, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
+    # cv2.putText(img_tag_warped, label_s, (bbox[0]-5, bbox[1]-5),cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), thickness=2)
+    # cv2.imwrite(os.path.join(save_dir,"img_tag_warped.jpg"), img_tag_warped)
     cv2.rectangle(img_open, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
-    cv2.rectangle(img_tag_warped, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
-    cv2.putText(img_tag_warped, label_s, (bbox[0]-5, bbox[1]-5),cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), thickness=2)
-    cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
-    cv2.imwrite(os.path.join(save_dir,"img_tag_warped.jpg"), img_tag_warped)
+    cv2.imwrite(os.path.join(save_dir,"img_open_cfg.jpg"), img_open)
+    cv2.rectangle(img_close, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
+    cv2.imwrite(os.path.join(save_dir,"img_close_cfg.jpg"), img_close)
+    lines = [[(bbox[0], bbox[1]), (bbox[2], bbox[1])],
+             [(bbox[2], bbox[1]), (bbox[2], bbox[3])],
+             [(bbox[2], bbox[3]), (bbox[0], bbox[3])],
+             [(bbox[0], bbox[1]), (bbox[0], bbox[3])],]
+    if result:
+        color = (0, 255, 0)
+    else:
+        color = (0, 0, 255)
+    for line in lines:
+        line = [convert_coor(line[0], M), convert_coor(line[1], M)]
+        cv2.line(img_tag, line[0], line[1], color, 2)
+    cv2.putText(img_tag, label_s, (bbox[0]-10, bbox[1]-10),cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=2)
+    cv2.imwrite(os.path.join(save_dir,"img_tag_cfg.jpg"), img_tag)
 
+    out_data["img_result"] = img2base64(img_tag)
+    
     return out_data
 
 
 def init_data():
-    tag_file = "images/test_0_open_open.png"
+    tag_file = "images/test_0_open_close.png"
     close_file = "images/test_0_close_open.png"
     open_file = "images/test_0_open_close.png"
     bbox =  [1460, 405, 1573, 578]
