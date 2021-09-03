@@ -5,7 +5,32 @@ import os
 import cv2
 import labelme2coco # pip install labelme2coco
 import xml.etree.ElementTree as ET
+import numpy as np
+from lib_image_ops import img2base64, base642img
+import json
 # from xml import etree
+
+
+def convert_points(points, bbox):
+    """
+    判断points是否都在bbox中，如果在则返回相对与bbox的points，否则，返回None.
+    args:
+        points: [[x0, y0], [x1, y1], ...]
+        bbox: [xmin, ymin, xmax, ymax]
+    return:
+        points or None
+    """
+    points = np.array(points, dtype=float)
+    a = points[:, 0]
+    if bbox[0] > np.min(points[:, 0]) or bbox[2] < np.max(points[:, 0]):
+        return None
+    if bbox[1] > np.min(points[:, 1]) or bbox[3] < np.max(points[:, 1]):
+        return None
+    for i in range(len(points)):
+        points[i][0] -= bbox[0]
+        points[i][1] -= bbox[1]
+        
+    return points.tolist()
 
 
 def rel_coordinates(ref_coo, tag_coo):
@@ -90,8 +115,68 @@ def crop_img_base_label(img_file, xml_file, save_dir, crop_label):
 
                 writer.save(targetFile=xml_out)
 
-            
 
+def crop_img_base_json(img_file, xml_file, json_file, save_dir):
+    """
+    根据目标框截取图片，并且将图像分割标注信息保留。
+    """
+    os.makedirs(save_dir, exist_ok=True)
+
+    ## 图片信息
+    img = cv2.imread(img_file)
+
+    ## json文件信息
+    f = open(json_file, 'r', encoding='utf-8')
+    labelme_info = json.load(f)
+    f.close()
+
+    ## 获取xml_file中的目标框信息
+    voc_info = PascalVocReader(xml_file)
+    bboxs = voc_info.getShapes()
+
+    count = 0
+    for b in bboxs:  # 需要裁剪的目标bbox
+        out_info = {}
+        bbox = [b[1][0][0], b[1][0][1], b[1][2][0], b[1][2][1]]
+        img_box = img[bbox[1]:bbox[3], bbox[0]: bbox[2]]
+
+        # json文件的值
+        version = labelme_info["version"]
+        flags = labelme_info["flags"]
+        imagePath = os.path.join(save_dir, os.path.basename(img_file)[:-4]+"_"+str(count)+".jpg")
+        imageData = img2base64(img_box)
+        imageHeight = img_box.shape[0]
+        imageWidth = img_box.shape[1]
+        shapes = []
+
+        ## 逐个分析shape
+        for i, shape in enumerate(labelme_info["shapes"]):
+            points = shape["points"]
+            points = convert_points(points, bbox) # 将坐标点转为相对与bbox的坐标值。
+            if points is not None:
+                label = shape["label"]
+                group_id = shape["group_id"]
+                shape_type = shape["shape_type"]
+                flags = shape["flags"]
+                shape = {"label":label,"points":points,"group_id":group_id,"shape_type":shape_type,"flags":flags}
+                shapes.append(shape)
+        if len(shapes) > 0:
+            count += 1
+            out_info["version"] = version
+            out_info["flags"] = flags
+            out_info["shapes"] = shapes
+            out_info["imagePath"] = imagePath
+            out_info["imageData"] = imageData
+            out_info["imageHeight"] = imageHeight
+            out_info["imageWidth"] = imageWidth
+
+            ## 保存
+            cv2.imwrite(imagePath, img_box)
+            f = open(imagePath[:-4] + ".json", "w")
+            json.dump(out_info, f, ensure_ascii=False, indent=2)
+            f.close()
+
+            
 def yolo2voc(img_file, txt_file, xml_file, class_file):
     """
     yolo标注格式转voc格式。
@@ -116,6 +201,7 @@ def yolo2voc(img_file, txt_file, xml_file, class_file):
     
     if count > 0:
         writer.save(targetFile=xml_file)
+
 
 def voc2yolo(img_file, xml_file, txt_file, class_file):
     """
@@ -189,6 +275,7 @@ def xml_merge(xml_raw, xml_part):
 
     writer.save(targetFile=xml_raw)
 
+
 def labelme_2_coco(labelme_folder, save_json_path):
     """
     labelme标注的目标分割数据转为coco格式
@@ -201,10 +288,9 @@ def labelme_2_coco(labelme_folder, save_json_path):
 
 
 if __name__ == '__main__':
-    # img_file = "C:/data/meter/test1/2021_4_27_meter_122.jpg"
-    # txt_file = "C:/data/meter/test1/2021_4_27_meter_122.txt"
-    xml_raw = "C:/data/meter/test1/num/2021_4_27_meter_122.xml"
-    xml_part = "C:/data/meter/test1/meter/2021_4_27_meter_122.xml"
-    # class_file = "C:/data/meter/test1/classes.txt"
+    img_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.jpg"
+    xml_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.xml"
+    json_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.json"
+    save_dir = "C:/data/meter/pointer/test/crop"
 
 
