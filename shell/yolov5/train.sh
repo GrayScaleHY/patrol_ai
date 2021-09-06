@@ -27,6 +27,17 @@ cfg_model=$data_path/yolov5_model_$name.yaml # 模型结构
 pre_weights=${data_path%/*}/weights/yolov5l.pt # 预训练模型
 save_dir=$data_path/saved_models/$time  # 训练后模型信息保存路径
 
+## 删除数据集的缓存文件
+train_cache=$data_path/labels/train.cache
+val_cache=$data_path/labels/val.cache
+if [ -f $train_cache ];then
+  rm $train_cache
+fi
+if [ -f $val_cache ];then
+  rm $val_cache
+fi
+
+## 训练
 python train.py --img-size $img_size \
         --multi-scale \
         --batch-size $batch_size \
