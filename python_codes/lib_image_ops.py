@@ -169,3 +169,4 @@ if __name__ == '__main__':
                 {"label": "6", "coor": [908, 919, 947, 974]},
                 {"label": "5", "coor": [988, 918, 1030, 979]}]
     draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
+    os.path.exists
