@@ -144,6 +144,7 @@ def crop_img_base_json(img_file, xml_file, json_file, save_dir):
         version = labelme_info["version"]
         flags = labelme_info["flags"]
         imagePath = os.path.join(save_dir, os.path.basename(img_file)[:-4]+"_"+str(count)+".jpg")
+        
         imageData = img2base64(img_box)
         imageHeight = img_box.shape[0]
         imageWidth = img_box.shape[1]
@@ -175,6 +176,7 @@ def crop_img_base_json(img_file, xml_file, json_file, save_dir):
             f = open(imagePath[:-4] + ".json", "w")
             json.dump(out_info, f, ensure_ascii=False, indent=2)
             f.close()
+            print(imagePath)
 
             
 def yolo2voc(img_file, txt_file, xml_file, class_file):
@@ -288,9 +290,25 @@ def labelme_2_coco(labelme_folder, save_json_path):
 
 
 if __name__ == '__main__':
-    img_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.jpg"
-    xml_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.xml"
-    json_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.json"
-    save_dir = "C:/data/meter/pointer/test/crop"
+    import glob
+    import os
+
+    # img_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.jpg"
+    # xml_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.xml"
+    # json_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.json"
+    save_dir = "C:/data/meter/pointer/chengyalan"
+
+    for json_file in glob.glob(os.path.join("C:/data/meter/pointer/test", "*.json")):
+        
+        img_name = os.path.basename(json_file)[:-5] + ".jpg"
+        img_file = os.path.join("C:/data/meter/meter_all", img_name)
+        xml_file = os.path.join("C:/data/meter/meter_all/label_xml", img_name[:-4] + ".xml")
+
+        
+        if os.path.exists(img_file) and os.path.exists(xml_file):
+            print(img_name)
+
+            crop_img_base_json(img_file, xml_file, json_file, save_dir)
+
 
 
