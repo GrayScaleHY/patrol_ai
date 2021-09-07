@@ -5,11 +5,28 @@ import glob
 import cv2  # conda install opencv || pip install opencv-python
 import ffmpeg  # pip install ffmpeg-python
 import shutil
-from PIL import Image
+from PIL import Image, ExifTags
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 import random
 import base64
 import numpy as np
+
+
+def get_exif_info(img_file, tag='Orientation'):
+    """
+    获取图片的exif信息。
+    """
+    item = None
+    ## 用循环查找自己需要的信息的item。
+    for it in ExifTags.TAGS.keys():
+        if ExifTags.TAGS[it]==tag:
+            item = it
+            break 
+    if item is None:
+        return None
+
+    img = Image.open(img_file)
+    return img._getexif()[item]
 
 
 def bmp2jpg(bmp_file, jpg_file):
