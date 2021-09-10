@@ -2,6 +2,7 @@
 
 import os
 import glob
+from sys import exc_info
 import cv2  # conda install opencv || pip install opencv-python
 import ffmpeg  # pip install ffmpeg-python
 import shutil
@@ -28,6 +29,33 @@ def get_exif_info(img_file, tag='Orientation'):
     img = Image.open(img_file)
     return img._getexif()[item]
 
+
+def img_rotate_batch(dir):
+    """
+    将文件夹中带旋转信息的图片进行旋转。防止标注错误。
+    """
+    for root, dirs, files in os.walk(dir):
+        
+        for file_name in files:
+            if not file_name.endswith((".jpg",".JPG",".png",".PNG",".bmp")):
+                continue
+            img_file = os.path.join(root, file_name)
+            try:
+                img = Image.open(img_file)
+                exif = img._getexif()
+                if exif[274] == 3: ## 274是旋转信息的id
+                    angle = 180
+                elif exif[274] == 6:
+                    angle = 270
+                elif exif[274] == 8:
+                    angle = 90
+                img=img.rotate(angle, expand=True)
+                print(img_file,"rotated", angle, "already!")
+                img.save(img_file)
+                img.close()
+            except:
+                continue
+            
 
 def bmp2jpg(bmp_file, jpg_file):
     """
@@ -162,6 +190,7 @@ def draw_bboxs(img_file, bbox_cfg, is_write=False, is_show=False):
         cv2.imwrite(save_name, img)
     return img
 
+
 def img2base64(img):
     """
     numpy的int数据转换为base64格式。
@@ -170,6 +199,7 @@ def img2base64(img):
     img_base64 = base64.b64encode(buffer)
     img_base64 = img_base64.decode()
     return img_base64
+    
 
 def base642img(img_base64):
     """
@@ -180,10 +210,13 @@ def base642img(img_base64):
     img = cv2.imdecode(img, cv2.IMREAD_COLOR)
     return img
 
+
 if __name__ == '__main__':
-    img_file = "C:/Users/yuanhui/Desktop/hear/test/#0773_org.jpg"
-    bbox_cfg = [{"label": "meter", "coor": [508, 218, 1430, 1080]},
-                {"label": "6", "coor": [908, 919, 947, 974]},
-                {"label": "5", "coor": [988, 918, 1030, 979]}]
-    draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
-    os.path.exists
+    # img_file = "C:/Users/yuanhui/Desktop/hear/test/#0773_org.jpg"
+    # bbox_cfg = [{"label": "meter", "coor": [508, 218, 1430, 1080]},
+    #             {"label": "6", "coor": [908, 919, 947, 974]},
+    #             {"label": "5", "coor": [988, 918, 1030, 979]}]
+    # draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
+    # os.path.exists
+
+    img_rotate_batch("C:/Users/yuanhui/Desktop/hear/test/test")
