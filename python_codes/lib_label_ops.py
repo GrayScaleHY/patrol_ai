@@ -4,9 +4,8 @@ from PIL import Image
 import os
 import cv2
 import labelme2coco # pip install labelme2coco
-import xml.etree.ElementTree as ET
 import numpy as np
-from lib_image_ops import img2base64, base642img
+from lib_image_ops import img2base64
 import json
 import xmltodict
 # from xml import etree
