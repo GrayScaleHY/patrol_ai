@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from lib_image_ops import img2base64, base642img
 import json
+import xmltodict
 # from xml import etree
 
 
@@ -215,7 +216,7 @@ def voc2yolo(img_file, xml_file, txt_file, class_file):
     img_name = os.path.basename(img_file)
     writer = YOLOWriter(folder, img_name, img_size, localImgPath=img_file)
     # Read classes.txt
-    f_class = open(class_file, 'r')
+    f_class = open(class_file, 'r', encoding='utf-8')
     classes = f_class.read().strip('\n').split('\n')
     f_class.close()
     voc_info = PascalVocReader(xml_file)
@@ -289,26 +290,80 @@ def labelme_2_coco(labelme_folder, save_json_path):
     labelme2coco.convert(labelme_folder, save_json_path)
 
 
+def int_bndbox(xml_file):
+    """
+    将xml文件中的bndbox坐标值改为int型,并保存回源路径
+    return:
+        文件是否发生了转换，如果转换了，返回True， 否则，返回False.
+    """
+
+    if not xml_file.endswith(".xml"): # 必须是.xml结尾的文件
+        return False
+    
+    ## 将xml文件内容转为dict
+    f = open(xml_file, "r", encoding='utf-8')
+    content = f.read()
+    f.close()
+    dict_ = xmltodict.parse(content)
+
+    try:
+        objects = dict_['annotation']['object'] #
+    except:
+        return False
+
+    if isinstance(objects, list):
+        for i, object in enumerate(objects):
+            try:
+                ## 将bndbox中的float型数据改为int
+                objects[i]['bndbox']['xmin'] = int(float(object['bndbox']['xmin']))
+                objects[i]['bndbox']['ymin'] = int(float(object['bndbox']['ymin']))
+                objects[i]['bndbox']['xmax'] = int(float(object['bndbox']['xmax']))
+                objects[i]['bndbox']['ymax'] = int(float(object['bndbox']['ymax']))
+            except:
+                return False
+    else:
+        try:
+            ## 将bndbox中的float型数据改为int
+            objects['bndbox']['xmin'] = int(float(objects['bndbox']['xmin']))
+            objects['bndbox']['ymin'] = int(float(objects['bndbox']['ymin']))
+            objects['bndbox']['xmax'] = int(float(objects['bndbox']['xmax']))
+            objects['bndbox']['ymax'] = int(float(objects['bndbox']['ymax']))
+        except:
+            return False
+    
+    dict_['annotation']['object'] = objects # 改变后的dict
+
+    ## 新的dict重新保存成xml文件
+    xml_res = xmltodict.unparse(dict_, pretty=True)
+    f = open(xml_file, "w", encoding='utf-8')
+    f.write(xml_res)
+    f.close()
+
+    return True
+
+
+def int_bndbox_batch(dir):
+    """
+    将文件夹中的xml文件中的bndbox坐标值改为int型
+    """
+    count = 0
+    for root, dirs, files in os.walk(dir):
+        for file_name in files:
+            if not file_name.endswith(".xml"):
+                continue
+            xml_file = os.path.join(root, file_name)
+            is_conv = int_bndbox(xml_file)
+            if is_conv:
+                count += 1
+    print("convert xml num:", count)
+
+
 if __name__ == '__main__':
     import glob
     import os
 
-    # img_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.jpg"
-    # xml_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.xml"
-    # json_file = "C:/data/meter/pointer/test/2021_4_11_meter_pachong_829.json"
-    save_dir = "C:/data/meter/pointer/chengyalan"
-
-    for json_file in glob.glob(os.path.join("C:/data/meter/pointer/test", "*.json")):
-        
-        img_name = os.path.basename(json_file)[:-5] + ".jpg"
-        img_file = os.path.join("C:/data/meter/meter_all", img_name)
-        xml_file = os.path.join("C:/data/meter/meter_all/label_xml", img_name[:-4] + ".xml")
-
-        
-        if os.path.exists(img_file) and os.path.exists(xml_file):
-            print(img_name)
-
-            crop_img_base_json(img_file, xml_file, json_file, save_dir)
-
-
-
+    class_file = "C:/Users/yuanhui/Desktop/hear/test/test/obj.names"
+    for jpg_file in glob.glob("C:/Users/yuanhui/Desktop/hear/test/test/*.jpg"):
+        xml_file = jpg_file[:-4] + ".xml"
+        txt_file = jpg_file[:-4] + ".txt"
+        voc2yolo(jpg_file, xml_file, txt_file, class_file)
