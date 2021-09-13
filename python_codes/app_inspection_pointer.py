@@ -104,6 +104,13 @@ def cal_base_scale(coordinates, segment):
 def inspection_pointer(input_data):
 
     ## 初始化输入输出信息。
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
+    save_path = os.path.join("pointer", TIME_START)
+    os.makedirs(save_path, exist_ok=True)
+    f = open(os.path.join(save_path, "input_data.json"), "w")
+    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
+
     out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
 
     if input_data["type"] != "pointer":
@@ -118,12 +125,6 @@ def inspection_pointer(input_data):
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_ref_ = img_ref.copy()
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("pointer", TIME_START)
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
     cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag_)
     cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
     for scale in coordinates_ref:  # 将坐标点标注在图片上
