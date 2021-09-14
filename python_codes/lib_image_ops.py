@@ -43,7 +43,7 @@ def img_rotate_batch(dir):
 
             ## 删除无法用cv2.imread()读取的图片。
             data = cv2.imread(img_file)
-            if data in None:
+            if data is None:
                 os.remove(img_file)
                 print(img_file, "remove already !")
 
@@ -226,4 +226,4 @@ if __name__ == '__main__':
     # draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
     # os.path.exists
 
-    img_rotate_batch("C:/Users/yuanhui/Desktop/hear/test/test")
+    img_rotate_batch("C:/data/raw_data/20210826")
