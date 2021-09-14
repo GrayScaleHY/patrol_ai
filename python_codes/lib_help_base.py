@@ -26,12 +26,12 @@ def color_list(c_size):
     color_map = {
         # 0: (0, 0, 0), # 黑色
         # 1: (255, 255, 255), # 白色
-        0: (255, 0, 0), # 红色
+        0: (0, 0, 255), # 红色
         1: (0, 255, 0), # 绿色
-        2: (0, 0, 255), # 蓝色
-        3: (0, 255, 255), # 青色
-        4: (255, 0, 255), # 洋红色
-        5: (255, 255, 0), # 黄色
+        2: (255, 0, 0), # 蓝色
+        3: (0, 255, 255), # 黄色
+        4: (255, 0, 255), # 粉色
+        5: (255, 255, 0), # 淡蓝
     }
     colors = []
     if c_size <= len(color_map):
@@ -43,3 +43,15 @@ def color_list(c_size):
             color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             colors.append(color)
     return colors
+
+
+if __name__ == '__main__':
+    import cv2
+    import numpy as np
+    c_list = color_list(10)
+    for c in c_list:
+        a = np.ones([1000, 1000,3], dtype=np.uint8)
+        b = a * list(c)
+        b = b.astype(np.uint8)
+        cv2.imshow(str(c), b)
+        cv2.waitKey(0)
