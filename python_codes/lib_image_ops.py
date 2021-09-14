@@ -40,6 +40,13 @@ def img_rotate_batch(dir):
             if not file_name.endswith((".jpg",".JPG",".png",".PNG",".bmp")):
                 continue
             img_file = os.path.join(root, file_name)
+
+            ## 删除无法用cv2.imread()读取的图片。
+            data = cv2.imread(img_file)
+            if data in None:
+                os.remove(img_file)
+                print(img_file, "remove already !")
+
             try:
                 img = Image.open(img_file)
                 exif = img._getexif()
