@@ -105,7 +105,7 @@ def inspection_pointer(input_data):
 
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("pointer", TIME_START)
+    save_path = os.path.join("inspection_result/pointer", TIME_START)
     os.makedirs(save_path, exist_ok=True)
     f = open(os.path.join(save_path, "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
@@ -120,7 +120,12 @@ def inspection_pointer(input_data):
     ## 提取输入请求信息
     img_tag = lib_image_ops.base642img(input_data["image"])
     img_ref = lib_image_ops.base642img(input_data["config"]["img_ref"])
-    coordinates_ref = input_data["config"]["coordinates"]
+    coordinates = input_data["config"]["coordinates"]
+    coordinates_ref = {}
+    W = img_ref.shape[1]
+    H = img_ref.shape[0]
+    for coor in coordinates:
+        coordinates_ref[coor] = [int(coordinates[coor][0] * W), int(coordinates[coor][1] * H)]
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
@@ -129,9 +134,9 @@ def inspection_pointer(input_data):
     cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
     for scale in coordinates_ref:  # 将坐标点标注在图片上
         coor = coordinates_ref[scale]
-        cv2.circle(img_ref_, (coor[0], coor[1]), 2, (255, 0, 0), 8)
+        cv2.circle(img_ref_, (int(coor[0]), int(coor[1])), 2, (255, 0, 0), 8)
         cv2.putText(img_ref_, str(scale), (int(coor[0])-5, int(coor[1])),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), thickness=2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
         
     ## 使用yolov5定位参考图和目标图的表盘。
@@ -183,38 +188,42 @@ def inspection_pointer(input_data):
         out_data["data"] = cfg
 
     ## 可视化最终计算结果
+    s = (coor_tag[2] - coor_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
     cv2.rectangle(img_tag_, (int(coor_tag[0]), int(coor_tag[1])),
-                    (int(coor_tag[2]), int(coor_tag[3])), (0, 0, 255), thickness=2)
+                    (int(coor_tag[2]), int(coor_tag[3])), (0, 0, 255), thickness=round(s*2))
     cv2.putText(img_tag_, "meter", (int(coor_tag[0])-5, int(coor_tag[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+                    cv2.FONT_HERSHEY_SIMPLEX, s/2, (0, 0, 255), thickness=round(s))
     for seg in segments[:1]:
-        cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+        cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), round(s))
     for i, val in enumerate(vals[:1]):
         cv2.putText(img_tag_, str(val), (int(segment_real[i][2])-5, int(segment_real[i][3])),
-                    cv2.FONT_HERSHEY_COMPLEX, 1.2, (255, 255, 0), thickness=2)
+                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 255, 0), thickness=round(s*2))
     for scale in coordinates_tag:
         coor = coordinates_tag[scale]
-        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 2, (255, 0, 0), 8)
-        cv2.putText(img_tag_, str(scale), (int(coor[0])-5, int(coor[1])),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), thickness=2)
+        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), round(s), (255, 0, 255), 8)
+        cv2.putText(img_tag_, str(scale), (int(coor[0]+s), int(coor[1]-s)),
+                    cv2.FONT_HERSHEY_SIMPLEX, s/4, (255, 0, 255), thickness=round(s/2))
 
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
+    f = open(os.path.join(save_path, "output_data.json"), "w", encoding='utf-8')
+    json.dump(out_data, f, indent=2, ensure_ascii=False)
+    f.close()
     out_data["img_result"] = lib_image_ops.img2base64(img_tag_)
 
     return out_data
 
 def main():
-    img_ref_file = "images/test_5.jpg"
-    img_tag_file = "images/test_5.jpg"
-    coordinates = {"center": [1093, 1947], "0": [356, 1939], "150": [450, 1566], "300": [726, 1293], "450": [1093, 1210]}
+    img_ref_file = "images/Preview_192.168.52.45_01_20210914_162813_25693395.bmp"
+    img_tag_file = "images/Preview_192.168.52.45_01_20210914_162813_25693395.bmp"
+    coordinates = {"center": [0.51, 0.5], "-0.10": [0.27, 0.71], "0.20": [0.26, 0.3], "0.40": [0.51, 0.17], "0.60": [0.76, 0.32]}
     
-    img_tag = lib_image_ops.img2base64(img_tag_file)
-    img_ref = lib_image_ops.img2base64(img_ref_file)
+    img_tag = lib_image_ops.img2base64(cv2.imread(img_tag_file))
+    img_ref = lib_image_ops.img2base64(cv2.imread(img_ref_file))
     input_data = {"image": img_tag, "config": {"img_ref": img_ref, "coordinates": coordinates}, "type": "pointer"}
     out_data = inspection_pointer(input_data)
-    print(out_data)
+    # print(out_data)
     # with open(img_ref_file, "rb") as imageFile:
     #     img_1 = imageFile.read()
     # img_2 = base64.b64encode(img_1).decode('utf-8')
