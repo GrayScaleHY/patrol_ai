@@ -11,7 +11,7 @@ yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") #
 yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
 yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
 yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
-# yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
+yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
 yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
 
 def inspection_object_detection(input_data):
@@ -42,8 +42,8 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_fire_smoke
     elif input_data["type"] == "led":
         yolov5_model = yolov5_led
-    # elif input_data["type"] == "helmet":
-    #     yolov5_model = yolov5_helmet
+    elif input_data["type"] == "helmet":
+        yolov5_model = yolov5_helmet
     elif input_data["type"] == "yolov5_fanpaiqi":
         yolov5_model = yolov5_fanpaiqi
     else:
