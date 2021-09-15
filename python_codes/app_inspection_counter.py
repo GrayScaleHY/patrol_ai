@@ -16,7 +16,7 @@ def inspection_counter(input_data):
     """
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("counter", TIME_START)
+    save_path = os.path.join("inspection_result/counter", TIME_START)
     os.makedirs(save_path, exist_ok=True)
 
     out_data = {"code": 0, "data":{}, "msg": "Success request counter"} # 初始化out_data
@@ -85,12 +85,15 @@ def inspection_counter(input_data):
                     cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_path, "img_result.jpg"), img)
 
+    ## 输出可视化结果的图片。
+    out_data["img_result"] = img2base64(img)
+
     return out_data
 
 if __name__ == '__main__':
     from lib_image_ops import img2base64
-    img_file = "images/#0389_MaxZoom.jpg"
-    img_base64 = img2base64(img_file)
+    img_file = "images/16316064882021.png"
+    img_base64 = img2base64(cv2.imread(img_file))
     input_data = {"image": img_base64, "config":[], "type": "counter"}
     out_data = inspection_counter(input_data)
     print(out_data)
