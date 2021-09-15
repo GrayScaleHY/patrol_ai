@@ -161,7 +161,7 @@ def inspection_disconnector(data):
     刀闸识别
     """
     TIME_START = time.strftime("%m-%d-%H-%M-%S")
-    save_dir = os.path.join(os.path.join("disconnector",TIME_START)) #保存图片的路径
+    save_dir = os.path.join(os.path.join("inspection_result/disconnector",TIME_START)) #保存图片的路径
     os.makedirs(save_dir, exist_ok=True)
     
     ## 提取data信息
