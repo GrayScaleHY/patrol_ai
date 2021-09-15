@@ -13,7 +13,7 @@ def inspection_meter(input_data):
     """
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("meter", TIME_START)
+    save_path = os.path.join("inspection_result/meter", TIME_START)
     os.makedirs(save_path, exist_ok=True)
 
     out_data = {"code": 0, "data":[], "msg": "Success request meter"} # 初始化out_data
@@ -48,11 +48,15 @@ def inspection_meter(input_data):
     f.close()
     for bbox in bbox_meters:
         coor = bbox["coor"]
+        s = (coor[2] - coor[0]) / 200 # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img, (int(coor[0]), int(coor[1])),
-                        (int(coor[2]), int(coor[3])), (0, 0, 255), thickness=2)
+                        (int(coor[2]), int(coor[3])), (0, 0, 255), thickness=round(s*2))
         cv2.putText(img, "meter", (int(coor[0])-5, int(coor[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+                    cv2.FONT_HERSHEY_COMPLEX, s, (0, 0, 255), thickness=round(s*2))
     cv2.imwrite(os.path.join(save_path, "img_result.jpg"), img)
+
+    ## 输出可视化结果的图片。
+    out_data["img_result"] = img2base64(img)
     
     return out_data
 
