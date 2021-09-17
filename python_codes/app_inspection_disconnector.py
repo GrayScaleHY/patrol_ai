@@ -221,7 +221,8 @@ def inspection_disconnector(data):
     for line in lines:
         line = [convert_coor(line[0], M), convert_coor(line[1], M)]
         cv2.line(img_tag, line[0], line[1], color, 2)
-    cv2.putText(img_tag, label_s, (bbox[0]-10, bbox[1]-10),cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=2)
+    point = convert_coor(lines[0][0], M)
+    cv2.putText(img_tag, label_s, (point[0]-10, point[1]-10),cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_tag_cfg.jpg"), img_tag)
 
     out_data["img_result"] = img2base64(img_tag)
