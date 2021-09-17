@@ -6,7 +6,7 @@ from sys import exc_info
 import cv2  # conda install opencv || pip install opencv-python
 import ffmpeg  # pip install ffmpeg-python
 import shutil
-from PIL import Image, ExifTags
+from PIL import Image, ExifTags, ImageDraw, ImageFont
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 import random
 import base64
@@ -216,6 +216,29 @@ def base642img(img_base64):
     img = np.fromstring(img, np.uint8)
     img = cv2.imdecode(img, cv2.IMREAD_COLOR)
     return img
+
+
+def img_chinese(img, text, coor, color=(0, 255, 0), size=20):
+    """
+    给cv2读取的图片标上中文。
+    args:
+        img: cv2读取的图片data
+        text: 中文内容
+        coor: 起始坐标
+    return:
+        img
+    """
+    if (isinstance(img, np.ndarray)):  # 判断是否OpenCV图片类型
+        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    # 创建一个可以在给定图像上绘图的对象
+    draw = ImageDraw.Draw(img)
+    # 字体的格式
+    fontStyle = ImageFont.truetype(
+        "../c_codes/simsun.ttc", size, encoding="utf-8")
+    # 绘制文本
+    draw.text(coor, text, color, font=fontStyle)
+    # 转换回OpenCV格式
+    return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 
 if __name__ == '__main__':
