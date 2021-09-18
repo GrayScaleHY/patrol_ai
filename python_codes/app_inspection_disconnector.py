@@ -169,7 +169,9 @@ def inspection_disconnector(data):
     img_tag = base642img(data["image"])
     img_open = base642img(data["config"]["img_open"])
     img_close = base642img(data["config"]["img_close"])
-    bbox = data["config"]["bbox"]
+    W = img_open.shape[1]; H = img_open.shape[0]
+    c = data["config"]["bbox"]
+    bbox = [int(c[0]*W), int(c[1]*H), int(c[2]*W), int(c[3]*H)]
     cv2.imwrite(os.path.join(save_dir,"img_close.jpg"), img_close)
     cv2.imwrite(os.path.join(save_dir,"img_tag.jpg"), img_tag)
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
