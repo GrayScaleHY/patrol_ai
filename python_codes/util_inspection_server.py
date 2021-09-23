@@ -6,6 +6,7 @@ from app_inspection_meter import inspection_meter
 from app_inspection_disconnector import inspection_disconnector
 from app_inspection_counter import inspection_counter
 from app_inspection_object_detection import inspection_object_detection
+from app_inspection_qrcode import inspection_qrcode
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
@@ -66,6 +67,22 @@ def inspection_meter_server():
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
     res = inspection_meter(data)
+    print("meter_location result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 二维码定位合识别
+@app.route('/inspection_meter/', methods=['POST'])
+def inspection_qrcode_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_qrcode(data)
     print("meter_location result:")
     print("-----------------------------------------------")
     for s in res:
