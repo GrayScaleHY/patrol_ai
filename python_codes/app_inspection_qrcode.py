@@ -3,7 +3,7 @@ import os
 import time
 import json
 import numpy as np
-from pyzbar.pyzbar import decode # pip install pyzbar
+from pyzbar.pyzbar import decode # sudo apt-get install libzbar-dev; pip install pyzbar
 from lib_image_ops import base642img, img2base64
 
 def decoder(img):
