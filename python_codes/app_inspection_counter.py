@@ -82,7 +82,7 @@ def inspection_counter(input_data):
         cv2.rectangle(img, (int(coor[0]), int(coor[1])),
                         (int(coor[2]), int(coor[3])), (0, 0, 255), thickness=2)
         cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+                    cv2.FONT_HERSHEY_COMPLEX, 1.5, (0, 0, 255), thickness=3)
     cv2.imwrite(os.path.join(save_path, "img_result.jpg"), img)
 
     ## 输出可视化结果的图片。
