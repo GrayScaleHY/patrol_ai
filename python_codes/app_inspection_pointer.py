@@ -215,9 +215,14 @@ def inspection_pointer(input_data):
     return out_data
 
 def main():
-    img_ref_file = "images/Preview_192.168.52.45_01_20210914_162813_25693395.bmp"
-    img_tag_file = "images/Preview_192.168.52.45_01_20210914_162813_25693395.bmp"
-    coordinates = {"center": [0.51, 0.5], "-0.10": [0.27, 0.71], "0.20": [0.26, 0.3], "0.40": [0.51, 0.17], "0.60": [0.76, 0.32]}
+    img_ref_file = "/home/yh/image/python_codes/test/test1.jpg"
+    img_tag_file = "/home/yh/image/python_codes/test/test1.jpg"
+    coordinates = {"center": [1074, 609], "-0.1": [919, 796], "0": [854, 709], "0.2": [864, 513], "0.4": [1058, 392], "0.6": [1256, 476], "0.8": [1312, 670], "0.9": [1253, 759]}
+    img_ref = cv2.imread(img_tag_file)
+    W = img_ref.shape[1]; H = img_ref.shape[0]
+    for t in coordinates:
+        coor = [coordinates[t][0]/W, coordinates[t][1]/H]
+        coordinates[t] = coor
     
     img_tag = lib_image_ops.img2base64(cv2.imread(img_tag_file))
     img_ref = lib_image_ops.img2base64(cv2.imread(img_ref_file))
