@@ -13,12 +13,18 @@ def requst_inspection_pointer():
     API = "http://192.168.57.159:5000/inspection_pointer/"
 
     ## 输入参数
-    img_ref_file = "images/pointer/test_4.jpg"
-    img_tag_file = "images/pointer/test_4.jpg"
-    coordinates = {"center": [1093, 1947], "150": [450, 1566], "300": [726, 1293], "450": [1093, 1210]}
-    
+    img_ref_file = "/home/yh/image/python_codes/test/test1.jpg"
+    img_tag_file = "/home/yh/image/python_codes/test/test1.jpg"
+    coordinates = {"center": [1074, 609], "-0.1": [919, 796], "0": [854, 709], "0.2": [864, 513], "0.4": [1058, 392], "0.6": [1256, 476], "0.8": [1312, 670], "0.9": [1253, 759]}
+    img_ref = cv2.imread(img_tag_file)
+    W = img_ref.shape[1]; H = img_ref.shape[0]
+    for t in coordinates:
+        coor = [coordinates[t][0]/W, coordinates[t][1]/H]
+        coordinates[t] = coor
+
+    img_ref = lib_image_ops.img2base64(img_ref)
     img_tag = lib_image_ops.img2base64(cv2.imread(img_ref_file))
-    img_ref = lib_image_ops.img2base64(cv2.imread(img_tag_file))
+    
     input_data = {"image": img_tag, "config": {"img_ref": img_ref, "coordinates": coordinates}, "type": "pointer"}
     send_data = json.dumps(input_data)
     res = requests.post(url=API, data=send_data).json()
@@ -66,7 +72,7 @@ def requst_inspection_counter():
     """
     API = "http://192.168.57.159:5000/inspection_counter/"
 
-    img_file = "images/#0389_MaxZoom.jpg"
+    img_file = "/home/yh/image/python_codes/test/test1.jpg"
     img_base64 = lib_image_ops.img2base64(cv2.imread(img_file))
     input_data = {"image": img_base64, "config":[], "type": "counter"}
 
@@ -121,6 +127,6 @@ def requst_inspection_object_detection():
 if __name__ == '__main__':
     # requst_inspection_pointer()
     # requst_inspection_meter()
-    # requst_inspection_counter()
+    requst_inspection_counter()
     # requst_inspection_disconnector()
-    requst_inspection_disconnector()
+    # requst_inspection_disconnector()
