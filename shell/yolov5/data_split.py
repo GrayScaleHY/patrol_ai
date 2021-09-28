@@ -28,7 +28,15 @@ assert os.path.exists(data_file), data_file + " is not exist !"
 assert os.path.exists(model_file), model_file + " is not exist !"
 
 ## 将train,val中的图片移动到根目录，然后统一分配
-for root, dirs, files in os.walk(data_path):
+for root, dirs, files in os.walk(os.path.join(data_path,"images")):
+    for raw_name in files:
+        raw_file = os.path.join(root, raw_name)
+        move_file = os.path.join(data_path, raw_name)
+        if raw_name.endswith(".jpg") or raw_name.endswith(".txt"):
+            if not os.path.exists(move_file):
+                shutil.move(raw_file, move_file)
+
+for root, dirs, files in os.walk(os.path.join(data_path,"labels")):
     for raw_name in files:
         raw_file = os.path.join(root, raw_name)
         move_file = os.path.join(data_path, raw_name)
