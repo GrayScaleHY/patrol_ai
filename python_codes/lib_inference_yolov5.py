@@ -46,7 +46,7 @@ def inference_yolov5(model_yolov5, img, resize=640):
     pred = model_yolov5(img)[0] # Inference
 
     ## 使用NMS挑选预测结果
-    pred_max = non_max_suppression(pred, 0.4, 0.5)[0] # Apply NMS
+    pred_max = non_max_suppression(pred, 0.4, 0.2)[0] # Apply NMS
     pred_max = scale_coords(img.shape[2:], pred_max, img_raw.shape).round() #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
