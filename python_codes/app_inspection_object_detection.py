@@ -81,8 +81,8 @@ def inspection_object_detection(input_data):
         s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
-    # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-    img = img_chinese(img, map_o[input_data["type"]][label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
+        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
+        img = img_chinese(img, map_o[input_data["type"]][label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
     cv2.imwrite(os.path.join(save_path, "img_result.jpg"), img)
 
     ## 输出可视化结果的图片。
