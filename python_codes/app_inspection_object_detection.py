@@ -5,6 +5,8 @@ import json
 from lib_image_ops import base642img, img2base64
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_help_base import color_list
+from lib_image_ops import img_chinese
+import config_object_name
 
 # yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
 yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") # 空气开关
@@ -13,6 +15,7 @@ yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
 yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
 yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
 yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
+yolov5_digital = load_yolov5_model("/data/inspection/yolov5/digital.pt") # 翻拍器
 
 def inspection_object_detection(input_data):
     """
@@ -44,8 +47,10 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_led
     elif input_data["type"] == "helmet":
         yolov5_model = yolov5_helmet
-    elif input_data["type"] == "yolov5_fanpaiqi":
+    elif input_data["type"] == "fanpaiqi":
         yolov5_model = yolov5_fanpaiqi
+    elif input_data["type"] == "digital":
+        yolov5_model = yolov5_digital
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
@@ -70,13 +75,14 @@ def inspection_object_detection(input_data):
     f = open(os.path.join(save_path, "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
+    map_o = config_object_name.OBJECT_MAP
     for bbox in bboxes:
         coor = bbox["coor"]; label = bbox["label"]
-        s = (coor[2] - coor[0]) / 200 # 根据框子大小决定字号和线条粗细。
+        s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img, (int(coor[0]), int(coor[1])),
-                        (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s*2))
-        cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, s, color_dict[label], thickness=round(s*2))
+                    (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
+    # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
+    img = img_chinese(img, map_o[input_data["type"]][label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
     cv2.imwrite(os.path.join(save_path, "img_result.jpg"), img)
 
     ## 输出可视化结果的图片。
