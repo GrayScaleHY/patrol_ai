@@ -157,7 +157,7 @@ def load_maskrcnn_model(mask_rcnn_weight):
     cfg.merge_from_file(
         "detectron2/configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.WEIGHTS = mask_rcnn_weight
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
     cfg.DATASETS.TEST = ("meter", )
     maskrcnn_weights = DefaultPredictor(cfg)
