@@ -2,13 +2,12 @@ import os
 import cv2
 import time
 import json
-import lib_image_ops
+from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
 from app_inspection_disconnector import sift_match, convert_coor
-from lib_image_ops import img_chinese
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
@@ -117,8 +116,8 @@ def get_input_data(input_data):
         color: None 或者 指针颜色
         dp: 3 或者 需要保留的小数位
     """
-    img_tag = lib_image_ops.base642img(input_data["image"])
-    img_ref = lib_image_ops.base642img(input_data["config"]["img_ref"])
+    img_tag = base642img(input_data["image"])
+    img_ref = base642img(input_data["config"]["img_ref"])
 
     W = img_ref.shape[1]; H = img_ref.shape[0]
 
@@ -314,7 +313,7 @@ def inspection_pointer(input_data):
     f = open(os.path.join(save_path, "output_data.json"), "w", encoding='utf-8')
     json.dump(out_data, f, indent=2, ensure_ascii=False)
     f.close()
-    out_data["img_result"] = lib_image_ops.img2base64(img_tag_)
+    out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
 
@@ -324,15 +323,15 @@ def main():
     img_tag_file = "test/img_tag.jpg"
     pointers = {"center": [1007, 405], "0": [1008, 319], "2": [1139, 385], "3": [1133, 447], "5": [995, 489], "7": [865, 426], "8": [871, 363], "9": [937, 322]}
     bboxes = {"roi": [805, 256, 1217, 556]}
-    img_ref = cv2.imread(img_tag_file)
+    img_ref = cv2.imread(img_ref_file)
     W = img_ref.shape[1]; H = img_ref.shape[0]
     for t in pointers:
         pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
     for b in bboxes:
         bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
     
-    img_tag = lib_image_ops.img2base64(cv2.imread(img_tag_file))
-    img_ref = lib_image_ops.img2base64(cv2.imread(img_ref_file))
+    img_tag = img2base64(cv2.imread(img_tag_file))
+    img_ref = img2base64(cv2.imread(img_ref_file))
     config = {
         "img_ref": img_ref, 
         "number": 1, 
