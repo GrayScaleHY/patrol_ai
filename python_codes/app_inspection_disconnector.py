@@ -9,7 +9,7 @@ except:
 import base64
 from lib_image_ops import base642img, img2base64
 import time
-
+import json
 
 def my_ssim(img1, img2):
     """
@@ -227,6 +227,11 @@ def inspection_disconnector(data):
     cv2.putText(img_tag, label_s, (point[0]-10, point[1]-10),cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_tag_cfg.jpg"), img_tag)
 
+    f = open(os.path.join(save_dir,"output_data.json"),"w",encoding='utf-8')
+    json.dump(out_data, f, indent=2)
+    f.close()
+
+    
     out_data["img_result"] = img2base64(img_tag)
     
     return out_data
