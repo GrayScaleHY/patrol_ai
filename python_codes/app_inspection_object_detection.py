@@ -93,6 +93,7 @@ def inspection_object_detection(input_data):
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
         cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
+    ## 求出目标图像的感兴趣区域
     if roi is None:
         M = None
     else:
