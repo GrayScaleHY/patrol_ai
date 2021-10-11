@@ -101,5 +101,16 @@ OBJECT_MAP = {
         'yingguangfu': '已穿荧光服',
         'no_yingguangfu': '未穿荧光服',
         'gongzuofu': '已穿工作服'
+    },
+    "rotary_switch":{
+        'name': '旋钮开发',
+        'up': '上',
+        'down': '下',
+        'left': '左',
+        'right': '右',
+        'leftup': '左上',
+        'leftdown': '左下',
+        'rightup': '右上',
+        'rightdown': '右下'
     }
 }
