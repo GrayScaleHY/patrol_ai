@@ -128,33 +128,33 @@ def get_input_data(input_data):
         pointers_ref[coor] = [int(pointers[coor][0] * W), int(pointers[coor][1] * H)]
 
     ## 感兴趣区域
-    if "bboxes" in input_data["config"]:
-        roi = input_data["config"]["bboxes"]["roi"]
-        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H),]
-    else:
+    if "bboxes" not in input_data["config"] or input_data["config"]["bboxes"] == -1:
         roi = None
+    else:
+        roi = input_data["config"]["bboxes"]["roi"]
+        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
     
     ## 其他信息
-    if "number" in input_data["config"]:
-        number = input_data["config"]["number"]
-    else:
+    if "number" not in input_data["config"] or input_data["config"]["number"] == -1:
         number = None
-    if "length" in input_data["config"]:
-        length = input_data["config"]["length"]
     else:
+        number = input_data["config"]["number"]
+    if "length" not in input_data["config"] or input_data["config"]["length"] == -1:
         length = None
-    if "color" in input_data["config"]:
-        color = input_data["config"]["color"]
     else:
+        length = input_data["config"]["length"]
+    if "color" not in input_data["config"] or input_data["config"]["color"] == -1:
         color = None
-    if "width " in input_data["config"]:
-        width = input_data["config"]["width"]
     else:
+        color = input_data["config"]["color"]
+    if "width " not in input_data["config"] or input_data["config"]["width"] == -1:
         width = None
-    if "dp " in input_data["config"]:
-        dp = input_data["config"]["dp"]
     else:
+        width = input_data["config"]["width"]
+    if "dp" not in input_data["config"] or input_data["config"]["dp"] == -1:
         dp = 3
+    else:
+        dp = input_data["config"]["dp"]
     
     return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp
 
