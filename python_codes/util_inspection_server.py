@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import json
 import os
 from app_inspection_pointer import inspection_pointer
-from app_inspection_meter import inspection_meter
+# from app_inspection_meter import inspection_meter
 from app_inspection_disconnector import inspection_disconnector
 from app_inspection_counter import inspection_counter
 from app_inspection_object_detection import inspection_object_detection
@@ -60,23 +60,23 @@ def inspection_counter_server():
     return jsonify(res)
 
 ## 仪表定位
-@app.route('/inspection_meter/', methods=['POST'])
-def inspection_meter_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_meter(data)
-    print("meter_location result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# @app.route('/inspection_meter/', methods=['POST'])
+# def inspection_meter_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_meter(data)
+#     print("meter_location result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
 ## 二维码定位合识别
-@app.route('/inspection_meter/', methods=['POST'])
+@app.route('/inspection_qrcond/', methods=['POST'])
 def inspection_qrcode_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
@@ -99,6 +99,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_fangpaiqi/', methods=['POST'])
 @app.route('/inspection_helmet/', methods=['POST'])
 @app.route('/inspection_digital/', methods=['POST'])
+@app.route('/inspection_meter/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
