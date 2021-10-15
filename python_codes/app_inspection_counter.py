@@ -27,12 +27,12 @@ def get_input_data(input_data):
         img_ref = None
 
     ## 感兴趣区域
-    if "bboxes" in input_data["config"]:
+    if "bboxes" not in input_data["config"] or input_data["config"]["bboxes"] == -1:
+        roi = None
+    else:
         W = img_ref.shape[1]; H = img_ref.shape[0]
         roi = input_data["config"]["bboxes"]["roi"]
-        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H),]
-    else:
-        roi = None
+        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
     
     return img_tag, img_ref, roi
 
