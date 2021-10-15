@@ -9,7 +9,7 @@ from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_res
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
 from app_inspection_disconnector import sift_match, convert_coor
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 ## 加载模型
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
