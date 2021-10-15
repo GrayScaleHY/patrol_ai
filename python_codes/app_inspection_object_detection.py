@@ -22,19 +22,20 @@ def get_input_data(input_data):
     img_tag = base642img(input_data["image"])
 
     ## 是否有模板图
-    if "img_ref" in input_data["config"]:
-        img_ref = base642img(input_data["config"]["img_ref"])
-    else:
+    if "img_ref" not in input_data["config"] or input_data["config"]["img_ref"] == -1:
         img_ref = None
+    else:
+        img_ref = base642img(input_data["config"]["img_ref"])
+        
 
     ## 感兴趣区域
-    if "bboxes" in input_data["config"]:
+    if "bboxes" not in input_data["config"] or input_data["config"]["bboxes"] == -1:
+        roi = None
+    else:
         W = img_ref.shape[1]; H = img_ref.shape[0]
         roi = input_data["config"]["bboxes"]["roi"]
-        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H),]
-    else:
-        roi = None
-    
+        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
+        
     return img_tag, img_ref, roi
 
 
@@ -160,7 +161,7 @@ def inspection_object_detection(input_data):
 
 
 if __name__ == '__main__':
-    tag_file = "test/p1.jpg"
+    tag_file = "/home/yh/inspection/python_codes/inspection_result/led/09-29-20-01-59/img_ref.jpg"
     ref_file = "test/p2.jpg"
     img_tag = img2base64(cv2.imread(tag_file))
     img_ = cv2.imread(ref_file)
@@ -169,7 +170,7 @@ if __name__ == '__main__':
     W = img_.shape[1]; H = img_.shape[0]
     roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
-    input_data = {"image": img_tag, "config":{"img_ref": img_ref, "bboxes": {"roi": roi}}, "type": "pressplate"} #
+    input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
     out_data = inspection_object_detection(input_data)
     print("inspection_object_detection result:")
     print("-----------------------------------------------")
