@@ -222,9 +222,9 @@ def inspection_pointer(input_data):
     cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
     for scale in pointers_ref:  # 将坐标点标注在图片上
         coor = pointers_ref[scale]
-        cv2.circle(img_ref_, (int(coor[0]), int(coor[1])), 2, (255, 0, 0), 8)
+        cv2.circle(img_ref_, (int(coor[0]), int(coor[1])), 4, (255, 0, 255), 8)
         cv2.putText(img_ref_, str(scale), (int(coor[0])-5, int(coor[1])),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), thickness=2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 255), thickness=4)
     if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
                     (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
@@ -250,14 +250,18 @@ def inspection_pointer(input_data):
         for coor in coors:
             coors_.append(list(convert_coor(coor, M)))
         coors_ = np.array(coors_, dtype=int)
-        roi_tag = [np.min(coors_[:,0]), np.min(coors_[:,1]), np.max(coors_[:,0]), np.max(coors_[:,1])]
+        xmin = max(0, np.min(coors_[:,0]))
+        ymin = max(0, np.min(coors_[:,1]))
+        xmax = min(img_tag.shape[1], np.max(coors_[:,0]))
+        ymax = min(img_tag.shape[0], np.max(coors_[:,1]))
+        roi_tag = [xmin, ymin, xmax, ymax]
     img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
 
     ## 使用映射变换矫正目标图，并且转换坐标点。
     pointers_tag = conv_coor(pointers_ref, M)
 
     ## 将矫正偏移的信息写到图片中
-    s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
+    s = (roi_tag[2] - roi_tag[0]) / 400 # 根据框子大小决定字号和线条粗细。
     cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
                     (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
     cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
@@ -306,6 +310,9 @@ def inspection_pointer(input_data):
     cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), round(s))
     cv2.putText(img_tag_, str(val), (int(seg[2])-5, int(seg[3])),
                 cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
+    # cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+    # cv2.putText(img_tag_, str(val), (int(seg[2])-5, int(seg[3])),
+    #             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), thickness=4)
     
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
@@ -318,10 +325,17 @@ def inspection_pointer(input_data):
     return out_data
 
 def main():
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-    img_ref_file = "test/img_ref.jpg"
-    img_tag_file = "test/img_tag.jpg"
-    pointers = {"center": [1007, 405], "0": [1008, 319], "2": [1139, 385], "3": [1133, 447], "5": [995, 489], "7": [865, 426], "8": [871, 363], "9": [937, 322]}
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    img_ref_file = "images/img_tag.jpg"
+    img_tag_file = "images/img_ref.jpg"
+    pointers ={"center": [969, 551],
+          "-0.1": [872, 834],
+          "0": [758, 755],
+          "0.2": [687, 510],
+          "0.4": [846, 310],
+          "0.6": [1095, 309],
+          "0.8": [1253, 505],
+          "0.9": [1248, 642]}
     bboxes = {"roi": [805, 256, 1217, 556]}
     img_ref = cv2.imread(img_ref_file)
     W = img_ref.shape[1]; H = img_ref.shape[0]
@@ -335,11 +349,11 @@ def main():
     config = {
         "img_ref": img_ref, 
         "number": 1, 
-        "pointers": pointers,
-        "length": 0, 
-        "width": 0, 
-        "color": 0, 
-        "bboxes": bboxes
+        "pointers": pointers
+        # "length": 0, 
+        # "width": 0, 
+        # "color": 0, 
+        # "bboxes": bboxes
     }
     input_data = {"image": img_tag, "config": config, "type": "pointer"}
     out_data = inspection_pointer(input_data)
