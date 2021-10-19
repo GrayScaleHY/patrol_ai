@@ -1,17 +1,18 @@
 OBJECT_MAP = {
     "meter": {
+        "name": "表记",
         "meter": "表记",
         "pointer": "指针"
     },
     "air_switch": {
         "name": "空气开关",
-        "air_switch_on": "合闸",
-        "air_switch_off": "分闸"
+        "air_switch_on": "开",
+        "air_switch_off": "关"
         },
     "pressplate":{
         "name": "压板",
-        "pressplate_on": "投入",
-        "pressplate_off": "退出"
+        "pressplate_on": "开",
+        "pressplate_off": "关"
     },
     "led": {
         "name": "LED灯",
@@ -27,9 +28,9 @@ OBJECT_MAP = {
     },
     "fanpaiqi": {
         "name": "翻拍器",
-        "fanpaiqi_red": "合闸",
-        "fanpaiqi_green": "分闸",
-        "fanpaiqi_jiedi": "接地"
+        "fanpaiqi_red": "翻牌器合",
+        "fanpaiqi_green": "翻牌器分",
+        "fanpaiqi_jiedi": "翻牌器接地"
     },
     "action_recognition":{
         "name": "行为识别",
@@ -50,16 +51,16 @@ OBJECT_MAP = {
         '7': '7',
         '8': '8',
         '9': '9',
-        '0': '0',
-        '1': '1',
-        '2': '2',
-        '3': '3',
-        '4': '4',
-        '5': '5',
-        '6': '6',
-        '7': '7',
-        '8': '8',
-        '9': '9',
+        '0.': '0.',
+        '1.': '1.',
+        '2.': '2.',
+        '3.': '3.',
+        '4.': '4.',
+        '5.': '5.',
+        '6.': '6.',
+        '7.': '7.',
+        '8.': '8.',
+        '9.': '9.',
         '-': '-'
     },
     "counter": {
@@ -77,30 +78,30 @@ OBJECT_MAP = {
     },
     "fire_smoke": {
         "name": "烟火",
-        'fire': '火',
+        'fire': '火焰',
         'smoke': '烟',
 
     },
     "helmet": {
         "name": "安全帽",
-        'person': '未佩戴安全帽',
-        'hat': '已佩戴安全帽',
-        'leifenghat': '雷锋帽',
+        'person': '头',
+        'hat': '安全帽',
+        'leifenghat': '棉帽',
     },
     "insulator": {
-        "name": "绝缘体",
-        "insulator": "绝缘"
+        "name": "绝缘子",
+        "insulator": "绝缘子"
     },
     "sitecar": {
         "name": "机动车",
-        'crane': '吊车',
+        'crane': '起重机',
         'excavator': '挖掘机'
     },
     "yingguangfu": {
         "name": "荧光服",
-        'yingguangfu': '已穿荧光服',
-        'no_yingguangfu': '未穿荧光服',
-        'gongzuofu': '已穿工作服'
+        'yingguangfu': '荧光服',
+        'no_yingguangfu': '未穿工服',
+        'gongzuofu': '工作服'
     },
     "rotary_switch":{
         'name': '旋钮开发',
@@ -112,5 +113,57 @@ OBJECT_MAP = {
         'leftdown': '左下',
         'rightup': '右上',
         'rightdown': '右下'
+    },
+    "tools":{
+        'name': '工具',
+        'Ground wire': '接地线',
+        'Electricity toolbox': '电工具箱',
+        'DC electroscope': '直流验电器',
+        'Electroscope': '验电笔',
+        'Multimeter': '万用表',
+        'Electric iron': '电熨头',
+        'Tin cleaner': '吸锡器',
+        'Solder wire': '焊锡线',
+        'Electrical tape': '电胶带',
+        'pliers': '钳子',
+        'Network pliers': '网络钳',
+        'Wrench': '扳手',
+        'Small screwdriver': '小螺丝刀',
+        'Screwdriver': '螺丝刀',
+        'Hex screwdriver': '六角螺丝刀',
+        'Hammer': '锤子',
+        'Utility knife': '多功能刀',
+        'Flashlight': '手电筒',
+        'Tape measure': '卷尺'
+    },
+    "equipment_defects": {
+        "name": "设备部件与缺陷",
+        '变压器_本体': '变压器_本体',
+        '变压器_套管': '变压器_套管',
+        '变压器_冷却器': '变压器_冷却器',
+        '变压器_冷却器_风扇': '变压器_冷却器_风扇',
+        '变压器_冷却器_散热片': '变压器_冷却器_散热片',
+        '变压器_呼吸器': '变压器_呼吸器',
+        '变压器_油枕': '变压器_油枕',
+        '变压器_机构箱': '变压器_机构箱',
+        '变压器_端子箱': '变压器_端子箱',
+        '断路器_本体': '断路器_本体',
+        '断路器_操作箱': '断路器_操作箱',
+        '刀闸_隔离刀闸': '刀闸_隔离刀闸',
+        '刀闸_操作机构箱': '刀闸_操作机构箱',
+        '刀闸_套管': '刀闸_套管',
+        '表计': '表计',
+        '绝缘子': '绝缘子',
+        '部件表面油污': '部件表面油污',
+        '地面油污': '地面油污',
+        '金属锈蚀': '金属锈蚀',
+        '表计破损': '表计破损',
+        '部件外观异常': '部件外观异常',
+        '呼吸器破损': '呼吸器破损',
+        '箱门闭合异常': '箱门闭合异常',
+        '绝缘子破裂': '绝缘子破裂',
+        '异物': '异物',
+        '缺陷不知道': '缺陷不知道',
+        '设备不知道_操作机构箱': '设备不知道_操作机构箱'
     }
 }
