@@ -11,8 +11,8 @@ OBJECT_MAP = {
         },
     "pressplate":{
         "name": "压板",
-        "pressplate_on": "开",
-        "pressplate_off": "关"
+        "pressplate_on": "合",
+        "pressplate_off": "分"
     },
     "led": {
         "name": "LED灯",
@@ -107,10 +107,10 @@ OBJECT_MAP = {
         'name': '旋钮开发',
         'up': '上',
         'down': '下',
-        'left': '左',
-        'right': '右',
         'leftup': '左上',
         'leftdown': '左下',
+        'right': '右',
+        'left': '左',
         'rightup': '右上',
         'rightdown': '右下'
     },
