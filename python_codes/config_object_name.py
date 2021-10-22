@@ -104,7 +104,18 @@ OBJECT_MAP = {
         'gongzuofu': '工作服'
     },
     "rotary_switch":{
-        'name': '旋钮开发',
+        'name': '旋钮开关',
+        'up': '上',
+        'down': '下',
+        'leftup': '左上',
+        'leftdown': '左下',
+        'right': '右',
+        'left': '左',
+        'rightup': '右上',
+        'rightdown': '右下'
+    },
+    "arrow": {
+        'name': '箭头仪表',
         'up': '上',
         'down': '下',
         'leftup': '左上',
