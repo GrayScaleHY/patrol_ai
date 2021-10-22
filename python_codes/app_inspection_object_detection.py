@@ -46,6 +46,7 @@ yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
 yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
 yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
 yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
+yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
 
 def inspection_object_detection(input_data):
     """
@@ -71,6 +72,10 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_helmet
     elif input_data["type"] == "fanpaiqi":
         yolov5_model = yolov5_fanpaiqi
+    elif input_data["type"] == "rotary_switch":
+        yolov5_model = yolov5_rotary_switch
+    elif input_data["type"] == "arrow":
+        yolov5_model = yolov5_rotary_switch
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
