@@ -127,7 +127,7 @@ def get_video_info(video_file):
     width = vs['width']
     height = vs['height']
 
-    print("format_name:{} \ncodec_name:{} \nduration_ts:{} \nwidth:{} \nheight:{} \nfps:{}".format(
+    print("format_name:{} /ncodec_name:{} /nduration_ts:{} /nwidth:{} /nheight:{} /nfps:{}".format(
         format_name, codec_name, duration_ts, width, height, fps))
 
     return format_name, codec_name, duration_ts, fps, width, height
@@ -244,6 +244,33 @@ def img_chinese(img, text, coor, color=(0, 255, 0), size=20):
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 
+def img_equalize(img):
+    """
+    直方图均衡化
+    """
+    if len(img.shape) == 3:
+        for i in range(3):
+            img[:,:,i] = cv2.equalizeHist(img[:,:,i])
+    elif len(img.shape) == 2:
+        img = cv2.equalizeHist(img)
+    else:
+        print("Warning: img is not a matrix !")
+    return img
+
+
+def img_clahe(img):
+    """
+    自适应均衡化
+    """
+    clahe = cv2.createCLAHE(clipLimit=2.0,
+                        tileGridSize=(8, 8))
+    if len(img.shape) == 3:
+        for i in range(3):
+            clahe.apply(img[:,:,i])
+    elif len(img.shape) == 2:
+        clahe.apply(img)
+    return img
+
 if __name__ == '__main__':
     # img_file = "C:/Users/yuanhui/Desktop/hear/test/#0773_org.jpg"
     # bbox_cfg = [{"label": "meter", "coor": [508, 218, 1430, 1080]},
@@ -252,4 +279,8 @@ if __name__ == '__main__':
     # draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
     # os.path.exists
 
-    img_rotate_batch("C:/data/raw_data/20210826")
+    img_file = "C:/Users/yuanhui/Desktop/hear/test/test/close_1011194217_gray3d.jpg"
+    img = cv2.imread(img_file, 0)
+    # img = img_equalize(img)
+    # img = img_clahe(img)
+    cv2.imwrite(img_file[:-4] + "_gray2d.jpg", img)
