@@ -128,33 +128,42 @@ def get_input_data(input_data):
         pointers_ref[coor] = [int(pointers[coor][0] * W), int(pointers[coor][1] * H)]
 
     ## 感兴趣区域
-    if "bboxes" not in input_data["config"] or input_data["config"]["bboxes"] == -1:
-        roi = None
-    else:
-        roi = input_data["config"]["bboxes"]["roi"]
-        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
+    roi = None # 初始假设
+    if "bboxes" in input_data["config"]:
+        if isinstance(input_data["config"]["bboxes"], dict):
+            if "roi" in input_data["config"]["bboxes"]:
+                if isinstance(input_data["config"]["bboxes"]["roi"], list):
+                    if len(isinstance(input_data["config"]["bboxes"]["roi"])) == 4:
+                        W = img_ref.shape[1]; H = img_ref.shape[0]
+                        roi = input_data["config"]["bboxes"]["roi"]
+                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
     
     ## 其他信息
-    if "number" not in input_data["config"] or input_data["config"]["number"] == -1:
-        number = None
-    else:
-        number = input_data["config"]["number"]
-    if "length" not in input_data["config"] or input_data["config"]["length"] == -1:
-        length = None
-    else:
-        length = input_data["config"]["length"]
-    if "color" not in input_data["config"] or input_data["config"]["color"] == -1:
-        color = None
-    else:
-        color = input_data["config"]["color"]
-    if "width " not in input_data["config"] or input_data["config"]["width"] == -1:
-        width = None
-    else:
-        width = input_data["config"]["width"]
-    if "dp" not in input_data["config"] or input_data["config"]["dp"] == -1:
-        dp = 3
-    else:
-        dp = input_data["config"]["dp"]
+    number = None
+    if "number" in input_data["config"]:
+        if isinstance(input_data["config"]["number"], int):
+            if input_data["config"]["number"] != -1:
+                number = input_data["config"]["number"]
+    length = None
+    if "length" in input_data["config"]:
+        if isinstance(input_data["config"]["length"], int):
+            if input_data["config"]["length"] != -1:
+                length = input_data["config"]["length"]
+    color = None
+    if "color" in input_data["config"]:
+        if isinstance(input_data["config"]["color"], int):
+            if input_data["config"]["color"] != -1:
+                color = input_data["config"]["color"]
+    width = None
+    if "width" in input_data["config"]:
+        if isinstance(input_data["config"]["width"], int):
+            if input_data["config"]["width"] != -1:
+                width = input_data["config"]["width"]
+    dp = None
+    if "dp" in input_data["config"]:
+        if isinstance(input_data["config"]["dp"], int):
+            if input_data["config"]["dp"] != -1:
+                dp = input_data["config"]["dp"]
     
     return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp
 
