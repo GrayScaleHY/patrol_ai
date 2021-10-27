@@ -75,8 +75,9 @@ def inspection_counter_server():
 #     print("----------------------------------------------")
 #     return jsonify(res)
 
-## 二维码定位合识别
+## 二维码识别，文本标识牌识别
 @app.route('/inspection_qrcond/', methods=['POST'])
+@app.route('/inspection_ocr/', methods=['POST'])
 def inspection_qrcode_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
