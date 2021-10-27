@@ -2,45 +2,10 @@ import cv2
 import os
 import time
 import json
-import numpy as np
-from pyzbar.pyzbar import decode # sudo apt-get install libzbar-dev; pip install pyzbar
 from lib_image_ops import base642img, img2base64, img_chinese
 from app_inspection_disconnector import sift_match, convert_coor
-
-def decoder(img):
-    """
-    二维码定位，并且读取二维码信息
-    https://towardsdatascience.com/build-your-own-barcode-and-qrcode-scanner-using-python-8b46971e719e
-    args:
-        img: image data
-    return:
-        info: 格式为: [{'coor': [xmin,ymin,xmax,ymax], 'content':content, "c_type":c_type}, ..]
-    """
-    ## 彩图变灰度图
-    if len(img.shape) == 3:
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    
-    barcode = decode(img) # 解二维码
-
-    info = []
-    for obj in barcode:
-        ## 取二维码的四边形框
-        # points = obj.polygon
-        # pts = np.array(points, np.int32)
-        # pts = pts.reshape((-1, 1, 2))
-        # cv2.polylines(img, [pts], True, (0, 255, 0), 3)
-
-        ## 取二维码的矩形框
-        (x,y,w,h) = obj.rect
-        bbox = [float(x), float(y), float(x+w), float(y+h)]
-        
-        ## 取二维码的内容合类型
-        content = str(obj.data.decode("utf-8"))
-        c_type = str(obj.type)
-
-        info.append({"coor": bbox, "content": content, "c_type": c_type})
-
-    return info
+from lib_qrcode import decoder
+import numpy as np
 
 
 def get_input_data(input_data):
@@ -127,13 +92,13 @@ def inspection_qrcode(input_data):
     ## 将bboxes映射到原图坐标
     bboxes = []
     for bbox in boxes:
-        c = bbox["coor"]; r = roi_tag
+        c = bbox["bbox"]; r = roi_tag
         coor = [c[0]+r[0], c[1]+r[1], c[2]+r[0], c[3]+r[1]]
         # {"coor": bbox, "content": content, "c_type": c_type}
-        bboxes.append({"content": bbox["content"], "coor": coor, "c_type": bbox["c_type"]})
+        bboxes.append({"content": bbox["content"], "bbox": coor, "c_type": bbox["c_type"]})
 
     for bbox in bboxes:
-        cfg = {"type": "qrcode", "content": bbox["content"], "bbox": bbox["coor"]}
+        cfg = {"type": "qrcode", "content": bbox["content"], "bbox": bbox["bbox"]}
         out_data["data"].append(cfg)
 
     ## 可视化计算结果
@@ -146,7 +111,7 @@ def inspection_qrcode(input_data):
     cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
                     cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
     for bbox in bboxes:
-        coor = bbox["coor"]; label = bbox["content"]
+        coor = bbox["bbox"]; label = bbox["content"]
         s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), (0, 225, 0), thickness=round(s/50))
