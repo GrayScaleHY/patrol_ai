@@ -114,8 +114,11 @@ def inspection_object_detection(input_data):
         coors_ = []
         for coor in coors:
             coors_.append(list(convert_coor(coor, M)))
-        coors_ = np.array(coors_, dtype=int)
-        roi_tag = [np.min(coors_[:,0]), np.min(coors_[:,1]), np.max(coors_[:,0]), np.max(coors_[:,1])]
+        xs = [coor[0] for coor in coors_]
+        ys = [coor[1] for coor in coors_]
+        xmin = max(0, min(xs)); ymin = max(0, min(ys))
+        xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
+        roi_tag = [xmin, ymin, xmax, ymax]
     img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
 
     ## 生成目标检测信息
