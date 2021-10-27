@@ -95,10 +95,11 @@ def inspection_qrcode(input_data):
     ## 二维码检测或文本检测
     if input_data["type"] == "qrcode":
         boxes = decoder(img_roi) # 解二维码
-    elif input_data["type"] == "qrcode": # 文本检测
-        bboxes = inference_ppocr(img_roi, text_sys)
+    elif input_data["type"] == "ocr": # 文本检测
+        boxes = inference_ppocr(img_roi, text_sys)
     else:
         out_data["msg"] = out_data["msg"] + "; Type is wrong !"
+        return out_data
 
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find qrcode"
@@ -110,10 +111,10 @@ def inspection_qrcode(input_data):
         c = bbox["bbox"]; r = roi_tag
         coor = [c[0]+r[0], c[1]+r[1], c[2]+r[0], c[3]+r[1]]
         # {"coor": bbox, "content": content, "c_type": c_type}
-        bboxes.append({"content": bbox["content"], "bbox": coor, "c_type": bbox["c_type"]})
+        bboxes.append({"content": bbox["content"], "bbox": coor, "type": input_data["type"]})
 
     for bbox in bboxes:
-        cfg = {"type": "qrcode", "content": bbox["content"], "bbox": bbox["bbox"]}
+        cfg = {"type": bbox["type"], "content": bbox["content"], "bbox": bbox["bbox"]}
         out_data["data"].append(cfg)
 
     ## 可视化计算结果
