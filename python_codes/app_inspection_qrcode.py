@@ -2,11 +2,16 @@ import cv2
 import os
 import time
 import json
+import numpy as np
 from lib_image_ops import base642img, img2base64, img_chinese
 from app_inspection_disconnector import sift_match, convert_coor
 from lib_qrcode import decoder
-import numpy as np
+from lib_inference_ocr import load_ppocr, inference_ppocr
 
+det_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_det_infer/"
+cls_model_dir = "/data/inspection/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+rec_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_rec_infer/"
+text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir) ## 加载ppocr模型
 
 def get_input_data(input_data):
     """
@@ -80,11 +85,21 @@ def inspection_qrcode(input_data):
         coors_ = []
         for coor in coors:
             coors_.append(list(convert_coor(coor, M)))
-        coors_ = np.array(coors_, dtype=int)
-        roi_tag = [np.min(coors_[:,0]), np.min(coors_[:,1]), np.max(coors_[:,0]), np.max(coors_[:,1])]
+        xs = [coor[0] for coor in coors_]
+        ys = [coor[1] for coor in coors_]
+        xmin = max(0, min(xs)); ymin = max(0, min(ys))
+        xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
+        roi_tag = [xmin, ymin, xmax, ymax]
     img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
     
-    boxes = decoder(img_roi) # 解二维码
+    ## 二维码检测或文本检测
+    if input_data["type"] == "qrcode":
+        boxes = decoder(img_roi) # 解二维码
+    elif input_data["type"] == "qrcode": # 文本检测
+        bboxes = inference_ppocr(img_roi, text_sys)
+    else:
+        out_data["msg"] = out_data["msg"] + "; Type is wrong !"
+
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find qrcode"
         return out_data
