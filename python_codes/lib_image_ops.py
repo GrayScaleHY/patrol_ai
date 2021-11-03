@@ -234,8 +234,8 @@ def img_chinese(img, text, coor, color=(0, 255, 0), size=20):
     # 创建一个可以在给定图像上绘图的对象
     draw = ImageDraw.Draw(img)
     # 字体的格式
-    if size > 50:
-        size = 50
+    # if size > 50:
+    #     size = 50
     fontStyle = ImageFont.truetype(
         "../c_codes/simsun.ttc", size, index=1, encoding="utf-8")
     # 绘制文本
