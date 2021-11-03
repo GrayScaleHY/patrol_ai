@@ -109,11 +109,11 @@ def requst_inspection_object_detection():
     """
     目标检测。
     """
-    API = "http://192.168.57.159:5000/inspection_led/"
+    API = "http://192.168.57.159:5100/inspection_fire_smoke/"
 
-    img_file = "/data/yolov5/led/images/val/2020_8_4_led_82.jpg"
+    img_file = "/home/yh/image/python_codes/test/test/空开-2.jpg"
     img_base64 = lib_image_ops.img2base64(cv2.imread(img_file))
-    input_data = {"image": img_base64, "config":[], "type": "led"}
+    input_data = {"image": img_base64, "config":[], "type": "air_switch"}
 
     send_data = json.dumps(input_data)
     res = requests.post(url=API, data=send_data).json()
@@ -148,4 +148,5 @@ if __name__ == '__main__':
     # requst_inspection_meter()
     # requst_inspection_counter()
     # requst_inspection_disconnector()
-    requst_inspection_ocr()
+    # requst_inspection_ocr()
+    requst_inspection_object_detection()
