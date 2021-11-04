@@ -11,6 +11,15 @@ from app_inspection_qrcode import inspection_qrcode
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
 
+@app.route('/inspection_state/', methods=['POST'])
+def inspection_state():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    else:
+        res = {"code": 0}
+    return jsonify(res)
+
 ## 刀闸分合识别
 @app.route('/inspection_disconnector/', methods=['POST'])
 def inspection_disconnector_server():
