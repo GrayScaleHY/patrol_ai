@@ -239,6 +239,42 @@ def voc2yolo(img_file, xml_file, txt_file, class_file):
         writer.save(targetFile=txt_file)
 
 
+def cvat2labelme(img_file, xml_file, json_file):
+    """
+    将cvat的labelme的xml格式的标签文件转成labelme软件保存的json格式标签文件。
+    """
+    ## 读取xml文件，转成dict格式
+    f = open(xml_file, 'r',encoding='utf-8')
+    xml_str = f.read() #读取xml文件内容
+    dict_ = xmltodict.parse(xml_str) #将读取的xml内容转为dict
+    f.close()
+
+    shapes = []
+    objects = dict_["annotation"]["object"]
+    for obj in objects:
+        label = obj["name"]
+        points = [[float(point["x"]), float(point["y"])] for point in obj["polygon"]["pt"]]
+        shapes.append({"label": label, "points": points, "group_id": None, "shape_type": "polygon", "flags": {}})
+
+    imagePath = os.path.basename(img_file)
+    img = cv2.imread(img_file)
+    imageData = img2base64(img)
+    imageHeight = img.shpae[0]
+    imageWidth = img.shape[1]
+
+    obj_json = {"version": "4.5.6",
+                "flags": {},
+                "shapes": shapes,
+                "imagePath": imagePath,
+                "imageData": imageData,
+                "imageHeight": imageHeight,
+                "imageWidth": imageWidth}
+
+    f = open(json_file, "w", encoding='utf-8')
+    json.dump(obj_json, f, indent=2, ensure_ascii=False) # 保存json
+    f.close()
+
+
 def xml_merge(xml_raw, xml_part):
     """
     将两个xml文件合并成一个。
