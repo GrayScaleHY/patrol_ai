@@ -250,7 +250,13 @@ def cvat2labelme(img_file, xml_file, json_file):
     f.close()
 
     shapes = []
+
+    if "object" not in dict_["annotation"]:
+        return 0
+
     objects = dict_["annotation"]["object"]
+    if not isinstance(objects, list):
+        objects = [objects]
     for obj in objects:
         label = obj["name"]
         points = [[float(point["x"]), float(point["y"])] for point in obj["polygon"]["pt"]]
@@ -259,7 +265,7 @@ def cvat2labelme(img_file, xml_file, json_file):
     imagePath = os.path.basename(img_file)
     img = cv2.imread(img_file)
     imageData = img2base64(img)
-    imageHeight = img.shpae[0]
+    imageHeight = img.shape[0]
     imageWidth = img.shape[1]
 
     obj_json = {"version": "4.5.6",
