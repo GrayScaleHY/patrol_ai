@@ -133,7 +133,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(isinstance(input_data["config"]["bboxes"]["roi"])) == 4:
+                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
                         W = img_ref.shape[1]; H = img_ref.shape[0]
                         roi = input_data["config"]["bboxes"]["roi"]
                         roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
@@ -276,9 +276,10 @@ def inspection_pointer(input_data):
                     cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
     for scale in pointers_tag:
         coor = pointers_tag[scale]
-        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), round(s), (255, 0, 255), 8)
-        cv2.putText(img_tag_, str(scale), (int(coor[0]+5), int(coor[1]-5)),
-                    cv2.FONT_HERSHEY_SIMPLEX, round(s/4), (255, 0, 255), thickness=round(s))
+        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), round(s/4), (255, 0, 255), 8)
+        cv2.putText(img_tag_, str(scale), (int(coor[0])-5, int(coor[1])),
+                    cv2.FONT_HERSHEY_SIMPLEX, s/2, (255, 0, 255), thickness=round(s)) #round(s/4)
+        
 
     # 用maskrcnn检测指针轮廓并且拟合成线段.
     contours, boxes = inference_maskrcnn(maskrcnn_pointer, img_roi)
@@ -306,13 +307,16 @@ def inspection_pointer(input_data):
         val = cal_base_scale(pointers_tag, seg)
     else:
         val = cal_base_angle(pointers_tag, seg)
+
+    if val == None:
+        out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
+        return out_data
+
     val = round(val, dp)
-    
     seg = [float(seg[0]), float(seg[1]), float(seg[2]), float(seg[3])]
     roi_tag = [float(roi_tag[0]), float(roi_tag[1]), float(roi_tag[2]), float(roi_tag[3])]
     out_data["data"] = {"type": "pointer", "values": val, "segment": seg, "bbox": roi_tag}
-    if val == None:
-        out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
+    
 
     ## 可视化最终计算结果
     cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), round(s))
@@ -334,37 +338,41 @@ def inspection_pointer(input_data):
 
 def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    img_ref_file = "images/img_tag.jpg"
-    img_tag_file = "images/img_ref.jpg"
-    pointers ={"center": [969, 551],
-          "-0.1": [872, 834],
-          "0": [758, 755],
-          "0.2": [687, 510],
-          "0.4": [846, 310],
-          "0.6": [1095, 309],
-          "0.8": [1253, 505],
-          "0.9": [1248, 642]}
-    bboxes = {"roi": [805, 256, 1217, 556]}
-    img_ref = cv2.imread(img_ref_file)
-    W = img_ref.shape[1]; H = img_ref.shape[0]
-    for t in pointers:
-        pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
-    for b in bboxes:
-        bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
+    # img_ref_file = "images/img_tag.jpg"
+    # img_tag_file = "images/img_ref.jpg"
+    # pointers ={"center": [969, 551],
+    #       "-0.1": [872, 834],
+    #       "0": [758, 755],
+    #       "0.2": [687, 510],
+    #       "0.4": [846, 310],
+    #       "0.6": [1095, 309],
+    #       "0.8": [1253, 505],
+    #       "0.9": [1248, 642]}
+    # bboxes = {"roi": [805, 256, 1217, 556]}
+    # img_ref = cv2.imread(img_ref_file)
+    # W = img_ref.shape[1]; H = img_ref.shape[0]
+    # for t in pointers:
+    #     pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
+    # for b in bboxes:
+    #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
     
-    img_tag = img2base64(cv2.imread(img_tag_file))
-    img_ref = img2base64(cv2.imread(img_ref_file))
-    config = {
-        "img_ref": img_ref, 
-        "number": 1, 
-        "pointers": pointers
-        # "length": 0, 
-        # "width": 0, 
-        # "color": 0, 
-        # "bboxes": bboxes
-    }
-    input_data = {"image": img_tag, "config": config, "type": "pointer"}
+    # img_tag = img2base64(cv2.imread(img_tag_file))
+    # img_ref = img2base64(cv2.imread(img_ref_file))
+    # config = {
+    #     "img_ref": img_ref, 
+    #     "number": 1, 
+    #     "pointers": pointers
+    #     # "length": 0, 
+    #     # "width": 0, 
+    #     # "color": 0, 
+    #     # "bboxes": bboxes
+    # }
+    # input_data = {"image": img_tag, "config": config, "type": "pointer"}
+    f = open("/home/yh/image/python_codes/inspection_result/pointer/11-05-14-55-56/input_data.json","r", encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_pointer(input_data)
+    print(1)
 
 
 if __name__ == '__main__':
