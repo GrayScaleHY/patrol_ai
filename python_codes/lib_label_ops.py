@@ -320,15 +320,15 @@ def xml_merge(xml_raw, xml_part):
     writer.save(targetFile=xml_raw)
 
 
-def labelme_2_coco(labelme_folder, save_json_path):
+def labelme_2_coco(labelme_folder, coco_json_file):
     """
     labelme标注的目标分割数据转为coco格式
     https://github.com/fcakyon/labelme2coco
     注意：
-        save_json_path不能在labelme_folder中，
+        coco_json_file不能在labelme_folder中，
         最好是labelme_folder和img在同一个目录。
     """
-    labelme2coco.convert(labelme_folder, save_json_path)
+    labelme2coco.convert(labelme_folder, coco_json_file)
 
 
 def int_bndbox(xml_file):
