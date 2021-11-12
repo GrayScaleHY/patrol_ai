@@ -54,6 +54,13 @@ def inspection_object_detection(input_data):
     """
     yolov5的目标检测推理。
     """
+    ## 将输入请求信息可视化
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
+    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
+    os.makedirs(save_path, exist_ok=True)
+    f = open(os.path.join(save_path, "input_data.json"), "w")
+    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
 
     ## 初始化输入输出信息。
     img_tag, img_ref, roi = get_input_data(input_data)
@@ -84,12 +91,6 @@ def inspection_object_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
     cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
@@ -135,6 +136,7 @@ def inspection_object_detection(input_data):
         bboxes.append({"label": bbox["label"], "coor": coor, "score": bbox["score"]})
 
     for bbox in bboxes:
+        c = bbox["coor"]; r = roi_tag
         cfg = {"type": bbox["label"], "bbox": [c[0]+r[0], c[1]+r[1], c[2]+r[0], c[3]+r[1]]}
         out_data["data"].append(cfg)
     
