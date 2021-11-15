@@ -33,7 +33,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(isinstance(input_data["config"]["bboxes"]["roi"])) == 4:
+                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
                         W = img_ref.shape[1]; H = img_ref.shape[0]
                         roi = input_data["config"]["bboxes"]["roi"]
                         roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]   
