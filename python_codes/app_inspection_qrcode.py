@@ -36,7 +36,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(isinstance(input_data["config"]["bboxes"]["roi"])) == 4:
+                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
                         W = img_ref.shape[1]; H = img_ref.shape[0]
                         roi = input_data["config"]["bboxes"]["roi"]
                         roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]   
@@ -50,6 +50,13 @@ def inspection_qrcode(input_data):
     """
     ## 初始化输入输出信息。
     ## 初始化输入输出信息。
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
+    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
+    os.makedirs(save_path, exist_ok=True)
+    f = open(os.path.join(save_path, "input_data.json"), "w")
+    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
+
     img_tag, img_ref, roi = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": "image", "msg": "Success request object detect; "} # 初始化out_data
 
@@ -132,7 +139,7 @@ def inspection_qrcode(input_data):
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), (0, 225, 0), thickness=round(s/50))
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, label, (coor[0], coor[1]-round(s/3)), color=(0, 225, 0), size=round(s/3))
+        img_tag_ = img_chinese(img_tag_, label, (coor[0], coor[1]-round(s)), color=(0, 225, 0), size=round(s))
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
@@ -142,21 +149,27 @@ def inspection_qrcode(input_data):
 
 
 if __name__ == '__main__':
-    tag_file = "test/16323889787350.png"
-    ref_file = "test/p2vm1.jpg"
-    img_tag = img2base64(cv2.imread(tag_file))
-    img_ = cv2.imread(ref_file)
-    img_ref = img2base64(img_)
-    ROI = [907, 7, 1583, 685]
-    W = img_.shape[1]; H = img_.shape[0]
-    roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
+    import glob
+    import time
+    for tag_file in glob.glob("/home/yh/image/python_codes/inspection_result/ocr/*.*"):
+        time.sleep(2)
+        
+        # tag_file = "/home/yh/image/python_codes/inspection_result/ocr/5.png"
+        
+        ref_file = "test/p2vm1.jpg"
+        img_tag = img2base64(cv2.imread(tag_file))
+        # img_ = cv2.imread(ref_file)
+        # img_ref = img2base64(img_)
+        # ROI = [907, 7, 1583, 685]
+        # W = img_.shape[1]; H = img_.shape[0]
+        # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
-    input_data = {"image": img_tag, "config":{"img_ref": img_ref, "bboxes": {"roi": roi}}, "type": "qrcode"} 
-    out_data = inspection_qrcode(input_data)
-    print("inspection_qrcode result:")
-    print("-----------------------------------------------")
-    for s in out_data:
-        if s != "img_result":
-            print(s,":",out_data[s])
-    print("----------------------------------------------")
+        input_data = {"image": img_tag, "config":{}, "type": "ocr"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+        out_data = inspection_qrcode(input_data)
+        print("inspection_qrcode result:")
+        print("-----------------------------------------------")
+        for s in out_data:
+            if s != "img_result":
+                print(s,":",out_data[s])
+        print("----------------------------------------------")
 
