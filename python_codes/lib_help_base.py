@@ -1,5 +1,7 @@
 import sys
 import random
+import sympy
+import math
 
 
 class Logger(object):
@@ -43,6 +45,39 @@ def color_list(c_size):
             color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             colors.append(color)
     return colors
+
+def oil_high(s_oil, s_round):
+    """
+    根据油面积和圆面积求油位的高度
+    args:
+        s_oil: 油面积
+        s_round: 圆面积
+    return:
+        h: 油位高度
+    """
+    R = math.sqrt(s_round / math.pi) #根据圆面积求圆半径
+    S = s_oil
+
+    if S > s_round / 2: # 油位在圆心之上
+        d=sympy.Symbol('H') # 圆心到油位的距离
+
+        ## 大扇形面积加上等腰三角形面积等于油面积
+        fx = (sympy.pi - sympy.acos(d/R))*R**2  + R * sympy.cos(sympy.asin(d/R)) * d - S
+        d = sympy.nsolve(fx,d,0) # 赋值解方程
+        h = d + R
+
+    elif S < s_round / 2: # 油位在圆心之下
+        d=sympy.Symbol('H')
+
+        ## 小扇形面积减去等腰三角形面积等于油面积
+        fx = sympy.acos(d/R)*R**2  - R * sympy.cos(sympy.asin(d/R)) * d - S
+        d = sympy.nsolve(fx,d,0) # 赋值解方程
+        h =  R - d
+
+    else:
+        h = R
+
+    return h
 
 
 if __name__ == '__main__':
