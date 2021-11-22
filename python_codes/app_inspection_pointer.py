@@ -283,7 +283,7 @@ def inspection_pointer(input_data):
         
 
     # 用maskrcnn检测指针轮廓并且拟合成线段.
-    contours, boxes = inference_maskrcnn(maskrcnn_pointer, img_roi)
+    contours, boxes, _ = inference_maskrcnn(maskrcnn_pointer, img_roi)
     segments = contour2segment(contours, boxes)
 
     if len(segments) == 0:
