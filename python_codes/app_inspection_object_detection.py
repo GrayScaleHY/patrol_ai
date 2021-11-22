@@ -36,9 +36,15 @@ def get_input_data(input_data):
                     if len(input_data["config"]["bboxes"]["roi"]) == 4:
                         W = img_ref.shape[1]; H = img_ref.shape[0]
                         roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]   
+                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
+    
+    ## 设备状态与显示名字的映射关系。
+    status_map = None
+    if "status_map" in input_data["config"]:
+        if isinstance(input_data["config"]["status_map"], dict):
+            status_map = input_data["config"]["status_map"]
 
-    return img_tag, img_ref, roi
+    return img_tag, img_ref, roi, status_map
 
 
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
@@ -63,7 +69,7 @@ def inspection_object_detection(input_data):
     f.close()
 
     ## 初始化输入输出信息。
-    img_tag, img_ref, roi = get_input_data(input_data)
+    img_tag, img_ref, roi, status_map = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": "image", "msg": "Success request object detect; "} # 初始化out_data
 
     ## 选择模型
@@ -128,6 +134,19 @@ def inspection_object_detection(input_data):
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
 
+    ## labels 列表 和 color 列表
+    labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+    colors = color_list(len(labels))
+    color_dict = {}
+    name_dict = {}
+    for i, label in enumerate(labels):
+        color_dict[label] = colors[i]
+        if status_map is not None and label in status_map:
+            name_dict[label] = status_map[label]
+        else:
+            name_dict[label] = config_object_name.OBJECT_MAP[input_data["type"]][label]
+
+
     ## 将bboxes映射到原图坐标
     bboxes = []
     for bbox in boxes:
@@ -136,16 +155,9 @@ def inspection_object_detection(input_data):
         bboxes.append({"label": bbox["label"], "coor": coor, "score": bbox["score"]})
 
     for bbox in bboxes:
-        c = bbox["coor"]; r = roi_tag
-        cfg = {"type": bbox["label"], "bbox": [c[0]+r[0], c[1]+r[1], c[2]+r[0], c[3]+r[1]]}
+        cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"]}
         out_data["data"].append(cfg)
     
-    ## labels 和 color的对应关系
-    labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-    colors = color_list(len(labels))
-    color_dict = {}
-    for i, label in enumerate(labels):
-        color_dict[label] = colors[i]
 
     ## 可视化计算结果
     f = open(os.path.join(save_path, "out_data.json"), "w")
@@ -156,14 +168,13 @@ def inspection_object_detection(input_data):
                     (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
     cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
                     cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
-    map_o = config_object_name.OBJECT_MAP
     for bbox in bboxes:
         coor = bbox["coor"]; label = bbox["label"]
         s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
+        img_tag_ = img_chinese(img_tag_, name_dict[label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
