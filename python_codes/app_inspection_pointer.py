@@ -159,7 +159,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["width"], int):
             if input_data["config"]["width"] != -1:
                 width = input_data["config"]["width"]
-    dp = None
+    dp = 3
     if "dp" in input_data["config"]:
         if isinstance(input_data["config"]["dp"], int):
             if input_data["config"]["dp"] != -1:
@@ -272,8 +272,9 @@ def inspection_pointer(input_data):
     s = (roi_tag[2] - roi_tag[0]) / 400 # 根据框子大小决定字号和线条粗细。
     cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
                     (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
+    cv2.putText(img_tag_, "meter", (int(roi_tag[0]), int(roi_tag[1]-s)),
+                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s)*2)
+    # img_chinese(img_tag_, "表记", (int(roi_tag[0]), int(roi_tag[1])), color=(0, 0, 255), size=20)
     for scale in pointers_tag:
         coor = pointers_tag[scale]
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), round(s/4), (255, 0, 255), 8)
