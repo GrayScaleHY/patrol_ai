@@ -148,7 +148,7 @@ def intersection_segment(line, segment):
     return int(x), int(y)
 
 
-def load_maskrcnn_model(mask_rcnn_weight):
+def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.5):
     """
     加载maskrcnn模型。
     """
@@ -157,8 +157,8 @@ def load_maskrcnn_model(mask_rcnn_weight):
     cfg.merge_from_file(
         "detectron2/configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.WEIGHTS = mask_rcnn_weight
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_thresh
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
     cfg.DATASETS.TEST = ("meter", )
     maskrcnn_weights = DefaultPredictor(cfg)
     return maskrcnn_weights
@@ -198,7 +198,7 @@ def inference_maskrcnn(maskrcnn_weights, img):
 
     # cv2.drawContours(img,contours,-1,(0,0,255),1)
     # cv2.imwrite("/home/yh/meter_recognition/test/point_two_0_contours.jpg", img)
-    return contours, boxes
+    return contours, boxes, masks
 
 
 def contour2segment(contours, boxes):
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)
     # for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test/meter","*.jpg"))[-1]:
     img = cv2.imread(img_file)
-    contours, boxes = inference_maskrcnn(maskrcnn_weights, img)
+    contours, boxes, _ = inference_maskrcnn(maskrcnn_weights, img)
     segments = contour2segment(contours, boxes)
     print(segments)
 
