@@ -6,25 +6,25 @@ OBJECT_MAP = {
     },
     "air_switch": {
         "name": "空气开关",
-        "air_switch_on": "开",
-        "air_switch_off": "关"
+        "air_switch_on": "合闸",
+        "air_switch_off": "分闸"
         },
     "pressplate":{
         "name": "压板",
-        "pressplate_on": "合",
-        "pressplate_off": "分"
+        "pressplate_on": "投入",
+        "pressplate_off": "退出"
     },
     "led": {
         "name": "LED灯",
-        "green_on": "绿开",
-        "green_off": "绿开",
-        "red_on": "红开",
-        "red_off": "红关",
-        "white_on": "白开",
-        "white_off": "白关",
-        "yellow_on": "黄开",
-        "yellow_off": "黄关",
-        "black_off": "黑关",
+        "green_on": "绿灯亮",
+        "green_off": "绿灯灭",
+        "red_on": "红灯亮",
+        "red_off": "红灯灭",
+        "white_on": "白灯亮",
+        "white_off": "白灯灭",
+        "yellow_on": "黄灯亮",
+        "yellow_off": "黄灯灭",
+        "black_off": "黑灯灭",
     },
     "fanpaiqi": {
         "name": "翻拍器",
@@ -79,12 +79,12 @@ OBJECT_MAP = {
     "fire_smoke": {
         "name": "烟火",
         'fire': '火焰',
-        'smoke': '烟',
+        'smoke': '烟火警告',
 
     },
     "helmet": {
         "name": "安全帽",
-        'person': '头',
+        'person': '未戴安全帽',
         'hat': '安全帽',
         'leifenghat': '棉帽',
     },
@@ -100,7 +100,7 @@ OBJECT_MAP = {
     "yingguangfu": {
         "name": "荧光服",
         'yingguangfu': '荧光服',
-        'no_yingguangfu': '未穿工服',
+        'no_yingguangfu': '未穿工作服',
         'gongzuofu': '工作服'
     },
     "rotary_switch":{
