@@ -140,22 +140,23 @@ def inspection_counter(input_data):
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
     s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
-    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                    (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
+    if roi is not None:
+        cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
+                        (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
+        cv2.putText(img_tag_, "meter", (int(roi_tag[0]), int(roi_tag[1]-s)),
+                        cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
     map_o = config_object_name.OBJECT_MAP
     for bbox in bboxes:
         coor = bbox["coor"]; label = bbox["label"]
         s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
-        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*2), color=color_dict[label], size=s*2)
+        # cv2.putText(img_tag_, map_o[input_data["type"]][label], (int(coor[0])-5, int(coor[1])-5)),cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
+        img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*4), color=color_dict[label], size=s*8)
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
-    out_data["img_result"] = img2base64(img_tag)
+    out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
 
