@@ -53,6 +53,7 @@ def inspection_pointer_server():
     return jsonify(res)
 
 ## 仪表计数器读数
+@app.route('/inspection_digital/', methods=['POST'])
 @app.route('/inspection_counter/', methods=['POST'])
 def inspection_counter_server():
     if request.method != 'POST':
@@ -85,7 +86,7 @@ def inspection_counter_server():
 #     return jsonify(res)
 
 ## 二维码识别，文本标识牌识别
-@app.route('/inspection_qrcond/', methods=['POST'])
+@app.route('/inspection_qrcode/', methods=['POST'])
 @app.route('/inspection_ocr/', methods=['POST'])
 def inspection_qrcode_server():
     if request.method != 'POST':
@@ -108,7 +109,6 @@ def inspection_qrcode_server():
 @app.route('/inspection_air_switch/', methods=['POST'])
 @app.route('/inspection_fangpaiqi/', methods=['POST'])
 @app.route('/inspection_helmet/', methods=['POST'])
-@app.route('/inspection_digital/', methods=['POST'])
 @app.route('/inspection_meter/', methods=['POST'])
 @app.route('/inspection_arrow/', methods=['POST'])
 @app.route('/inspection_rotary_switch/', methods=['POST'])
