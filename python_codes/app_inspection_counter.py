@@ -152,7 +152,7 @@ def inspection_counter(input_data):
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
         # cv2.putText(img_tag_, map_o[input_data["type"]][label], (int(coor[0])-5, int(coor[1])-5)),cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
-        img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*4), color=color_dict[label], size=s*8)
+        img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*8), color=color_dict[label], size=s*8)
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
