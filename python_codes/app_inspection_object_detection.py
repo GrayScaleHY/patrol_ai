@@ -164,9 +164,10 @@ def inspection_object_detection(input_data):
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
     s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
-    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                    (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
+    if M is not None:
+        cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
+                        (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
+        cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
                     cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
     for bbox in bboxes:
         coor = bbox["coor"]; label = bbox["label"]
