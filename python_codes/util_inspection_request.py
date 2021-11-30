@@ -46,13 +46,17 @@ def requst_inspection_disconnector():
     tag_file = "images/test_0_open_open.png"
     open_file = "images/test_0_close_open.png"
     close_file = "images/test_0_open_close.png"
-    bbox =  [1460, 405, 1573, 578]
+    roi =  [1460, 405, 1573, 578]
     img_tag = lib_image_ops.img2base64(cv2.imread(tag_file))
-    img_open = lib_image_ops.img2base64(cv2.imread(open_file))
+    img_open = cv2.imread(open_file)
+    W = img_open.shape[1]; H = img_open.shape[0]
+    img_open = lib_image_ops.img2base64(img_open)
     img_close = lib_image_ops.img2base64(cv2.imread(close_file))
+
+    roi_r = [roi[0]/W, roi[1]/H, roi[2]/W, roi[3]/H]
     input_data = {
         "image": img_tag,
-        "config": {"img_open": img_open, "img_close": img_close, "bbox": bbox},
+        "config": {"img_open": img_open, "img_close": img_close, "bbox": {"roi":roi_r}},
         "type": "disconnector"
     }
 

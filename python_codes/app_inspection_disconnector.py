@@ -154,9 +154,45 @@ def convert_coor(coor_ref, M):
         coor_tag = np.array([x, y], dtype=float)
 
     return tuple(coor_tag.astype(int))
-        
 
-def inspection_disconnector(data):
+def get_input_data(input_data):
+    """
+    提取input_data中的信息。
+    return:
+        img_tag: 目标图片数据
+        img_open: 模板图，刀闸打开
+        img_close: 模板图，刀闸闭合
+        roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
+    """
+
+    img_tag = base642img(input_data["image"])
+
+    ## 是否有模板图
+    img_close = None
+    if "img_close" in input_data["config"]:
+        if isinstance(input_data["config"]["img_close"], str):
+            img_close = base642img(input_data["config"]["img_close"])    
+
+    ## 是否有模板图
+    img_open = None
+    if "img_open" in input_data["config"]:
+        if isinstance(input_data["config"]["img_open"], str):
+            img_open = base642img(input_data["config"]["img_open"]) 
+        
+    ## 感兴趣区域
+    roi = None # 初始假设
+    if "bboxes" in input_data["config"]:
+        if isinstance(input_data["config"]["bboxes"], dict):
+            if "roi" in input_data["config"]["bboxes"]:
+                if isinstance(input_data["config"]["bboxes"]["roi"], list):
+                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
+                        W = img_open.shape[1]; H = img_open.shape[0]
+                        roi = input_data["config"]["bboxes"]["roi"]
+                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
+    
+    return img_tag, img_open, img_close, roi
+        
+def inspection_disconnector(input_data):
     """
     刀闸识别
     """
@@ -165,13 +201,9 @@ def inspection_disconnector(data):
     os.makedirs(save_dir, exist_ok=True)
     
     ## 提取data信息
-    out_data = {"code": 0, "data":{}, "msg": "Success request pointer"}
-    img_tag = base642img(data["image"])
-    img_open = base642img(data["config"]["img_open"])
-    img_close = base642img(data["config"]["img_close"])
-    W = img_open.shape[1]; H = img_open.shape[0]
-    c = data["config"]["bbox"]
-    bbox = [int(c[0]*W), int(c[1]*H), int(c[2]*W), int(c[3]*H)]
+    out_data = {"code": 0, "data":{}, "msg": "Success request disconnector"}
+    img_tag, img_open, img_close, roi = get_input_data(input_data)
+
     cv2.imwrite(os.path.join(save_dir,"img_close.jpg"), img_close)
     cv2.imwrite(os.path.join(save_dir,"img_tag.jpg"), img_tag)
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
@@ -185,9 +217,9 @@ def inspection_disconnector(data):
         return out_data
 
     ## 截取图片区域，并且用ssim算法比较相似性
-    img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-    img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-    img_tag_warp = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+    img_op = img_open[roi[1]: roi[3], roi[0]: roi[2]]
+    img_cl = img_close[roi[1]: roi[3], roi[0]: roi[2]]
+    img_tag_warp = img_tag_warped[roi[1]: roi[3], roi[0]: roi[2]]
     score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
     score_close = my_ssim(img_tag_warp, img_cl)
 
@@ -205,17 +237,17 @@ def inspection_disconnector(data):
     # cv2.imwrite(os.path.join(save_dir,"img_op.jpg"), img_op)
     # cv2.imwrite(os.path.join(save_dir,"img_cl.jpg"), img_cl)
     # cv2.imwrite(os.path.join(save_dir,"img_tag_warp.jpg"), img_tag_warp)
-    # cv2.rectangle(img_tag_warped, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
-    # cv2.putText(img_tag_warped, label_s, (bbox[0]-5, bbox[1]-5),cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), thickness=2)
+    # cv2.rectangle(img_tag_warped, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
+    # cv2.putText(img_tag_warped, label_s, (roi[0]-5, roi[1]-5),cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), thickness=2)
     # cv2.imwrite(os.path.join(save_dir,"img_tag_warped.jpg"), img_tag_warped)
-    cv2.rectangle(img_open, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
+    cv2.rectangle(img_open, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_open_cfg.jpg"), img_open)
-    cv2.rectangle(img_close, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), thickness=2)
+    cv2.rectangle(img_close, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_close_cfg.jpg"), img_close)
-    lines = [[(bbox[0], bbox[1]), (bbox[2], bbox[1])],
-             [(bbox[2], bbox[1]), (bbox[2], bbox[3])],
-             [(bbox[2], bbox[3]), (bbox[0], bbox[3])],
-             [(bbox[0], bbox[1]), (bbox[0], bbox[3])],]
+    lines = [[(roi[0], roi[1]), (roi[2], roi[1])],
+             [(roi[2], roi[1]), (roi[2], roi[3])],
+             [(roi[2], roi[3]), (roi[0], roi[3])],
+             [(roi[0], roi[1]), (roi[0], roi[3])],]
     if result:
         color = (0, 255, 0)
     else:
