@@ -70,11 +70,14 @@ def requst_inspection_counter():
     """
     智能巡视-计数器读数。
     """
-    API = "http://192.168.57.159:5000/inspection_counter/"
+    API = "http://192.168.44.135:5000/inspection_digital/"
 
-    img_file = "/home/yh/image/python_codes/test/test1.jpg"
+    img_file = "/home/yh/image/python_codes/inspection_result/digital/11-29-19-26-13/img_tag.jpg"
     img_base64 = lib_image_ops.img2base64(cv2.imread(img_file))
-    input_data = {"image": img_base64, "config":[], "type": "counter"}
+    input_data = {"image": img_base64, "config":[], "type": "digital"}
+    # f = open("/home/yh/image/python_codes/inspection_result/digital/11-24-19-09-10/input_data.json","r",encoding='utf-8')
+    # input_data = json.load(f)
+    # f.close()
 
     send_data = json.dumps(input_data)
     res = requests.post(url=API, data=send_data).json()
@@ -109,11 +112,11 @@ def requst_inspection_object_detection():
     """
     目标检测。
     """
-    API = "http://192.168.57.159:5100/inspection_fire_smoke/"
+    API = "http://192.168.57.159:5000/inspection_rotary_switch/"
 
-    img_file = "/home/yh/image/python_codes/test/test/空开-2.jpg"
+    img_file = "/home/yh/image/python_codes/inspection_result/digital/test1.jpg"
     img_base64 = lib_image_ops.img2base64(cv2.imread(img_file))
-    input_data = {"image": img_base64, "config":[], "type": "air_switch"}
+    input_data = {"image": img_base64, "config":{}, "type": "digital"}
 
     send_data = json.dumps(input_data)
     res = requests.post(url=API, data=send_data).json()
@@ -146,7 +149,7 @@ def requst_inspection_ocr():
 if __name__ == '__main__':
     # requst_inspection_pointer()
     # requst_inspection_meter()
-    # requst_inspection_counter()
+    requst_inspection_counter()
     # requst_inspection_disconnector()
     # requst_inspection_ocr()
-    requst_inspection_object_detection()
+    # requst_inspection_object_detection()
