@@ -39,7 +39,7 @@ def requst_inspection_pointer():
 
 def requst_inspection_disconnector():
     """
-    智能巡视-指针读数。
+    智能巡视-刀闸分析读数。
     """
     API = "http://192.168.57.159:5000/inspection_disconnector/"
 
