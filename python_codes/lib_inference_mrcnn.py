@@ -173,12 +173,14 @@ def inference_maskrcnn(maskrcnn_weights, img):
     return:
         contours:轮廓坐标。结构为[array[x, 1, 2], ..]
         boxes: 包住轮廓的框。结构为array[[xmin, ymin, xmax, ymax], ..]
+        (masks, classes): mask 和 对应的类别
     """
     # maskrcnn推理，输出mask结果, 为false和true组成的矩阵。
     outputs = maskrcnn_weights(img) # 包含pred_masks, pred_boox, scores, pred_classes
     instances = outputs["instances"]
     masks = instances.pred_masks.to('cpu').numpy() #提取masks
     boxes = instances.pred_boxes.tensor.to('cpu').numpy() #提取boxes
+    classes = instances.pred_classes.to('cpu').numpy()
 
     # 将masks转成轮廓contours。
     contours = []
@@ -198,7 +200,7 @@ def inference_maskrcnn(maskrcnn_weights, img):
 
     # cv2.drawContours(img,contours,-1,(0,0,255),1)
     # cv2.imwrite("/home/yh/meter_recognition/test/point_two_0_contours.jpg", img)
-    return contours, boxes, masks
+    return contours, boxes, (masks, classes)
 
 
 def contour2segment(contours, boxes):
