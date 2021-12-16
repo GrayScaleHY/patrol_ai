@@ -289,6 +289,7 @@ def inspection_pointer(input_data):
     if len(segments) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer; "
         cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+
         return out_data
 
     ## 筛选指针
@@ -311,6 +312,9 @@ def inspection_pointer(input_data):
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
+        f = open(os.path.join(save_path, "output_data.json"), "w", encoding='utf-8')
+        json.dump(out_data, f, indent=2, ensure_ascii=False)
+        f.close()
         return out_data
 
     val = round(val, dp)
@@ -369,7 +373,7 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/home/yh/image/python_codes/inspection_result/pointer/11-05-14-55-56/input_data.json","r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/inspection_result/pointer/12-15-13-57-12/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
