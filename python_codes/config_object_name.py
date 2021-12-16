@@ -106,13 +106,9 @@ OBJECT_MAP = {
     "rotary_switch":{
         'name': '旋钮开关',
         'up': '上',
-        'down': '下',
         'leftup': '左上',
-        'leftdown': '左下',
-        'right': '右',
-        'left': '左',
         'rightup': '右上',
-        'rightdown': '右下'
+        'left': '左'
     },
     "arrow": {
         'name': '箭头仪表',
