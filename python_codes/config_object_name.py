@@ -177,5 +177,10 @@ OBJECT_MAP = {
         "name": "箱门",
         "close": "闭",
         "open": "开"
+    },
+    "key":{
+        "name": "钥匙",
+        "key": "钥匙"
     }
+
 }
