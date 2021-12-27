@@ -129,6 +129,7 @@ def inspection_level_gauge_server():
 @app.route('/inspection_arrow/', methods=['POST'])
 @app.route('/inspection_rotary_switch/', methods=['POST'])
 @app.route('/inspection_door/', methods=['POST'])
+@app.route('/inspection_key/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
