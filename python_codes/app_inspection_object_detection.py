@@ -163,8 +163,12 @@ def inspection_object_detection(input_data):
     for bbox in bboxes:
         cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"]}
         out_data["data"].append(cfg)
-    
 
+    if input_data["type"] == "key":
+        out_data["data"] = {"label": "key", "number": len(bboxes), "boxes": []}
+        for bbox in bboxes:
+            out_data["data"]["boxes"].append(bbox["coor"])
+    
     ## 可视化计算结果
     f = open(os.path.join(save_path, "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
