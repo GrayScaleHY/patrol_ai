@@ -32,7 +32,9 @@ $ curl -v 192.168.57.159:8010/v2/models/airswitch | jq
 有两种客户端方式，1.[官方提供客户端](https://github.com/triton-inference-server/client) 2.自己使用requests.post函数写一个。
 
 我们智能分析上triton服务对应的triton python [http客户端](https://git.utapp.cn/fangjiacong/yolov5/-/blob/add_http_infer/trt_client_image_v2.py) 和 [grpc客户端](https://git.utapp.cn/fangjiacong/yolov5/-/blob/add_http_infer/triton_client_grpc.py)。内有详细注释。
-
+```
+python trt_client_image_v2.py --input /home/yh/triton_models/airswitch.jpg --out /home/yh/triton_models/airswitch_result.jpg --url 192.168.57.159:8010 --model airswitch --model_type tensorrt
+```
 ## 自定义triton python后端
 参考[官方教程](https://github.com/triton-inference-server/python_backend)和[detectron2例子](https://github.com/triton-inference-server/server/issues/3074)。
 
