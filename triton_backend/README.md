@@ -51,7 +51,7 @@ $ cd detectron2
 $ git checkout v0.5 ## 若要跑CenterNet2,则需要使用detectron2 v0.5版本
 $ python3 setup.py build develop
 ```
-3. 写[model.py](https://github.com/triton-inference-server/python_backend/blob/main/examples/add_sub/model.py)文件，构建TritonPythonModel类和initialize，execute和finalize这三个函数。model.py和config.pbtxt按照以下目录结构存放。
+3. 参考[model.py](https://github.com/triton-inference-server/python_backend/blob/main/examples/add_sub/model.py)写运行文件，构建TritonPythonModel类和initialize，execute和finalize这三个函数。model.py和config.pbtxt按照以下目录结构存放。例如上面的两个例子,"pointer"是mask-rcnn指针模型，"insulator"是CenterNet2绝缘子模型。
 ```
   <model-repository-path>/
     <model-name>/
