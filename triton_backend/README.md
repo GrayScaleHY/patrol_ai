@@ -63,6 +63,11 @@ $ python3 setup.py build develop
 ```
 $ docker run --gpus=1 --rm --shm-size 4g -p8010:8000 -p8011:8001 -p8012:8002 -v /home/yh/triton_models/python_backend:/models ut/tritonserver:detectron2-v0.5 tritonserver --model-repository=/models
 ```
+5. 运行客户端测试
+```
+python trt_client_image_v2.py --input /home/yh/triton_models/pointer.jpg --out /home/yh/triton_models/pointer_result.jpg --url 192.168.57.159:8010 --model pointer --model_type tensorrt
+python trt_client_image_v2.py --input /home/yh/triton_models/insulator.jpg --out /home/yh/triton_models/insulator_result.jpg --url 192.168.57.159:8010 --model insulator --model_type tensorrt
+```
 
 
 
