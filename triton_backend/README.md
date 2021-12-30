@@ -61,7 +61,7 @@ $ python3 setup.py build develop
 ```
 4. 运行服务。(注意，模型较多或者当个模型较大时要加上--shm-size参数)
 ```
-$ docker run --gpus=1 --rm --shm-size 4g -p8010:8000 -p8011:8001 -p8012:8002 -v /home/yh/triton_models/python_backend:/models ut/tritonserver：detectron2-v0.5 tritonserver --model-repository=/models
+$ docker run --gpus=1 --rm --shm-size 4g -p8010:8000 -p8011:8001 -p8012:8002 -v /home/yh/triton_models/python_backend:/models ut/tritonserver:detectron2-v0.5 tritonserver --model-repository=/models
 ```
 
 
