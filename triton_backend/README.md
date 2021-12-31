@@ -40,7 +40,7 @@ python trt_client_image_v2.py --input /home/yh/triton_models/airswitch.jpg --out
 
 1. 创建triton基础环境。可以参考[教程](https://github.com/triton-inference-server/python_backend)在本地build一个，也可以直接使用提供的triton环境docker。
 
-2. 在triton环境的基础上搭建运行model.py所需要的环境。例如，detectron2可以用以下命令搭建。
+2. 在triton环境的基础上搭建推理所需要的环境。例如，detectron2可以用以下命令搭建。
 ```
 $ apt-get update && apt-get install -y python3-dev
 $ python3 -m pip install --upgrade pip
