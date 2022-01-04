@@ -89,6 +89,7 @@ def inspection_counter_server():
 ## 二维码识别，文本标识牌识别
 @app.route('/inspection_qrcode/', methods=['POST'])
 @app.route('/inspection_ocr/', methods=['POST'])
+@app.route('/inspection_screen_ocr/', methods=['POST'])
 def inspection_qrcode_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
