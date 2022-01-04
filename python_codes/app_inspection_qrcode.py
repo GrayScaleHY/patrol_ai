@@ -102,7 +102,7 @@ def inspection_qrcode(input_data):
     ## 二维码检测或文本检测
     if input_data["type"] == "qrcode":
         boxes = decoder(img_roi) # 解二维码
-    elif input_data["type"] == "ocr": # 文本检测
+    elif "ocr" in input_data["type"]: # 文本检测
         boxes = inference_ppocr(img_roi, text_sys)
     else:
         out_data["msg"] = out_data["msg"] + "; Type is wrong !"
