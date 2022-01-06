@@ -9,7 +9,17 @@ from app_inspection_disconnector import sift_match, convert_coor
 import config_object_name
 import numpy as np
 
-
+def is_include(sub_box, par_box, srate=0.8):
+    sb = sub_box; pb = par_box
+    xmin = max(pb[0], sb[0]); ymin = max(pb[1], sb[1])
+    xmax = min(pb[2], sb[2]); ymax = min(pb[3], sb[3])
+    s_include = (xmax-xmin) * (ymax-ymin)
+    s_box = (sb[2]-sb[0]) * (sb[3]-sb[1])
+    if s_include / s_box >= srate:
+        return True
+    else:
+        return False
+    
 def get_input_data(input_data):
     """
     提取input_data中的信息。
@@ -46,7 +56,6 @@ def get_input_data(input_data):
 
     return img_tag, img_ref, roi, status_map
 
-
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
 yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") # 空气开关
 yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
@@ -73,6 +82,18 @@ def inspection_object_detection(input_data):
     ## 初始化输入输出信息。
     img_tag, img_ref, roi, status_map = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": "image", "msg": "Success request object detect; "} # 初始化out_data
+    ## 将输入请求信息可视化
+    img_tag_ = img_tag.copy()
+    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
+    if img_ref is not None:
+        cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
+    if roi is not None:   # 如果配置了感兴趣区域，则画出感兴趣区域
+        img_ref_ = img_ref.copy()
+        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
+                    (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
+        cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
+        cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
     ## 选择模型
     if input_data["type"] == "pressplate": # ["air_switch", "fire_smoke", "led", "pressplate"]:
@@ -101,41 +122,9 @@ def inspection_object_detection(input_data):
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
 
-    ## 将输入请求信息可视化
-    img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
-    if img_ref is not None:
-        cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
-    if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
-        img_ref_ = img_ref.copy()
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
-                    (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
-        cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
-        cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
-
-    ## 求出目标图像的感兴趣区域
-    if roi is None:
-        M = None
-    else:
-        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
-
-    if M is None:
-        roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]
-    else:
-        coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-        coors_ = []
-        for coor in coors:
-            coors_.append(list(convert_coor(coor, M)))
-        xs = [coor[0] for coor in coors_]
-        ys = [coor[1] for coor in coors_]
-        xmin = max(0, min(xs)); ymin = max(0, min(ys))
-        xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
-        roi_tag = [xmin, ymin, xmax, ymax]
-    img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
-
     ## 生成目标检测信息
-    boxes = inference_yolov5(yolov5_model, img_roi, resize=640) # inference
+    boxes = inference_yolov5(yolov5_model, img_tag, resize=640) # inference
+    print(boxes)
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
@@ -151,46 +140,58 @@ def inspection_object_detection(input_data):
             name_dict[label] = status_map[label]
         else:
             name_dict[label] = config_object_name.OBJECT_MAP[input_data["type"]][label]
+            
+    ## 画出boxes
+    for bbox in boxes:
+        c = bbox["coor"]; label = bbox["label"]
+        s = int((c[2] - c[0]) / 3) # 根据框子大小决定字号和线条粗细。
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=round(s/50))
+        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
+        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]-s), color=color_dict[label], size=s)
 
+    ## 求出目标图像的感兴趣区域
+    if roi is not None:
+        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+        if M is None:
+            out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
+            roi_tag = roi
+        else:
+            coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
+            coors_ = []
+            for coor in coors:
+                coors_.append(list(convert_coor(coor, M)))
+            xs = [coor[0] for coor in coors_]
+            ys = [coor[1] for coor in coors_]
+            xmin = max(0, min(xs)); ymin = max(0, min(ys))
+            xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
+            roi_tag = [xmin, ymin, xmax, ymax]
 
-    ## 将bboxes映射到原图坐标
+        ## 画出roi_tag
+        c = roi_tag; s = int((c[2] - c[0]) / 3) # 根据框子大小决定字号和线条粗细。
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=round(s/50))
+        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
+        img_tag_ = img_chinese(img_tag_, "roi", (c[0], c[1]-s), color=color_dict[label], size=s)
+
+    ## 判断bbox是否在roi中
     bboxes = []
     for bbox in boxes:
-        c = bbox["coor"]; r = roi_tag
-        coor = [c[0]+r[0], c[1]+r[1], c[2]+r[0], c[3]+r[1]]
-        bboxes.append({"label": bbox["label"], "coor": coor, "score": bbox["score"]})
-
-    for bbox in bboxes:
-        cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"]}
-        out_data["data"].append(cfg)
+        if roi is None or is_include(bbox["coor"], roi_tag, srate=0.5):
+            cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"]}
+            out_data["data"].append(cfg)
+            bboxes.append(bbox["coor"])
 
     if input_data["type"] == "key":
-        out_data["data"] = {"label": "key", "number": len(bboxes), "boxes": []}
-        for bbox in bboxes:
-            out_data["data"]["boxes"].append(bbox["coor"])
+        out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
     
     ## 可视化计算结果
     f = open(os.path.join(save_path, "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
-    if M is not None:
-        cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                        (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-        cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
-    for bbox in bboxes:
-        coor = bbox["coor"]; label = bbox["label"]
-        s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
-        cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
-                    (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
-        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (coor[0], coor[1]-s), color=color_dict[label], size=s)
     cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
-
+    
     return out_data
 
 
@@ -205,7 +206,7 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/home/yh/image/python_codes/inspection_result/meter/test/input_data.json", "r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/test/input_data.json", "r", encoding='utf-8')
     input_data = json.load(f)
     out_data = inspection_object_detection(input_data)
     print("inspection_object_detection result:")
