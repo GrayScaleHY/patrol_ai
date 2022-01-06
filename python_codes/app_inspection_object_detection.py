@@ -167,7 +167,7 @@ def inspection_object_detection(input_data):
             roi_tag = [xmin, ymin, xmax, ymax]
 
         ## 画出roi_tag
-        c = roi_tag; s = int((c[2] - c[0]) / 3) # 根据框子大小决定字号和线条粗细。
+        c = roi_tag; s = int((c[2] - c[0]) / 10) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=round(s/50))
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
         img_tag_ = img_chinese(img_tag_, "roi", (c[0], c[1]-s), color=color_dict[label], size=s)
