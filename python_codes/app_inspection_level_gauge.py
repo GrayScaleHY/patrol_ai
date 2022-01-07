@@ -86,10 +86,8 @@ def inspection_level_gauge(input_data):
     if roi is not None and img_ref is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
-                    (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
-        cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
+        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
         cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
     ## 如果没有配置roi，则自动识别表盘作为roi
@@ -115,11 +113,8 @@ def inspection_level_gauge(input_data):
     ## 使用映射变换矫正目标图，并且转换坐标点。
 
     ## 将矫正偏移的信息写到图片中
-    s = (roi_tag[2] - roi_tag[0]) / 400 # 根据框子大小决定字号和线条粗细。
-    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                    (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s)*2)     
+    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),(int(roi_tag[2]), int(roi_tag[3])), (255, 0, 255), thickness=1)
+    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-5)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), thickness=1)     
 
     # 用maskrcnn检测油和空气的mask.
     contours, _, (masks, classes) = inference_maskrcnn(maskrcnn_oil, img_roi)
