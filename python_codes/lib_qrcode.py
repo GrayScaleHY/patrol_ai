@@ -35,3 +35,8 @@ def decoder(img):
         info.append({"bbox": bbox, "content": content, "c_type": c_type})
 
     return info
+
+if __name__ == '__main__':
+    img = cv2.imread("/home/yh/image/python_codes/test/img_tag.jpg")
+    info = decoder(img)
+    print(info)
