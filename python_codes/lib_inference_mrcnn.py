@@ -181,6 +181,7 @@ def inference_maskrcnn(maskrcnn_weights, img):
     masks = instances.pred_masks.to('cpu').numpy() #提取masks
     boxes = instances.pred_boxes.tensor.to('cpu').numpy() #提取boxes
     classes = instances.pred_classes.to('cpu').numpy()
+    scores = instances.scores.to('cpu').numpy()
 
     # 将masks转成轮廓contours。
     contours = []
@@ -200,7 +201,7 @@ def inference_maskrcnn(maskrcnn_weights, img):
 
     # cv2.drawContours(img,contours,-1,(0,0,255),1)
     # cv2.imwrite("/home/yh/meter_recognition/test/point_two_0_contours.jpg", img)
-    return contours, boxes, (masks, classes)
+    return contours, boxes, (masks, classes, scores)
 
 
 def contour2segment(contours, boxes):
@@ -261,7 +262,7 @@ if __name__ == '__main__':
     import os
 
     mask_rcnn_weight = '/data/inspection/maskrcnn/pointer.pth'
-    img_file = "/home/yh/app_inspection/python_codes/recognition_resutl/08-30-16-08-37/raw_img_meter_rec.jpg"
+    img_file = "/home/yh/image/python_codes/inspection_result/#0014_org_0_meter.jpg"
 
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)
     # for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test/meter","*.jpg"))[-1]:
