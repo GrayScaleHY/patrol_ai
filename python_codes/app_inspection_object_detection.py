@@ -168,7 +168,7 @@ def inspection_object_detection(input_data):
         ## 画出roi_tag
         c = roi_tag
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
-        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 判断bbox是否在roi中
     bboxes = []
