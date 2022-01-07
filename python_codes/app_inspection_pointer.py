@@ -274,18 +274,25 @@ def inspection_pointer(input_data):
             s = segments[i]
             seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
             segments_cfg.append([scores[i]] + seg)
-    
+
+    ## 将所有表盘画出来
+    for bbox in bboxes:
+        c = bbox["coor"]
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+
+    if len(segments_cfg) == 0:
+        out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
+        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        return out_data
+
     ## 对segments根据得分排序
     segments_cfg = np.array(segments_cfg, dtype=float)
     segments_cfg = segments_cfg[np.argsort(segments_cfg[:, 0])]
     segments = segments_cfg[:,1:].tolist()  # 置信度从小到大排序
     segments = [segments[-i-1] for i in range(len(segments))] # 置信度从大到小排序
 
-    ## 将所有表盘和指针画出来
-    for bbox in bboxes:
-        c = bbox["coor"]
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    ## 将所有指针画出来
     for seg in segments:
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
