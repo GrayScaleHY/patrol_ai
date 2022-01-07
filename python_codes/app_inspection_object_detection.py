@@ -11,6 +11,8 @@ import numpy as np
 
 def is_include(sub_box, par_box, srate=0.8):
     sb = sub_box; pb = par_box
+    sb = [min(sb[0],sb[2]), min(sb[1],sb[3]), max(sb[0],sb[2]), max(sb[1],sb[3])]
+    pb = [min(pb[0],pb[2]), min(pb[1],pb[3]), max(pb[0],pb[2]), max(pb[1],pb[3])]
     xmin = max(pb[0], sb[0]); ymin = max(pb[1], sb[1])
     xmax = min(pb[2], sb[2]); ymax = min(pb[3], sb[3])
     s_include = (xmax-xmin) * (ymax-ymin)
@@ -81,7 +83,7 @@ def inspection_object_detection(input_data):
 
     ## 初始化输入输出信息。
     img_tag, img_ref, roi, status_map = get_input_data(input_data)
-    out_data = {"code": 0, "data":[], "img_result": "image", "msg": "Success request object detect; "} # 初始化out_data
+    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
@@ -89,10 +91,8 @@ def inspection_object_detection(input_data):
         cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
     if roi is not None:   # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
-                    (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
-        cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
+        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
         cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
     ## 选择模型
@@ -124,7 +124,6 @@ def inspection_object_detection(input_data):
 
     ## 生成目标检测信息
     boxes = inference_yolov5(yolov5_model, img_tag, resize=640) # inference
-    print(boxes)
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
@@ -145,7 +144,7 @@ def inspection_object_detection(input_data):
     for bbox in boxes:
         c = bbox["coor"]; label = bbox["label"]
         s = int((c[2] - c[0]) / 3) # 根据框子大小决定字号和线条粗细。
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=round(s/50))
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]-s), color=color_dict[label], size=s)
 
@@ -167,10 +166,9 @@ def inspection_object_detection(input_data):
             roi_tag = [xmin, ymin, xmax, ymax]
 
         ## 画出roi_tag
-        c = roi_tag; s = int((c[2] - c[0]) / 10) # 根据框子大小决定字号和线条粗细。
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=round(s/50))
-        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, "roi", (c[0], c[1]-s), color=color_dict[label], size=s)
+        c = roi_tag
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
+        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 判断bbox是否在roi中
     bboxes = []
