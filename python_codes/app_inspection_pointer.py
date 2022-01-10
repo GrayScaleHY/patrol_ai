@@ -88,6 +88,12 @@ def cal_base_scale(coordinates, segment):
         coordinates: 刻度的坐标点，格式如 {"center": [398, 417], -0.1: [229, 646], 0.9: [641, 593]}
         segment: 线段，格式为 [x1, y1, x2, y2]
     """
+
+    ## 根据与表盘中心的距离更正segment的头尾
+    xo = coordinates["center"][0]; yo = coordinates["center"][1]
+    if (segment[0]-xo)**2+(segment[1]-yo)**2 > (segment[2]-xo)**2+(segment[3]-yo)**2:
+        segment = [segment[2], segment[3], segment[0], segment[1]]
+
     scales = []
     for scale in coordinates:
         if scale == "center":
@@ -344,15 +350,16 @@ def inspection_pointer(input_data):
         cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 根据与表盘中心的距离更正segment的头尾
-    xo = pointers_tag["center"][0]; yo = pointers_tag["center"][1]
-    if (seg[0]-xo)**2+(seg[1]-yo)**2 > (seg[2]-xo)**2+(seg[3]-yo)**2:
+    b = bboxes[0]["coor"]
+    xo = (b[2]-b[0]) / 2; yo = (b[3]-b[1]) / 2
+    if (seg[0]-xo)**2+(seg[1]-yo)**2 < (seg[2]-xo)**2+(seg[3]-yo)**2:
         seg = [seg[2], seg[3], seg[0], seg[1]]
 
     ## 求指针读数
-    # if M is not None:
-    val = cal_base_scale(pointers_tag, seg)
-    # else:
-    #     val = cal_base_angle(pointers_tag, seg)
+    if M is not None:
+        val = cal_base_scale(pointers_tag, seg)
+    else:
+        val = cal_base_angle(pointers_tag, seg)
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
