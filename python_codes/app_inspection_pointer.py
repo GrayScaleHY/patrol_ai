@@ -406,7 +406,7 @@ def main():
     # img_tag = img2base64(cv2.imread(img_tag_file))
     # img_ref = img2base64(cv2.imread(img_ref_file))
     # config = {
-    #     "img_ref": img_ref, 
+    #     "img_ref": img_ref,
     #     "number": 1, 
     #     "pointers": pointers
     #     # "length": 0, 
