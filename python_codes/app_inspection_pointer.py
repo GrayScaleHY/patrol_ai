@@ -319,7 +319,7 @@ def inspection_pointer(input_data):
     if roi is not None:
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-            roi_tag = roi
+            roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]
         else:
             coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
             coors_ = []
