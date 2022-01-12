@@ -13,7 +13,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 ## 加载模型
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
-maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth") # 加载指针的maskrcnn模型
+maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
 
 
 def is_include(sub_box, par_box, srate=0.8):
