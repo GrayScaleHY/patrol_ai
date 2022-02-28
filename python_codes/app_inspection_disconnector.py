@@ -10,21 +10,25 @@ import base64
 from lib_image_ops import base642img, img2base64
 import time
 import json
+import tensorflow as tf
 
 def my_ssim(img1, img2):
     """
     python官方的计算ssim的包。
+    ## 
     """
 
-    ## 使用tensorflow计算ssim, 输入彩图
-    # score = tf.image.ssim(img1, img2, 255)
+    # 使用tensorflow计算ssim, 输入彩图,需要较长时间。
+    # 注意需要根据图片长宽来设置filter_size的大小，如下链接。
+    ## https://github.com/tensorflow/tensorflow/issues/33840#issuecomment-633715778
+    # score = tf.image.ssim_multiscale(img1, img2, 255, power_factors=(0.0448, 0.2856, 0.3001),filter_size=6)
     # score = score.numpy()
 
     if len(img1.shape) == 3:
         img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
     if len(img2.shape) == 3:
         img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
-    score = sk_cpt_ssim(img1, img2) #输入灰度图
+    score = sk_cpt_ssim(img1, img2) #输入灰度图 , multichannel=True
     
     return score
 
