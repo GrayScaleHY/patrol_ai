@@ -17,8 +17,8 @@ def my_ssim(img1, img2):
     python官方的计算ssim的包。
     ## 
     """
-
     # 使用tensorflow计算ssim, 输入彩图,需要较长时间。
+    # score = tf.image.ssim(img1, img2, 255)
     # 注意需要根据图片长宽来设置filter_size的大小，如下链接。
     ## https://github.com/tensorflow/tensorflow/issues/33840#issuecomment-633715778
     # score = tf.image.ssim_multiscale(img1, img2, 255, power_factors=(0.0448, 0.2856, 0.3001),filter_size=6)
