@@ -47,22 +47,24 @@ def img_rotate_batch(dir):
                 os.remove(img_file)
                 print(img_file, "remove already !")
 
-            try:
-                img = Image.open(img_file)
-                exif = img._getexif()
-                if exif[274] == 3: ## 274是旋转信息的id
-                    angle = 180
-                elif exif[274] == 6:
-                    angle = 270
-                elif exif[274] == 8:
-                    angle = 90
+            img = Image.open(img_file)
+            exif = img._getexif()
+            if exif == None or 274 not in exif:
+                img.close()
+                continue
+            if exif[274] == 3: ## 274是旋转信息的id
+                angle = 180
+            elif exif[274] == 6:
+                angle = 270
+            elif exif[274] == 8:
+                angle = 90
+            else:
+                angle = 0
+            if angle != 0:
                 img=img.rotate(angle, expand=True)
                 print(img_file,"rotated", angle, "already!")
                 img.save(img_file)
-                img.close()
-            except:
-                continue
-            
+            img.close()
 
 def bmp2jpg(bmp_file, jpg_file):
     """
