@@ -2,6 +2,9 @@ import sys
 import random
 import sympy
 import math
+from config_object_name import COLOR_HSV_MAP
+import cv2
+import numpy as np
 
 
 class Logger(object):
@@ -78,6 +81,30 @@ def oil_high(s_oil, s_round):
         h = R
 
     return h
+
+def color_area(img, color_list=["black","white","red","red2","orange","yellow","green","cyan","blue","purple"]):
+    """
+    根据hsv颜色空间判断图片中各颜色的面积。
+    """
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    color_dict = {}
+    for color in color_list:
+        hsv_lower = np.array(COLOR_HSV_MAP[color][0])
+        hsv_upper = np.array(COLOR_HSV_MAP[color][1])
+        mask = cv2.inRange(hsv, hsv_lower, hsv_upper)
+
+        # color_sum = np.sum(mask)
+
+        binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
+        binary = cv2.dilate(binary,None,iterations=2)
+        cnts, hiera = cv2.findContours(binary.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        color_sum = 0
+        for c in cnts:
+            color_sum += cv2.contourArea(c)
+
+        color_dict[color] = color_sum
+    
+    return color_dict
 
 
 if __name__ == '__main__':
