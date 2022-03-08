@@ -26,5 +26,5 @@
 ```
 ##### 编写应用和服务代码
 应用代码一般以app_inspection开头，打包成可以用python直接调用的函数，输入输出对应接口设计的输入输出。注意，模型加载代码不要写进函数里，防止每次调用函数重新加载模型花费太多时间。
-将新开发的应用添加到[util_inspection_server.py](https://git.utapp.cn/yuanhui/image/-/blob/main/python_codes/util_inspection_server.py)中
+将新开发的应用添加到服务代码[util_inspection_server.py](https://git.utapp.cn/yuanhui/image/-/blob/main/python_codes/util_inspection_server.py)中。
 
