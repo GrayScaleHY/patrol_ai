@@ -25,6 +25,8 @@
 
 ```
 ##### 编写应用和服务代码
-应用代码一般以app_inspection开头，打包成可以用python直接调用的函数，输入输出对应接口设计的输入输出。注意，模型加载代码不要写进函数里，防止每次调用函数重新加载模型花费太多时间。
-将新开发的应用添加到服务代码[util_inspection_server.py](https://git.utapp.cn/yuanhui/image/-/blob/main/python_codes/util_inspection_server.py)中。
+训练好的模型统一放到"/data/inspection"目录下，以方便更新和管理。各种lebel对应的中文名列举在[config_object_name.py](https://git.utapp.cn/utiva/image/-/blob/main/python_codes/config_object_name.py)下。应用代码一般以app_inspection开头，打包成可以用python直接调用的函数，输入输出对应接口设计的输入输出（注意，模型加载代码不要写进函数里，防止每次调用函数重新加载模型花费太多时间）。将新开发的应用添加到服务代码[util_inspection_server.py](https://git.utapp.cn/yuanhui/image/-/blob/main/python_codes/util_inspection_server.py)中。
+##### 测试接口
+1.自己先使用[util_inspection_request.py](https://git.utapp.cn/utiva/image/-/blob/main/python_codes/util_inspection_request.py)代码是否有问题，若没问题,则会在"inspection_result"文件加下形成带结果显示的图片。
+2.将接口文档链接发送给张瑞广，让他使用巡检机器人测试下性能。
 
