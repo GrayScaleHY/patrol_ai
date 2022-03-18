@@ -122,8 +122,7 @@ def inspection_qrcode(input_data):
         bboxes.append({"content": bbox["content"], "bbox": coor, "type": input_data["type"]})
 
     for bbox in bboxes:
-        b = bbox["content"]
-        cfg = {"type": bbox["type"], "content": [float(b[0]), float(b[1]), float(b[2]), float(b[3])], "bbox": bbox["bbox"]}
+        cfg = {"type": bbox["type"], "content": bbox["content"], "bbox": bbox["bbox"]}
         out_data["data"].append(cfg)
 
     ## 可视化计算结果
