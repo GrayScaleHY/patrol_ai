@@ -1,5 +1,7 @@
-import cv2
+import cv2 ## pip install opencv-python==4.5.2.52; pip install opencv-contrib-python==4.5.2.52
 from pyzbar.pyzbar import decode # sudo apt-get install libzbar-dev; pip install pyzbar
+import numpy as np
+import os
 
 def decoder(img):
     """
@@ -36,7 +38,39 @@ def decoder(img):
 
     return info
 
+def decoder_wechat(img):
+    """
+    微信团队的二维码定位，并且读取二维码信息
+    http://www.juzicode.com/opencv-note-wechat-qrcode-detect-decode/
+    args:
+        img: image data
+    return:
+        info: 格式为: [{'bbox': [xmin,ymin,xmax,ymax], 'content':content}, ..]
+    """
+    ## 二维码识别模型存放路线
+    de_txt = '/data/inspection/opencv_3rdparty/detect.prototxt'
+    de_model = '/data/inspection/opencv_3rdparty/detect.caffemodel'
+    sr_txt = '/data/inspection/opencv_3rdparty/sr.prototxt'
+    sr_model = '/data/inspection/opencv_3rdparty/sr.caffemodel'
+
+    ## 识别二维码类容
+    if os.path.exists(de_txt) and os.path.exists(de_model) and os.path.exists(sr_txt) and os.path.exists(sr_model):
+        detect_obj = cv2.wechat_qrcode_WeChatQRCode(de_txt, de_model, sr_txt, sr_model) 
+    else:
+        detect_obj = cv2.wechat_qrcode_WeChatQRCode()
+    res, points = detect_obj.detectAndDecode(img) 
+
+    ## 后处理
+    info = []
+    for i in range(len(points)):
+        p = points[i].astype(int)
+        content = res[i]
+        bbox = [np.min(p[:,0]), np.min(p[:,1]), np.max(p[:,0]), np.max(p[:,1])]
+        info.append({"bbox": bbox, "content": content})
+
+    return info
+
 if __name__ == '__main__':
-    img = cv2.imread("/home/yh/image/python_codes/test/img_tag.jpg")
-    info = decoder(img)
+    img = cv2.imread("/home/yh/image/python_codes/test/test/img_tag.jpg")
+    info = decoder_wechat(img)
     print(info)
