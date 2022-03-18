@@ -5,7 +5,7 @@ import json
 import numpy as np
 from lib_image_ops import base642img, img2base64, img_chinese
 from app_inspection_disconnector import sift_match, convert_coor
-from lib_qrcode import decoder
+from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import load_ppocr, inference_ppocr
 
 det_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_det_infer/"
@@ -101,7 +101,8 @@ def inspection_qrcode(input_data):
     
     ## 二维码检测或文本检测
     if input_data["type"] == "qrcode":
-        boxes = decoder(img_roi) # 解二维码
+        # boxes = decoder(img_roi) # 解二维码
+        boxes = decoder_wechat(img_roi)
     elif "ocr" in input_data["type"]: # 文本检测
         boxes = inference_ppocr(img_roi, text_sys)
     else:
@@ -156,7 +157,7 @@ if __name__ == '__main__':
         
         # tag_file = "/home/yh/image/python_codes/inspection_result/ocr/5.png"
         
-        ref_file = "test/p2vm1.jpg"
+        ref_file = "/home/yh/image/python_codes/test/test/img_tag.jpg"
         img_tag = img2base64(cv2.imread(tag_file))
         # img_ = cv2.imread(ref_file)
         # img_ref = img2base64(img_)
