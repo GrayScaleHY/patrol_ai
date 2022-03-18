@@ -65,7 +65,7 @@ def decoder_wechat(img):
     for i in range(len(points)):
         p = points[i].astype(int)
         content = res[i]
-        bbox = [np.min(p[:,0]), np.min(p[:,1]), np.max(p[:,0]), np.max(p[:,1])]
+        bbox = [float(np.min(p[:,0])), float(np.min(p[:,1])), float(np.max(p[:,0])), float(np.max(p[:,1]))]
         info.append({"bbox": bbox, "content": content})
 
     return info
