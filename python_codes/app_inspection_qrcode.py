@@ -122,7 +122,8 @@ def inspection_qrcode(input_data):
         bboxes.append({"content": bbox["content"], "bbox": coor, "type": input_data["type"]})
 
     for bbox in bboxes:
-        cfg = {"type": bbox["type"], "content": bbox["content"], "bbox": bbox["bbox"]}
+        b = bbox["content"]
+        cfg = {"type": bbox["type"], "content": [float(b[0]), float(b[1]), float(b[2]), float(b[3])], "bbox": bbox["bbox"]}
         out_data["data"].append(cfg)
 
     ## 可视化计算结果
@@ -152,25 +153,24 @@ def inspection_qrcode(input_data):
 if __name__ == '__main__':
     import glob
     import time
-    for tag_file in glob.glob("/home/yh/image/python_codes/inspection_result/ocr/*.*"):
-        time.sleep(2)
-        
-        # tag_file = "/home/yh/image/python_codes/inspection_result/ocr/5.png"
-        
-        ref_file = "/home/yh/image/python_codes/test/test/img_tag.jpg"
-        img_tag = img2base64(cv2.imread(tag_file))
-        # img_ = cv2.imread(ref_file)
-        # img_ref = img2base64(img_)
-        # ROI = [907, 7, 1583, 685]
-        # W = img_.shape[1]; H = img_.shape[0]
-        # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
+    # for tag_file in glob.glob("/home/yh/image/python_codes/inspection_result/ocr/*.*"):
+    # time.sleep(2)
+    
+    tag_file = "/home/yh/image/python_codes/test/img_tag.jpg"
+    
+    img_tag = img2base64(cv2.imread(tag_file))
+    # img_ = cv2.imread(ref_file)
+    # img_ref = img2base64(img_)
+    # ROI = [907, 7, 1583, 685]
+    # W = img_.shape[1]; H = img_.shape[0]
+    # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
-        input_data = {"image": img_tag, "config":{}, "type": "ocr"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-        out_data = inspection_qrcode(input_data)
-        print("inspection_qrcode result:")
-        print("-----------------------------------------------")
-        for s in out_data:
-            if s != "img_result":
-                print(s,":",out_data[s])
-        print("----------------------------------------------")
+    input_data = {"image": img_tag, "config":{}, "type": "qrcode"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    out_data = inspection_qrcode(input_data)
+    print("inspection_qrcode result:")
+    print("-----------------------------------------------")
+    for s in out_data:
+        if s != "img_result":
+            print(s,":",out_data[s])
+    print("----------------------------------------------")
 
