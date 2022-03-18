@@ -183,6 +183,16 @@ OBJECT_MAP = {
     "key":{
         "name": "钥匙",
         "key": "钥匙"
+    },
+    "robot":{
+        'door_abnormal':"箱门异常",
+        'door_normal':"箱门闭合",
+        'suspension':"挂空悬浮物",
+        'nest':"鸟巢",
+        'no_helmet':"未带安全帽",
+        'helmet':"安全帽",
+        'smoking':"吸烟"
+
     }
 
 }
