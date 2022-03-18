@@ -80,6 +80,7 @@ yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻
 yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
 yolov5_door = load_yolov5_model("/data/inspection/yolov5/door.pt") # 箱门闭合
 yolov5_key = load_yolov5_model("/data/inspection/yolov5/key.pt") # 箱门闭合
+yolov5_robot = load_yolov5_model("/data/inspection/yolov5/robot.pt") # 机器人送检缺陷
 
 def inspection_object_detection(input_data):
     """
@@ -130,6 +131,8 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_door
     elif input_data["type"] == "key":
         yolov5_model = yolov5_key
+    elif input_data["type"] == "robot":
+        yolov5_model = yolov5_robot
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
