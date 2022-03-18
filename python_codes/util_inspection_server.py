@@ -10,6 +10,8 @@ from app_inspection_qrcode import inspection_qrcode
 from app_inspection_level_gauge import inspection_level_gauge
 from app_inspection_xishiqi import inspection_xishiqi
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
 
@@ -147,6 +149,7 @@ def inspection_xishiqi_color_server():
 @app.route('/inspection_rotary_switch/', methods=['POST'])
 @app.route('/inspection_door/', methods=['POST'])
 @app.route('/inspection_key/', methods=['POST'])
+@app.route('/inspection_robot/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
@@ -163,4 +166,4 @@ def inspection_object():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    app.run(debug=True, host='0.0.0.0', port=5010, threaded=True)
