@@ -193,6 +193,8 @@ def inference_maskrcnn(maskrcnn_weights, img):
         contour, hierarchy = cv2.findContours(
             mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         ## 由于一个mask可能会拟合出多个contour，因此取点数最多的contour
+        if len(contour) < 1:
+            continue
         contour_shape0 = [c.shape[0] for c in contour]
         contour = [contour[contour_shape0.index(max(contour_shape0))]]
 
