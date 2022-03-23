@@ -1,24 +1,26 @@
-from yolov5.models.experimental import attempt_load
 import cv2
 import torch
 import sys
+import time
 
 from yolov5.utils.datasets import letterbox
 from yolov5.utils.general import non_max_suppression, scale_coords
+# from models.common import DetectMultiBackend
 import numpy as np
-sys.path.append('./yolov5')
+from yolov5.utils.torch_utils import select_device
+from yolov5.models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
+# sys.path.append('./yolov5')
 
-
-
+device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def load_yolov5_model(model_file):
     """
     # load yolov5 FP32 model
     """
-    yolov5_weights = attempt_load(model_file)
+    # yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
+    yolov5_weights = attempt_load(model_file , map_location=device) # 加载模型
     return yolov5_weights
-
 
 def inference_yolov5(model_yolov5, img, resize=640):
     """
@@ -36,24 +38,25 @@ def inference_yolov5(model_yolov5, img, resize=640):
     ## 将numpy转成yolov5格式input data.
     img = letterbox(img, new_shape=resize)[0] # resize图片
     img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3 x 640 x 640
-    img = np.ascontiguousarray(img)
-    img = torch.from_numpy(img) # numpy转tensor
-    img = img.float() 
-    img /= 255.0  # 0 - 255 to 0.0 - 1.0
-    img = img.unsqueeze(0)
+    img = torch.from_numpy(img.copy()).to(device) # numpy转tenso
+    img = img.float()
+    img /= 255  # 0 - 255 to 0.0 - 1.0
+    img = img.unsqueeze(0) # 添加一维
+    # if len(img.shape) == 3:
+    #     img = img[None]  # expand for batch dim
 
     ## 使用yolov5预测
-    pred = model_yolov5(img)[0] # Inference
+    pred = model_yolov5(img, augment=False, visualize=False)[0] # Inference
 
     ## 使用NMS挑选预测结果
     pred_max = non_max_suppression(pred, 0.4, 0.2)[0] # Apply NMS
-    pred_max = scale_coords(img.shape[2:], pred_max, img_raw.shape).round() #bbox映射为resize之前的大小
+    pred_max = scale_coords(img.shape[2:], pred_max, img_raw.shape) #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
     labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
     bbox_cfg = []
-    for res in pred_max.numpy():
-        bbox = {"label": labels[int(res[-1])], "coor": (res[:4]).tolist(), "score": res[4]}
+    for res in pred_max.cpu().numpy():
+        bbox = {"label": labels[int(res[-1])], "coor": (res[:4]).astype(int).tolist(), "score": res[4]}
         bbox_cfg.append(bbox)
 
     # lib_image_ops.draw_bboxs(img_file, bbox_cfg, is_write=True)
@@ -66,15 +69,11 @@ if __name__ == '__main__':
     import glob
     # model_file = 'yolov5/runs/best.pt'
     count = 0
-    model_file = '/home/yh/app_meter_inference/yolov5/saved_model/best_meter.pt'
+    model_file = '/data/home/zgl/yolov5/runs/train/class_7_focal_200/weights/best.pt'
     model_yolov5 = load_yolov5_model(model_file)
-    for img_file in glob.glob(os.path.join("/home/yh/meter_recognition/test/test","*.jpg")):
-        # img_file = 'images/WIN_20210819_15_47_09_Pro.jpg'
-        img = cv2.imread(img_file)
-        bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
-        for bbox in bbox_cfg:
-            c = np.array(bbox["coor"],dtype=int)
-            img_meter = img[c[1]:c[3], c[0]:c[2]]
-            cv2.imwrite(os.path.join("/home/yh/meter_recognition/test/test/meter","meter_"+str(count).zfill(2)+".jpg"), img_meter)
-            # print(bbox_cfg)
-            count += 1
+    img_file = "/home/yh/yolov5/smoke_22.jpg"
+    img = cv2.imread(img_file)
+    start = time.time()
+    bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
+    print(time.time()- start)
+    print(bbox_cfg)
