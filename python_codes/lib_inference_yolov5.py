@@ -3,14 +3,13 @@ import torch
 import sys
 import time
 
-from yolov5.utils.datasets import letterbox
-from yolov5.utils.general import non_max_suppression, scale_coords
-# from models.common import DetectMultiBackend
+sys.path.append('../yolov5') ## ultralytics/yolov5 存放的路径
+from utils.datasets import letterbox
+from utils.general import non_max_suppression, scale_coords
+from models.common import DetectMultiBackend
 import numpy as np
-from yolov5.utils.torch_utils import select_device
-from yolov5.models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
-
-# sys.path.append('./yolov5')
+from utils.torch_utils import select_device
+from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
 device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
@@ -70,10 +69,11 @@ if __name__ == '__main__':
     # model_file = 'yolov5/runs/best.pt'
     count = 0
     model_file = '/data/home/zgl/yolov5/runs/train/class_7_focal_200/weights/best.pt'
+    # model_file = '/data/inspection/yolov5/helmet.pt'
     model_yolov5 = load_yolov5_model(model_file)
     img_file = "/home/yh/yolov5/smoke_22.jpg"
     img = cv2.imread(img_file)
     start = time.time()
     bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
-    print(time.time()- start)
+    print("inference:",time.time()- start)
     print(bbox_cfg)
