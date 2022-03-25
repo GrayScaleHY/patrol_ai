@@ -2,6 +2,8 @@ import cv2
 import torch
 import sys
 import time
+import os
+import glob
 
 sys.path.append('../yolov5') ## ultralytics/yolov5 存放的路径
 from utils.datasets import letterbox
@@ -21,7 +23,7 @@ def load_yolov5_model(model_file):
     yolov5_weights = attempt_load(model_file , map_location=device) # 加载模型
     return yolov5_weights
 
-def inference_yolov5(model_yolov5, img, resize=640):
+def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.4, iou_thres=0.2):
     """
     使用yolov5对图片做推理，返回bbox信息。
     args:
@@ -48,7 +50,7 @@ def inference_yolov5(model_yolov5, img, resize=640):
     pred = model_yolov5(img, augment=False, visualize=False)[0] # Inference
 
     ## 使用NMS挑选预测结果
-    pred_max = non_max_suppression(pred, 0.4, 0.2)[0] # Apply NMS
+    pred_max = non_max_suppression(pred, conf_thres, iou_thres)[0] # Apply NMS
     pred_max = scale_coords(img.shape[2:], pred_max, img_raw.shape) #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
@@ -62,18 +64,67 @@ def inference_yolov5(model_yolov5, img, resize=640):
 
     return bbox_cfg
 
+def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
+    """
+    使用yolov5模型推理图片，并保存成特殊格式。
+    args:
+        weights: yolov5模型文件，.pt结尾。
+        soutce: 图片路径或者含有图片的文件夹。
+        save_dir: 保存结果的文件夹。
+    """
+    ## 判断source是文件还是文件夹
+    if os.path.isfile(source):
+        img_list = [source]
+    elif os.path.isdir(source):
+        img_list = glob.glob(os.path.join(source,"*.jpg"))
+    else:
+        print(source, "not exists!")
+        return 0
+    ## 加载模型
+    yolov5_weights = load_yolov5_model(weights)
+
+    ## 创建文件夹
+    os.makedirs(save_dir, exist_ok=True)
+    label_dir = os.path.join(save_dir, "label")
+    result_dir = os.path.join(save_dir, "result")
+    os.makedirs(label_dir, exist_ok=True)
+    os.makedirs(result_dir, exist_ok=True)
+
+    ## 批处理
+    for img_file in img_list:
+        img = cv2.imread(img_file)
+        # [{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=640, conf_thres=conf_thres, iou_thres=iou_thres) #推理
+        print("--------------------------------")
+        print(img_file)
+        print(bbox_cfg)
+        ## 保存推理结果
+        res_file = os.path.join(result_dir, os.path.basename(img_file)) 
+        label_file = os.path.join(label_dir, os.path.basename(img_file)[:-4]+".txt")
+        s = "ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n"  
+        count = 0
+        for bbox in bbox_cfg:
+            count += 1
+            label = bbox["label"]
+            score = bbox["score"]
+            c = bbox["coor"]
+
+            ## 将结果画在图上
+            cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+            cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+
+            ## 输出结果
+            result = [str(count),os.path.basename(img_file),label,str(score),str(c[0]),str(c[1]),str(c[2]),str(c[3])]
+            s = s + ",".join(result) + "\n"
+        
+        f = open(label_file, "w", encoding='utf-8')
+        f.write(s)
+        f.close()
+        cv2.imwrite(res_file, img)
+
+
 if __name__ == '__main__':
-    import numpy as np
-    import os
-    import glob
-    # model_file = 'yolov5/runs/best.pt'
-    count = 0
-    model_file = '/data/home/zgl/yolov5/runs/train/class_7_focal_200/weights/best.pt'
-    # model_file = '/data/inspection/yolov5/helmet.pt'
-    model_yolov5 = load_yolov5_model(model_file)
-    img_file = "/home/yh/yolov5/smoke_22.jpg"
-    img = cv2.imread(img_file)
-    start = time.time()
-    bbox_cfg = inference_yolov5(model_yolov5, img, resize=640)
-    print("inference:",time.time()- start)
-    print(bbox_cfg)
+    weights = '/data/home/zgl/yolov5/runs/train/class_7_focal_200/weights/best.pt'
+    source = "/home/yh/image/python_codes/test/test"
+    save_dir = "./result"
+    inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2)
