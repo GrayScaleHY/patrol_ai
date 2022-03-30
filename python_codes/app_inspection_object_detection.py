@@ -189,7 +189,7 @@ def inspection_object_detection(input_data):
     bboxes = []
     for bbox in boxes:
         if roi is None or is_include(bbox["coor"], roi_tag, srate=0.5):
-            cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"], "score": bbox["score"]}
+            cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"], "score": float(bbox["score"])}
             out_data["data"].append(cfg)
             bboxes.append(bbox["coor"])
 
