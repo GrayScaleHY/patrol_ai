@@ -43,6 +43,10 @@ docker run -it --gpus '"device=1"' --name yh_inspection -p 5000:5000 --ipc=host 
 cd /home/yh/image/python_codes 
 conda activate tf24 
 python util_inspection_server.py 
+
+## 设置进入docker自启动服务，将以下命令加入到~/.bashrc
+cd /data/inspection/image/python_codes
+/root/miniconda3/envs/tf24/bin/python util_inspection_server.py
 ```
 2. 自己先使用[util_inspection_request.py](https://git.utapp.cn/utiva/image/-/blob/main/python_codes/util_inspection_request.py)代码是否有问题，若没问题,则会在"inspection_result"文件加下形成带结果显示的图片。
 3. 将接口文档链接发送给张瑞广，让他使用巡检机器人测试下性能。
