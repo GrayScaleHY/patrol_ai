@@ -37,7 +37,7 @@ cd image
 git clone https://github.com/ultralytics/yolov5.git
 
 ## 开启配置好巡检环境docker，注意-p要与util_inspection_server.py代码中的端口对应。
-docker run -it --gpus '"device=1"' --name yh_inspection -p 5000:5000 --ipc=host -v /home/yh/image:/home/yh/image -v /data/inspection:/data/inspection yh/dnn:ub18-cuda11.1-conda-trt7.2 
+docker run -it --gpus '"device=1"' --cpus="8" --name yh_inspection -p 5000:5000 --ipc=host -v /home/yh/image:/home/yh/image -v /data/inspection:/data/inspection yh/dnn:ub18-cuda11.1-conda-trt7.2 
 
 ## 在docker中运行巡检系统python脚本
 cd /home/yh/image/python_codes 
