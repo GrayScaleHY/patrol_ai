@@ -44,7 +44,7 @@ REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 yh/dnn       ub18-cuda11.1-conda-trt7.2   de9fc58182f4   2 weeks ago   45.2GB
 ```
-##### 启动docker，并设置开机自启动算法服务
+##### 5. 启动docker，并设置开机自启动算法服务
 输入以下命令启动docker， 注意，--gpus的数量设置为服务器cpu核数的一半。
 ```
 sudo docker run -it --gpus '"device=0"' --cpus="8." --name yh_inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection yh/dnn:ub18-cuda11.1-conda-trt7.2 
@@ -60,3 +60,4 @@ cd /data/inspection/image/python_codes
 ```
 sudo docker update --restart=always yh_inspection
 ```
+##### 至此，巡检算法服务部署完必
