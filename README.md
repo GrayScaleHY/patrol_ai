@@ -9,7 +9,7 @@
 sudo apt-get update
 sudo apt-get install nvidia-driver-470
 ```
-终端输入```nvidia-smi```命令，屏幕出现以下形式的打印时表示显卡驱动安装完成。
+重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下形式的打印时表示显卡驱动安装完成。
 ```
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 470.103.01   Driver Version: 470.103.01   CUDA Version: 11.4     |
