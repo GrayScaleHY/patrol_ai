@@ -23,10 +23,17 @@ sudo apt-get install nvidia-driver-470
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 ```
-##### 2. 安装docker
+##### 2. 安装docker 和 nvidia-container-toolkit
 服务器连接外网，终端输入以下命令。（如果没联网，请下载docker安装包后安装）
 ```
+## 安装docker
 curl -sSL https://get.daocloud.io/docker | sh
+## 安装nvidia-container-toolkit
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
 ```
 终端输入```sudo docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
 ```
@@ -73,13 +80,14 @@ sudo docker update --restart=always yh_inspection
 ##### 6. 验证是否部署成功
 输入以下 
 ```
-sudo stop yh_inspection
-sudo start yh_inspection
+sudo docker stop yh_inspection
+sudo docker start yh_inspection
 ## 过1分钟后输入以下命令
 sudo docker logs yh_inspection --tail 100
 ```
-若出现下面打印，表示部署成功
+若末尾出现下面打印，则表示部署成功
 ```
-
+* Debugger is active!
+* Debugger PIN: 250-735-988
 ```
 ##### 至此，巡检算法服务部署完必
