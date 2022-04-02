@@ -32,12 +32,22 @@ curl -sSL https://get.daocloud.io/docker | sh
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
+注意，可以输入以下命令，使得将用户加入docker管理员组，以便后续使用docker命令不需要用sudo
+```
+sudo groupadd docker
+sudo gpasswd -a ${USER} docker
+sudo service docker restart
+```
 ##### 3. 将算法服务需要的代码和模型放入服务器
 在根目录下新建/data文件夹，链接了公司内网的情况下，下载[inspection](http://192.168.69.36/d/c8340061061a41369159/)文件夹，将inspection文件夹放入/data目录下。
 ##### 4. 拉取并启动巡检docker
-链接了公司内网的情况下，输入以下命令拉取巡检docker镜像。（镜像较大，请耐心等待拉去完成）
+如果没有docker镜像，在链接了公司内网的情况下，输入以下命令拉取巡检docker镜像。（镜像较大，请耐心等待拉去完成）
 ```
-docker pull docker.utpf.cn:445/yh/dnn@sha256:404c56595695897f1ebdc7a68df98b2c175fb2cab1ab3f0cd115c9bd404fef71
+sudo docker pull docker.utpf.cn:445/yh/dnn@sha256:404c56595695897f1ebdc7a68df98b2c175fb2cab1ab3f0cd115c9bd404fef71
+```
+如果已经有docker镜像yh_dnn.tar, 可以输入以下命令导入镜像
+```
+sudo docker load --input yh_dnn.tar
 ```
 输入```sudo docker images```, 屏幕出现以下形式的打印时表示docker拉取成功。
 ```
