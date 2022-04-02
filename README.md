@@ -70,4 +70,16 @@ cd /data/inspection/image/python_codes
 ```
 sudo docker update --restart=always yh_inspection
 ```
+##### 6. 验证是否部署成功
+输入以下 
+```
+sudo stop yh_inspection
+sudo start yh_inspection
+## 过1分钟后输入以下命令
+sudo docker logs yh_inspection --tail 100
+```
+若出现下面打印，表示部署成功
+```
+
+```
 ##### 至此，巡检算法服务部署完必
