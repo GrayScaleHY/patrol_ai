@@ -273,32 +273,24 @@ def inspection_disconnector(input_data):
     return out_data
 
 
-def init_data():
-    tag_file = "images/test_0_open_close.png"
-    close_file = "images/test_0_close_open.png"
-    open_file = "images/test_0_open_close.png"
-    bbox =  [1460, 405, 1573, 578]
-    with open(tag_file, "rb") as imageFile:
-        img_tag= imageFile.read()
-    img_tag = base64.b64encode(img_tag).decode('utf-8')
-    with open(close_file, "rb") as imageFile:
-        img_close = imageFile.read()
-    img_close = base64.b64encode(img_close).decode('utf-8')
-    with open(open_file, "rb") as imageFile:
-        img_open = imageFile.read()
-    img_open = base64.b64encode(img_open).decode('utf-8')
-
-    data = {
-        "image": img_tag,
-        "config": {"img_open": img_open, "img_close": img_close, "bbox": bbox},
-        "type": "disconnector"
-    }
-    return data
-
 if __name__ =='__main__':
     
-    data = init_data()
-    out_data = inspection_disconnector(data)
+    close_file = "close_1011133344.jpg"
+    open_file = "open_20211012121525.jpg"
+    tag_file = "tag_1102104306.jpg"
+    bbox =  [315, 147, 355, 204]
+    img_close = img2base64(cv2.imread(close_file))
+    img_open = img2base64(cv2.imread(open_file))
+    img_tag = img2base64(cv2.imread(tag_file))
+    H, W = cv2.imread(close_file).shape[:2]
+    roi = [bbox[0] / W, bbox[1] / H, bbox[2] / W, bbox[3] / H]
+
+    input_data = {
+        "image": img_tag,
+        "config": {"img_open": img_open, "img_close": img_close, "bboxes": {"roi": roi}},
+        "type": "disconnector"
+    }
+    out_data = inspection_disconnector(input_data)
     
 
 
