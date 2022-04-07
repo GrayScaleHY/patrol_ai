@@ -9,8 +9,9 @@ from app_inspection_object_detection import inspection_object_detection
 from app_inspection_qrcode import inspection_qrcode
 from app_inspection_level_gauge import inspection_level_gauge
 from app_inspection_xishiqi import inspection_xishiqi
+from config_version import code_version
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
@@ -22,6 +23,15 @@ def inspection_state():
         return jsonify(res)
     else:
         res = {"code": 0}
+    return jsonify(res)
+
+@app.route('/inspection_version/', methods=['POST'])
+def inspection_version():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    else:
+        res = {"data":code_version["v1"], "code": 0}
     return jsonify(res)
 
 ## 刀闸分合识别
