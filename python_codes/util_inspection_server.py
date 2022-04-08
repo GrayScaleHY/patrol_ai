@@ -31,7 +31,7 @@ def inspection_version():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     else:
-        res = {"data":code_version["v1"], "code": 0}
+        res = {"data":code_version, "code": 0}
     return jsonify(res)
 
 ## 刀闸分合识别
