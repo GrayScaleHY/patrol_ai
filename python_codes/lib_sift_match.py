@@ -4,12 +4,13 @@ sift匹配相关的算法函数
 
 import cv2
 import numpy as np
+from app_inspection_disconnector import sift_match, correct_offset, sift_create, convert_coor
 import time
 try:
     from skimage.measure import compare_ssim as sk_cpt_ssim # pip install scikit-image
 except:
     from skimage.metrics import structural_similarity as sk_cpt_ssim
-# from lib_image_ops import img_chinese
+from lib_image_ops import img_chinese
 
 
 def _resize(img):
@@ -187,21 +188,20 @@ def convert_coor(coor_ref, M):
     return tuple(coor_tag.astype(int))
 
 
-def detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate):
+def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
     """
     判别算法，检测出待分析图与基准图的差异区域
     return:
         rec_real: 差异区域，若判定没差异，则返回[]
     """
-    H,W = ref.shape[:2]
+    img_tag_ = img_tag.copy()
+    H,W = img_tag.shape[:2]
     ## 求偏移矩阵
-    M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine")
-    if M is None:
-        return []
+    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
 
     ## 对待分析图进行纠偏
-    tag_warped = correct_offset(tag, M)
-    # cv2.imwrite("test1/tag_swarped.jpg", tag_warped)
+    ref_warped = correct_offset(img_ref, M)
+    # cv2.imwrite("test1/ref_swarped.jpg", ref_warped)
 
     ## 将矫正图与外边缘切掉,并且将基准图的相应位置切掉
     coors = [[0,0],[W,0],[0,H],[W,H]]
@@ -220,16 +220,17 @@ def detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate):
     xmax = min(W, off_c[1][0], off_c[3][0])
     ymax = min(H, off_c[2][1], off_c[3][1])
     rec_cut = [xmin, ymin, xmax, ymax]
-    ref = ref[ymin:ymax, xmin:xmax, :]
-    tag = tag_warped[ymin:ymax, xmin:xmax, :]
-    # cv2.imwrite("test1/tag_cut.jpg", tag)
+    img_ref = ref_warped[ymin:ymax, xmin:xmax, :]
+    img_tag = img_tag[ymin:ymax, xmin:xmax, :]
+    # cv2.imwrite("test1/tag_cut.jpg", img_tag)
+    # cv2.imwrite("test1/ref_cut.jpg", img_ref)
 
     ## 将图片转为灰度图后相减，再二值化，得到差异图片
-    if len(ref.shape) == 3:
-        ref = cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY)
-    if len(tag.shape) == 3:
-        tag = cv2.cvtColor(tag, cv2.COLOR_RGB2GRAY)
-    dif_img = tag.astype(float) - ref.astype(float)
+    if len(img_ref.shape) == 3:
+        img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
+    if len(img_tag.shape) == 3:
+        img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
+    dif_img = img_tag.astype(float) - img_ref.astype(float)
     dif_img = np.abs(dif_img).astype(np.uint8)
     _, dif_img = cv2.threshold(dif_img, 100, 255, cv2.THRESH_BINARY) # 二值化
     # cv2.imwrite("test1/tag_diff.jpg",dif_img)
@@ -237,7 +238,7 @@ def detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate):
     ## 对差异性图片进行腐蚀操作，去除零星的点。
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
     dif_img = cv2.erode(dif_img,kernel,iterations=1)
-    # cv2.imwrite("test1/tag_diff_1.jpg",dif_img)
+    # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
 
     ## 用最小外接矩阵框出差异的地方
     H, W = dif_img.shape
@@ -262,36 +263,19 @@ def detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate):
     ## 将矩形框映射回原待分析图
     rec_real = [rec_dif[0] + rec_cut[0], rec_dif[1] + rec_cut[1], 
                 rec_dif[2]+ rec_cut[0], rec_dif[3] + rec_cut[1]]
-    coors = [[rec_real[0], rec_real[1]],
-            [rec_real[2], rec_real[1]],
-            [rec_real[2], rec_real[3]],
-            [rec_real[0], rec_real[3]]]
-    coors_real = []
-    for c in coors:
-        coor = convert_coor(c, M)
-        coors_real.append(list(coor))
-    coors_real = np.array(coors_real, dtype=int)
-    xmin = int(np.min(coors_real[:,0]) * rate)
-    ymin = int(np.min(coors_real[:,1]) * rate)
-    xmax= int(np.max(coors_real[:,0]) * rate)
-    ymax = int(np.max(coors_real[:,1]) * rate)
-    rec_real = [xmin, ymin, xmax, ymax]
 
-    # cv2.rectangle(img_tag, (rec_real[0], rec_real[1]), (rec_real[2], rec_real[3]), (0,0,255), 5)
-    # cv2.imwrite("test1/tag_real.jpg", img_tag)
+    # cv2.rectangle(img_tag_, (rec_real[0], rec_real[1]), (rec_real[2], rec_real[3]), (0,0,255), 5)
+    # cv2.imwrite("test1/tag_rec_real.jpg", img_tag_)
 
     return rec_real
 
 if __name__ == '__main__':
-    ref_file = "test/test1/ref.jpg"
-    tag_file = "test/test1/tag.jpg"
+    ref_file = "test1/ref.jpg"
+    tag_file = "test1/tag.jpg"
     img_ref = cv2.imread(ref_file)
     img_tag = cv2.imread(tag_file)
 
-    ref, rate, feat_ref = _resize_feat(img_ref)
-    tag, rate, feat_tag = _resize_feat(img_tag)
-    rec_real = detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate)
-
-    cv2.rectangle(img_tag, (rec_real[0], rec_real[1]), (rec_real[2], rec_real[3]), (0,0,255), 5)
-    cv2.imwrite("test/test1/tag_real.jpg", img_tag)
-
+    feat_ref = sift_create(img_ref)
+    feat_tag = sift_create(img_tag)
+    rec_real = detect_diff(img_ref, feat_ref, img_tag, feat_tag)
+    
