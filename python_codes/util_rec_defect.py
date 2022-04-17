@@ -24,7 +24,6 @@ if __name__ == '__main__':
     list_file = os.path.join(img_dir, "train_list.txt")
     contestantId = "49e6264e517d428796b532796b74a364"
 
-    
     count = 1
     result = []
     for line in open(list_file, "r", encoding='utf-8'):
@@ -36,7 +35,7 @@ if __name__ == '__main__':
         img = cv2.imread(img_file)
         if img is None:
             print("Warning:", img_file, "name is not rule !")
-        bbox_cfg = inference_yolov5(yolov5_red_defect, img, resize=640, conf_thres=0.4, iou_thres=0.4)
+        bbox_cfg = inference_yolov5(yolov5_red_defect, img, resize=640, conf_thres=0.3, iou_thres=0.4)
 
         for cfg in bbox_cfg:
             id_ = str(count)
@@ -53,5 +52,4 @@ if __name__ == '__main__':
     
     result_data = {"contestantId":contestantId,"isEnd":1,"results":result}
     post_submit_result(result_data)
-
 
