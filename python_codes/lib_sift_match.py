@@ -4,7 +4,6 @@ sift匹配相关的算法函数
 
 import cv2
 import numpy as np
-from app_inspection_disconnector import sift_match, correct_offset, sift_create, convert_coor
 import time
 try:
     from skimage.measure import compare_ssim as sk_cpt_ssim # pip install scikit-image
@@ -278,4 +277,3 @@ if __name__ == '__main__':
     feat_ref = sift_create(img_ref)
     feat_tag = sift_create(img_tag)
     rec_real = detect_diff(img_ref, feat_ref, img_tag, feat_tag)
-    
