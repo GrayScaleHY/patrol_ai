@@ -122,6 +122,13 @@ def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
     判别算法
+    args:
+        img_ref: 基准图
+        feat_ref: 基准图的sift特征
+        img_tag: 待分析图
+        feat_tag: 待分析图的特征
+    return:
+        tag_diff:不一致目标框列表,格式为[[x0, y0, x1, y1], ..]
     """
     tag_diff = []
     img_tag_ = img_tag.copy()
