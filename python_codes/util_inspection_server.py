@@ -69,7 +69,7 @@ def inspection_pointer_server():
 
 ## 判别算法
 @app.route('/inspection_identify_defect/', methods=['POST'])
-def inspection_pointer_server():
+def inspection_identify_defect():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
