@@ -2,39 +2,11 @@ import os
 import time
 import cv2
 import json
-from util_identify_defect import indentify_door, indentify_led, indentify_pointer, indentify_pressplate
+from util_identify_defect import identify_defect
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_help_base import color_list
-from lib_sift_match import _resize_feat, detect_diff
+from lib_sift_match import _resize_feat, detect_diff, sift_match, sift_create
 import numpy as np
-
-def indentify_defect(img_ref, img_tag):
-    
-    ## 箱门闭合异常
-    rec = indentify_door(img_ref, img_tag)
-    if len(rec) != 0:
-        return rec
-    
-    ## 仪表读数变化太大
-    rec = indentify_pointer(img_ref, img_tag)
-    if len(rec) != 0:
-        return rec
-    
-    ## 压板
-    rec = indentify_pressplate(img_ref, img_tag)
-    if len(rec) != 0:
-        return rec
-
-    ## led灯颜色变化
-    rec = indentify_led(img_ref, img_tag)
-    if len(rec) != 0:
-        return rec
-    
-    ref, rate, feat_ref = _resize_feat(img_ref)
-    tag, rate, feat_tag = _resize_feat(img_tag)
-    rec = detect_diff(img_ref, ref, feat_ref, img_tag, tag, feat_tag, rate)
-
-    return rec
 
 def get_input_data(input_data):
     """
@@ -55,7 +27,7 @@ def get_input_data(input_data):
     return img_tag, img_ref
 
 
-def inspection_object_detection(input_data):
+def inspection_identify_defect(input_data):
     """
     yolov5的目标检测推理。
     """
@@ -78,17 +50,25 @@ def inspection_object_detection(input_data):
     cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
     cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
 
-    rec = indentify_defect(img_ref, img_tag)
+    ## 提取sift特征
+    feat_ref = sift_create(img_ref) 
+    feat_tag = sift_create(img_tag)
 
-    if len(rec) == 0:
+    tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag)
+    tag_diff = np.array(tag_diff, dtype=float).tolist() ## 将int改为float
+
+    out_cfg = []
+    if len(tag_diff) == 0:
         label = "0"
-        img_tag_ = img_chinese(img_tag_, "正常", (10, 10), (0, 255, 0), size=10)
+        img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=20)
     else:
-        label = "1"
-        cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), "异常", thickness=2)
-        img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+10), (0,0,255), size=10)
+        for rec in tag_diff:
+            label = "异常"
+            cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
+            img_tag_ = img_chinese(img_tag_, label, (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=20)
+            out_cfg.append({"label": "1", "bbox":rec})
     
-    out_data["data"] = [{"label": label, "bbox": rec}]
+    out_data["data"] = out_cfg
 
     ## 可视化计算结果
     f = open(os.path.join(save_path, "out_data.json"), "w")
@@ -102,4 +82,16 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    a = 1
+    ref_file = "/home/yh/image/python_codes/test/panbie/0005_normal.jpg"
+    tag_file = "/home/yh/image/python_codes/test/panbie/0005_3.jpg"
+
+    img_tag = img2base64(cv2.imread(tag_file))
+    img_ref = img2base64(cv2.imread(ref_file))
+
+    input_data = {"image": img_tag, "config":{"img_ref": img_ref}, "type": "identify_defect"}
+
+    out_data = inspection_identify_defect(input_data)
+    for c_ in out_data:
+        if c_ != "img_result":
+            print(c_,":",out_data[c_])
+
