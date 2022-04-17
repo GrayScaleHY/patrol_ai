@@ -6,7 +6,7 @@ from lib_analysis_meter import segment2angle
 from lib_image_ops import img_chinese
 import numpy as np
 
-yolov5_posun = load_yolov5_model("/data/inspection/yolov5/rotary_posun.pt") # 破损类缺陷
+yolov5_posun = load_yolov5_model("/data/inspection/yolov5/posun.pt") # 破损类缺陷
 yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
 yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
 yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
