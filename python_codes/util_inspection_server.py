@@ -9,6 +9,7 @@ from app_inspection_object_detection import inspection_object_detection
 from app_inspection_qrcode import inspection_qrcode
 from app_inspection_level_gauge import inspection_level_gauge
 from app_inspection_xishiqi import inspection_xishiqi
+from app_inspection_identify_defect import inspection_identify_defect
 from config_version import code_version
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -59,6 +60,22 @@ def inspection_pointer_server():
     data = json.loads(request.get_data(as_text=True))
     res = inspection_pointer(data)
     print("inspection_pointer result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 判别算法
+@app.route('/inspection_identify_defect/', methods=['POST'])
+def inspection_pointer_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_identify_defect(data)
+    print("inspection_identify_defect result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
