@@ -99,31 +99,32 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     kps2, feat2 = feat_tag
 
     ## 将rm_regs区域中的sift特征点去除
-    rm_ids = []
-    for reg in rm_regs:
+    if len(rm_regs) > 0:
+        rm_ids = []
+        for reg in rm_regs:
+            for i in range(len(kps1)):
+                pt_ = kps1[i].pt
+                if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
+                    rm_ids.append(i)
+        kps = []
         for i in range(len(kps1)):
-            pt_ = kps1[i].pt
-            if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
-                rm_ids.append(i)
-    kps = []
-    for i in range(len(kps1)):
-        if i not in rm_ids:
-            kps.append(kps1[i])
-    kps1 = kps
-    feat1 = np.delete(feat1, rm_ids, axis=0)
-    rm_ids = []
-    kps = []
-    for reg in rm_regs:
+            if i not in rm_ids:
+                kps.append(kps1[i])
+        kps1 = kps
+        feat1 = np.delete(feat1, rm_ids, axis=0)
+        rm_ids = []
+        kps = []
+        for reg in rm_regs:
+            for i in range(len(kps2)):
+                pt_ = kps2[i].pt
+                if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
+                    rm_ids.append(i)
+        kps = []
         for i in range(len(kps2)):
-            pt_ = kps2[i].pt
-            if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
-                rm_ids.append(i)
-    kps = []
-    for i in range(len(kps2)):
-        if i not in rm_ids:
-            kps.append(kps2[i])
-    kps2 = kps
-    feat2 = np.delete(feat2, rm_ids, axis=0)
+            if i not in rm_ids:
+                kps.append(kps2[i])
+        kps2 = kps
+        feat2 = np.delete(feat2, rm_ids, axis=0)
 
     ## 画出siftt特征点
     # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
