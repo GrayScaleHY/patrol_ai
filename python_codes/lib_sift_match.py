@@ -113,7 +113,6 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
         kps1 = kps
         feat1 = np.delete(feat1, rm_ids, axis=0)
         rm_ids = []
-        kps = []
         for reg in rm_regs:
             for i in range(len(kps2)):
                 pt_ = kps2[i].pt
