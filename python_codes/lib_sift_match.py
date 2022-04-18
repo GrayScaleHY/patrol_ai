@@ -61,6 +61,7 @@ def my_ssim(img1, img2):
 def sift_create(img):
     """
     提取sift特征
+    return: (kps, feat)
     """
     ## 彩图转灰度图，灰度图是二维的
     if len(img.shape) == 3:
@@ -81,12 +82,13 @@ def sift_create(img):
     return (kps, feat)
 
 
-def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
+def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     """
     使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
     args:
         feat_ref: 参考图片的sift特征，格式为：(kps, feat)
         feat_tag: 待分析图片的sift特征，格式为：(kps, feat)
+        rm_regs: 需要去掉sift特征的区域，例如OSD区域。格式为[[xmin, xmax, ymin, ymax], ..]
         ratio: sift点正匹配的阈值
         ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
     return:
@@ -95,6 +97,34 @@ def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
     """
     kps1, feat1 = feat_ref
     kps2, feat2 = feat_tag
+
+    ## 将rm_regs区域中的sift特征点去除
+    rm_ids = []
+    for reg in rm_regs:
+        for i in range(len(kps1)):
+            pt_ = kps1[i].pt
+            if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
+                rm_ids.append(i)
+    kps = []
+    for i in range(len(kps1)):
+        if i not in rm_ids:
+            kps.append(kps1[i])
+    kps1 = kps
+    feat1 = np.delete(feat1, rm_ids, axis=0)
+    rm_ids = []
+    kps = []
+    for reg in rm_regs:
+        for i in range(len(kps2)):
+            pt_ = kps2[i].pt
+            if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
+                rm_ids.append(i)
+    kps = []
+    for i in range(len(kps2)):
+        if i not in rm_ids:
+            kps.append(kps2[i])
+    kps2 = kps
+    feat2 = np.delete(feat2, rm_ids, axis=0)
+
     ## 画出siftt特征点
     # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
     # tar_sift = cv2.drawKeypoints(tag_img,kps2,tag_img,color=(255,0,255))
@@ -269,11 +299,12 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
     return rec_real
 
 if __name__ == '__main__':
-    ref_file = "test1/ref.jpg"
-    tag_file = "test1/tag.jpg"
+    ref_file = "test/test1/0001_normal_off.jpg"
+    tag_file = "test/test1/0001_normal_on.jpg"
     img_ref = cv2.imread(ref_file)
     img_tag = cv2.imread(tag_file)
 
     feat_ref = sift_create(img_ref)
     feat_tag = sift_create(img_tag)
+    
     rec_real = detect_diff(img_ref, feat_ref, img_tag, feat_tag)
