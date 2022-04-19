@@ -10,7 +10,7 @@ import base64
 from lib_image_ops import base642img, img2base64
 import time
 import json
-import tensorflow as tf
+# import tensorflow as tf
 
 def my_ssim(img1, img2):
     """
