@@ -79,7 +79,7 @@ def sift_create(img):
     # feat: 特征值，每个特征点的特征值是128维
     start = time.time()
     kps, feat = sift.detectAndCompute(img, None) #提取sift特征
-    print("sift len of img:", len(kps))
+    # print("sift len of img:", len(kps))
     return (kps, feat)
 
 
@@ -148,7 +148,7 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     for m, n in matches:
         if m.distance < ratio * n.distance:
             good.append(m)
-    print("num of good match pointer:", len(good))
+    # print("num of good match pointer:", len(good))
 
     ## 求偏移矩阵,[[^x1, ^x2, dx],[^y1, ^y2, dy]]
     min_match_count = 10  ## 至少多少个好的匹配点
@@ -165,10 +165,10 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
             print("ops is wrong!")
             M = cv2.estimateRigidTransform(src_pts, dst_pts, False)  # python bindings removed
 
-        print("Enough matches are found - {}/{}".format(len(good), min_match_count))
+        # print("Enough matches are found - {}/{}".format(len(good), min_match_count))
         return M
     else:
-        print("Not enough matches are found - {}/{}".format(len(good), min_match_count))
+        # print("Not enough matches are found - {}/{}".format(len(good), min_match_count))
         return None
 
 
