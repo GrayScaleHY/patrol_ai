@@ -56,6 +56,7 @@ def my_ssim(img1, img2):
     if len(img2.shape) == 3:
         img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
     score = sk_cpt_ssim(img1, img2) #输入灰度图 , multichannel=True
+    return score
 
 
 def sift_create(img):
