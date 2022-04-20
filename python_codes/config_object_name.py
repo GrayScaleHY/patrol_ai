@@ -13,8 +13,8 @@ OBJECT_MAP = {
         },
     "pressplate":{
         "name": "压板",
-        "pressplate_on": "投入",
-        "pressplate_off": "退出"
+        "kgg_ybf": "退出",
+        "kgg_ybh": "投入"
     },
     "led": {
         "name": "LED灯",
@@ -177,8 +177,8 @@ OBJECT_MAP = {
     },
     "door":{
         "name": "箱门",
-        "close": "闭",
-        "open": "开"
+        "xmbhyc": "箱门闭合异常",
+        "xmbhzc": "箱门闭合正常"
     },
     "key":{
         "name": "钥匙",
