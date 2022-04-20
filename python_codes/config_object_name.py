@@ -194,7 +194,7 @@ OBJECT_MAP = {
         'smoking':"吸烟"
 
     },
-    "patrol_17classes": {
+    "rec_defect": {
         "name": "巡检17类缺陷",
         'bj_bpmh': '表盘模糊',
         'sly_dmyw': '地面油污',
