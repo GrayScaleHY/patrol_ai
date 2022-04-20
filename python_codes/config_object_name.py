@@ -177,8 +177,8 @@ OBJECT_MAP = {
     },
     "door":{
         "name": "箱门",
-        "xmbhyc": "箱门闭合异常",
-        "xmbhzc": "箱门闭合正常"
+        "xmbhyc": "开",
+        "xmbhzc": "闭"
     },
     "key":{
         "name": "钥匙",
