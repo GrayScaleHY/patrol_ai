@@ -177,6 +177,7 @@ def inspection_xishiqi_color_server():
 @app.route('/inspection_door/', methods=['POST'])
 @app.route('/inspection_key/', methods=['POST'])
 @app.route('/inspection_robot/', methods=['POST'])
+@app.route('/inspection_rec_defect/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
