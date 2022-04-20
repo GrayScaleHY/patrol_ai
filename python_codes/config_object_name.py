@@ -193,6 +193,26 @@ OBJECT_MAP = {
         'helmet':"安全帽",
         'smoking':"吸烟"
 
+    },
+    "patrol_17classes": {
+        "name": "巡检17类缺陷",
+        'bj_bpmh': '表盘模糊',
+        'sly_dmyw': '地面油污',
+        'xmbhyc': '箱门闭合异常',
+        'yw_gkxfw': '挂空悬浮物',
+        'yw_nc': '鸟巢',
+        'wcgz': '未穿工装',
+        'hxq_gjbs': '硅胶变色',
+        'kgg_ybh': '压板合',
+        'bjdsyc': '表计读数异常',
+        'wcaqm': '未戴安全帽',
+        'jyz_pl': '绝缘子破裂',
+        'gbps': '盖板破损',
+        'bj_bpps': '表盘破损',
+        'xy': '吸烟',
+        'ywzt_yfyc': '呼吸器油封油位异常',
+        'bj_wkps': '外壳破损',
+        'hxq_gjtps': '硅胶筒破损'
     }
 
 }
