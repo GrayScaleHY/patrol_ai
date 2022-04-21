@@ -7,7 +7,7 @@
 若服务器连接外网，终端输入以下命令。
 ```
 sudo apt-get update
-sudo apt-get install nvidia-driver-470
+sudo apt-get install nvidia-driver-510
 ```
 若没链接外网，则需要离线安装。注意需要按ctrl+alt+f3进入命令行模式安装。
 ```
@@ -29,8 +29,8 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 ```
-##### 2. 安装docker 和 nvidia-container-toolkit
-服务器连接外网，终端输入以下命令。（如果没联网，请下载docker安装包后安装）
+##### 2. 安装docker 和 nvidia-docker
+若服务器连接外网，且docker版本高于19，终端输入以下命令安装即可。若docker版本低于19，则需要离线安装docker和nvidia-docker,首先下载下载[安装包](http://192.168.69.36/d/a76899fa3851456587bd/)，解压后运行```sudo ./run.sh```，然后等待安装完成。
 ```
 ## 安装docker
 curl -sSL https://get.daocloud.io/docker | sh
@@ -58,18 +58,21 @@ sudo service docker restart
 ```
 sudo docker pull docker.utpf.cn:445/yh/dnn@sha256:404c56595695897f1ebdc7a68df98b2c175fb2cab1ab3f0cd115c9bd404fef71
 ```
-如果已经有docker镜像yh_dnn.tar, 可以输入以下命令导入镜像
+如果已经有docker镜像ut-inspection.tar, 可以输入以下命令导入镜像
 ```
-sudo docker load --input yh_dnn.tar
+sudo docker load --input ut-inspection.tar
 ```
 输入```sudo docker images```, 屏幕出现以下形式的打印时表示docker拉取成功。
 ```
-REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
-yh/dnn       ub18-cuda11.1-conda-trt7.2   de9fc58182f4   2 weeks ago   45.2GB
+REPOSITORY         TAG                                    IMAGE ID       CREATED       SIZE
+utdnn/inspection   yolov5-detectron2-paddle-trail-04-18   de9fc58182f4   2 weeks ago   45.2GB
 ```
 ##### 5. 启动docker，并设置开机自启动算法服务
 输入以下命令启动docker， 注意，--cpus的数量设置为服务器cpu核数的一半。
 ```
+## docker低于19版本，则运行以下命令
+sudo nvidia-docker run -it --runtime nvidia --cpus="8." --name ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
+## docker高于19版本，则运行以下命令
 sudo docker run -it --gpus '"device=0"' --cpus="8." --name ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
 ```
 进入docker后，编辑~/.bashrc文件，使得启动docker时会自动开启服务。
@@ -77,19 +80,19 @@ sudo docker run -it --gpus '"device=0"' --cpus="8." --name ut-inspection -p 5000
 vim ~/.bashrc 
 ## 将以下两行拷贝到.bashrc文件的末尾，并保存
 cd /data/inspection/image/python_codes
-/root/miniconda3/envs/tf24/bin/python util_inspection_server.py
+python util_inspection_server.py
 ```
 同时按Ctrl+P+Q退出docker，输入以下命令，使得巡检docker会随开机自启动
 ```
-sudo docker update --restart=always yh_inspection
+sudo docker update --restart=always ut-inspection
 ```
 ##### 6. 验证是否部署成功
 输入以下 
 ```
-sudo docker stop yh_inspection
-sudo docker start yh_inspection
-## 过1分钟后输入以下命令
-sudo docker logs yh_inspection --tail 100
+sudo docker stop ut-inspection
+sudo docker start ut-inspection
+## 过3分钟后输入以下命令
+sudo docker logs ut-inspection --tail 100
 ```
 若末尾出现下面打印，则表示部署成功
 ```
