@@ -4,10 +4,16 @@
 ### 巡检算法服务的部署
 服务区需要装备英伟达显卡，且系统为ubuntu，部署流程如下：
 ##### 1. 安装显卡驱动
-服务器连接外网，终端输入以下命令。（如果没联网，请下载驱动安装包后安装）
+若服务器连接外网，终端输入以下命令。
 ```
 sudo apt-get update
 sudo apt-get install nvidia-driver-470
+```
+若没链接外网，则需要离线安装。注意需要按ctrl+alt+f3进入命令行模式安装。
+```
+sudo service lightdm stop
+sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
+
 ```
 重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下形式的打印时表示显卡驱动安装完成。
 ```
