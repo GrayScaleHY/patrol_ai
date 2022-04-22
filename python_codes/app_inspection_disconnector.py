@@ -1,163 +1,18 @@
-from sys import int_info
+
+from lib_image_ops import base642img, img2base64, img_chinese
+from util_inspection_disconnector import disconnector_state
+import time
+import json
 import cv2
 import numpy as np
 import os
-try:
-    from skimage.measure import compare_ssim as sk_cpt_ssim # pip install scikit-image
-except:
-    from skimage.metrics import structural_similarity as sk_cpt_ssim
-import base64
-from lib_image_ops import base642img, img2base64
-import time
-import json
-# import tensorflow as tf
 
-def my_ssim(img1, img2):
-    """
-    python官方的计算ssim的包。
-    ## 
-    """
-    # 使用tensorflow计算ssim, 输入彩图,需要较长时间。
-    # score = tf.image.ssim(img1, img2, 255)
-    # 注意需要根据图片长宽来设置filter_size的大小，如下链接。
-    ## https://github.com/tensorflow/tensorflow/issues/33840#issuecomment-633715778
-    # score = tf.image.ssim_multiscale(img1, img2, 255, power_factors=(0.0448, 0.2856, 0.3001),filter_size=6)
-    # score = score.numpy()
-
-    if len(img1.shape) == 3:
-        img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
-    if len(img2.shape) == 3:
-        img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
-    score = sk_cpt_ssim(img1, img2) #输入灰度图 , multichannel=True
-    
-    return score
-
-
-def sift_match(ref_img, tag_img, ratio=0.5, ops="Affine"):
-    """
-    使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
-    args:
-        ref_img: 参考图片data
-        tag_img: 变换图片data
-        ratio: sift点正匹配的阈值
-        ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
-    return:
-        M:偏移矩阵, 2*3矩阵，前两列表示仿射变换，后一列表示平移量。
-          偏移后的点的计算公式：(x', y') = M * (x, y, 1)
-    """
-
-    ## 彩图转灰度图，灰度图是二维的
-    if len(ref_img.shape) == 3:
-        ref_img = cv2.cvtColor(ref_img, cv2.COLOR_RGB2GRAY)
-    if len(tag_img.shape) == 3:
-        tag_img = cv2.cvtColor(tag_img, cv2.COLOR_RGB2GRAY)
-
-    ## 直方图均衡化，增加图片的对比度
-    # ref_img = cv2.equalizeHist(ref_img)
-    # tag_img = cv2.equalizeHist(tag_img)
-
-    print("ref_img shape:", ref_img.shape)
-    print("tag_img shape:", tag_img.shape)
-
-    ## 提取sift特征 
-    sift = cv2.SIFT_create() # 创建sift对象
-    # kps: 关键点，包括 angle, class_id, octave, pt, response, size
-    # feat: 特征值，每个特征点的特征值是128维
-    kps1, feat1 = sift.detectAndCompute(ref_img, None) #提取sift特征
-    kps2, feat2 = sift.detectAndCompute(tag_img, None)
-    print("sift len of ref_img:", len(kps1))
-    print("sift len of tag_img:", len(kps2))
-
-    ## 画出siftt特征点
-    # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
-    # tar_sift = cv2.drawKeypoints(tag_img,kps2,tag_img,color=(255,0,255))
-    # hmerge = np.hstack((ref_sift, tar_sift)) # 两张图拼接在一起
-    # cv2.imwrite("images/test_sift.jpg", hmerge)
-    
-    ## flann 快速最近邻搜索算法，计算两张特征的正确匹配点。
-    ## https://www.cnblogs.com/shuimuqingyang/p/14789534.html
-    flann_index_katree = 1
-    index_params = dict(algorithm=flann_index_katree, trees=5) # trees:指定待处理核密度树的数量
-    search_params = dict(checks=50) # checks: 指定递归遍历迭代的次数
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-    matches = flann.knnMatch(feat1, feat2, k=2)
-    # 画出匹配图
-    # img_match = cv2.drawMatchesKnn(ref_img,kps1,tag_img,kps2,matches,None,flags=2)
-    # cv2.imwrite("images/test_match.jpg",img_match)
-
-    ## store all the good matches as per Lowe's ratio test.
-    good = []
-    for m, n in matches:
-        if m.distance < ratio * n.distance:
-            good.append(m)
-    print("num of good match pointer:", len(good))
-
-    ## 求偏移矩阵,[[^x1, ^x2, dx],[^y1, ^y2, dy]]
-    min_match_count = 10  ## 至少多少个好的匹配点
-    if len(good) > min_match_count:
-        src_pts = np.float32([kps1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kps2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-
-        ## 根据正匹配点求偏移矩阵
-        if ops == "Affine":
-            M, mask = cv2.estimateAffinePartial2D(src_pts, dst_pts, method=cv2.RANSAC, ransacReprojThreshold=5)
-        elif ops == "Perspective":
-            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0, maxIters=2000, confidence=0.995)
-        else:
-            print("ops is wrong!")
-            M = cv2.estimateRigidTransform(src_pts, dst_pts, False)  # python bindings removed
-
-        print("Enough matches are found - {}/{}".format(len(good), min_match_count))
-        return M
-    else:
-        print("Not enough matches are found - {}/{}".format(len(good), min_match_count))
-        return None
-
-
-def correct_offset(ref_img, tag_img, M):
-    """
-    根据偏移矩阵矫正图片。
-    args:
-        M: 偏移矩阵
-    return:
-        img_tag_warped: 矫正之后的tag_img
-    """
-    if M is None:
-        return ref_img
-    
-    ## 矫正图片
-    if M.shape == (2, 3):  # warp affine
-        img_tag_warped = cv2.warpAffine(tag_img, M, (tag_img.shape[1], tag_img.shape[0]), flags=cv2.WARP_INVERSE_MAP)
-    elif M.shape == (3, 3):  # warp perspective
-        img_tag_warped = cv2.warpPerspective(tag_img, M, (tag_img.shape[1], tag_img.shape[0]), flags=cv2.WARP_INVERSE_MAP)
-
-    return img_tag_warped
-
-
-def convert_coor(coor_ref, M):
-    """
-    使用偏移矩阵M计算参考坐标发生偏移后的对应坐标。
-    args:
-        coor_ref: 参考坐标
-        M: 偏移矩阵
-    return: 
-        (x, y): 转换后的坐标
-    """
-    if M is None:
-        return coor_ref
-
-    M = np.array(M, dtype=float)
-    
-    assert M.shape == (2, 3) or M.shape == (3, 3), "shape of M is not match !"
-
-    coor_ref = np.array(list(coor_ref) + [1], dtype=float)
-    coor_tag = np.dot(M, coor_ref) # (2, 3)的转换矩阵直接通过相乘得到转换后坐标
-
-    if M.shape == (3, 3): # Homo坐标系
-        x = coor_tag[0] / coor_tag[2]; y = coor_tag[1] / coor_tag[2]
-        coor_tag = np.array([x, y], dtype=float)
-
-    return tuple(coor_tag.astype(int))
+state_map = {
+    "合": {"name": "合闸正常", "color": [(255,0,0), (255,0,0)]},
+    "分": {"name": "分闸正常", "color": [(0,255,0), (0,255,0)]},
+    "异常": {"name": "分合闸异常", "color": [(0,0,255), (0,0,255)]},
+    "无法判别状态": {"name": "分析失败", "color": [(0,0,255), (0,0,255)]},
+}
 
 def get_input_data(input_data):
     """
@@ -166,7 +21,7 @@ def get_input_data(input_data):
         img_tag: 目标图片数据
         img_open: 模板图，刀闸打开
         img_close: 模板图，刀闸闭合
-        roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
+        roi1, roi2: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
     """
 
     img_tag = base642img(input_data["image"])
@@ -184,18 +39,25 @@ def get_input_data(input_data):
             img_open = base642img(input_data["config"]["img_open"]) 
         
     ## 感兴趣区域
-    roi = None # 初始假设
+    roi1= None # 初始假设
+    roi2= None # 初始假设
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
-            if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
+            if "roi1" in input_data["config"]["bboxes"]:
+                if isinstance(input_data["config"]["bboxes"]["roi1"], list):
+                    if len(input_data["config"]["bboxes"]["roi1"]) == 4:
                         W = img_open.shape[1]; H = img_open.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
+                        roi1 = input_data["config"]["bboxes"]["roi1"]
+                        roi1 = [int(roi1[0]*W), int(roi1[1]*H), int(roi1[2]*W), int(roi1[3]*H)]
+            if "roi1" in input_data["config"]["bboxes"]:
+                if isinstance(input_data["config"]["bboxes"]["roi2"], list):
+                    if len(input_data["config"]["bboxes"]["roi2"]) == 4:
+                        W = img_open.shape[1]; H = img_open.shape[0]
+                        roi2 = input_data["config"]["bboxes"]["roi2"]
+                        roi2 = [int(roi2[0]*W), int(roi2[1]*H), int(roi2[2]*W), int(roi2[3]*H)]
     
-    return img_tag, img_open, img_close, roi
-        
+    return img_tag, img_open, img_close, roi1, roi2
+
 def inspection_disconnector(input_data):
     """
     刀闸识别
@@ -206,93 +68,62 @@ def inspection_disconnector(input_data):
     
     ## 提取data信息
     out_data = {"code": 0, "data":{}, "msg": "Success request disconnector"}
-    img_tag, img_open, img_close, roi = get_input_data(input_data)
+    img_tag, img_open, img_close, roi1, roi2 = get_input_data(input_data)
 
+    ## 保存模板图与待分析图
     cv2.imwrite(os.path.join(save_dir,"img_close.jpg"), img_close)
     cv2.imwrite(os.path.join(save_dir,"img_tag.jpg"), img_tag)
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
 
-    ## 对图像做矫正偏移
-    ## 使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
-    M = sift_match(img_open, img_tag).astype(np.float32) # 2*3偏移矩阵
-    img_tag_warped = correct_offset(img_open, img_tag, M)
-    if M is None:
-        out_data["msg"] = "img_tar is not match img_open!"
-        return out_data
+    ## 求刀闸状态
+    bboxes = [roi1, roi2]
+    state, bboxes_tag = disconnector_state(img_open, img_close, img_tag, bboxes)
 
-    ## 截取图片区域，并且用ssim算法比较相似性
-    img_op = img_open[roi[1]: roi[3], roi[0]: roi[2]]
-    img_cl = img_close[roi[1]: roi[3], roi[0]: roi[2]]
-    img_tag_warp = img_tag_warped[roi[1]: roi[3], roi[0]: roi[2]]
-    score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
-    score_close = my_ssim(img_tag_warp, img_cl)
+    out_data["data"] = {"result": state_map[state]["name"]}
 
-    ## 将计算结果复制到return data中。
-    if score_close > score_open:
-        result = 1
-    else:
-        result = 0
-    out_data["data"] = {"result": result, "score_open": score_open, "score_close": score_close, "img_result": "image"}
+    ## 保存结果
+    for i in range(2):
+        b1 = bboxes[0]; b2 = bboxes[1]
+        bt1 = bboxes_tag[0]; bt2 = bboxes_tag[1]
+        cv2.rectangle(img_open, (b1[0], b1[1]), (b1[2], b1[3]), state_map["分"]["color"][0], thickness=2)
+        cv2.rectangle(img_open, (b2[0], b2[1]), (b2[2], b2[3]), state_map["分"]["color"][0], thickness=2)
+        cv2.rectangle(img_close, (b1[0], b1[1]), (b1[2], b1[3]), state_map["合"]["color"][0], thickness=2)
+        cv2.rectangle(img_close, (b2[0], b2[1]), (b2[2], b2[3]), state_map["合"]["color"][0], thickness=2)
+        cv2.rectangle(img_tag, (bt1[0], bt1[1]), (bt1[2], bt1[3]), state_map[state]["color"][0], thickness=2)
+        cv2.rectangle(img_tag, (bt2[0], bt2[1]), (bt2[2], bt2[3]), state_map[state]["color"][1], thickness=2)
+    img_tag = img_chinese(img_tag, state_map[state]["name"], (10, 50), color=state_map[state]["color"][0], size=40)
 
-    label_s = "op : cl = %.3f : %.3f" % (score_open, score_close)
-    print(label_s)
-
-    ## 画图，将结果用图片的形式展示结果，有利于debug
-    # cv2.imwrite(os.path.join(save_dir,"img_op.jpg"), img_op)
-    # cv2.imwrite(os.path.join(save_dir,"img_cl.jpg"), img_cl)
-    # cv2.imwrite(os.path.join(save_dir,"img_tag_warp.jpg"), img_tag_warp)
-    # cv2.rectangle(img_tag_warped, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
-    # cv2.putText(img_tag_warped, label_s, (roi[0]-5, roi[1]-5),cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), thickness=2)
-    # cv2.imwrite(os.path.join(save_dir,"img_tag_warped.jpg"), img_tag_warped)
-    cv2.rectangle(img_open, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_open_cfg.jpg"), img_open)
-    cv2.rectangle(img_close, (roi[0], roi[1]), (roi[2], roi[3]), (0, 0, 255), thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_close_cfg.jpg"), img_close)
-    lines = [[(roi[0], roi[1]), (roi[2], roi[1])],
-             [(roi[2], roi[1]), (roi[2], roi[3])],
-             [(roi[2], roi[3]), (roi[0], roi[3])],
-             [(roi[0], roi[1]), (roi[0], roi[3])],]
-    if result:
-        color = (0, 255, 0)
-    else:
-        color = (0, 0, 255)
-    for line in lines:
-        line = [convert_coor(line[0], M), convert_coor(line[1], M)]
-        cv2.line(img_tag, line[0], line[1], color, 2)
-    point = convert_coor(lines[0][0], M)
-    cv2.putText(img_tag, label_s, (point[0]-10, point[1]-10),cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=2)
     cv2.imwrite(os.path.join(save_dir,"img_tag_cfg.jpg"), img_tag)
 
     f = open(os.path.join(save_dir,"output_data.json"),"w",encoding='utf-8')
     json.dump(out_data, f, indent=2)
     f.close()
 
-    
     out_data["img_result"] = img2base64(img_tag)
-    
+
     return out_data
 
-
-if __name__ =='__main__':
+if __name__ == '__main__':
+    tag_file = "/home/yh/image/python_codes/test/test1/img_tag3.jpg"
+    open_file = "/home/yh/image/python_codes/test/test1/img_open.jpg"
+    close_file = "/home/yh/image/python_codes/test/test1/img_close.jpg"
     
-    close_file = "close_1011133344.jpg"
-    open_file = "open_20211012121525.jpg"
-    tag_file = "tag_1102104306.jpg"
-    bbox =  [315, 147, 355, 204]
+    bboxes = [[651, 315, 706, 374], [661, 400, 713, 450]]
     img_close = img2base64(cv2.imread(close_file))
     img_open = img2base64(cv2.imread(open_file))
     img_tag = img2base64(cv2.imread(tag_file))
     H, W = cv2.imread(close_file).shape[:2]
-    roi = [bbox[0] / W, bbox[1] / H, bbox[2] / W, bbox[3] / H]
-
+    roi1 = [bboxes[0][0] / W, bboxes[0][1] / H, bboxes[0][2] / W, bboxes[0][3] / H]
+    roi2 =  [bboxes[1][0] / W, bboxes[1][1] / H, bboxes[1][2] / W, bboxes[1][3] / H]
     input_data = {
         "image": img_tag,
-        "config": {"img_open": img_open, "img_close": img_close, "bboxes": {"roi": roi}},
+        "config": {"img_open": img_open, "img_close": img_close, "bboxes": {"roi1": roi1, "roi2": roi2}},
         "type": "disconnector"
     }
     out_data = inspection_disconnector(input_data)
-    
-
-
-
+    for s in out_data:
+        if s != "img_result":
+            print(s,":",out_data[s])
 
