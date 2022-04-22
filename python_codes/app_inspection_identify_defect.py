@@ -59,14 +59,13 @@ def inspection_identify_defect(input_data):
 
     out_cfg = []
     if len(tag_diff) == 0:
-        label = "0"
         img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=20)
+        out_cfg.append({"label": "0", "bbox":[]})
     else:
-        for rec in tag_diff:
-            label = "异常"
-            cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
-            img_tag_ = img_chinese(img_tag_, label, (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=20)
-            out_cfg.append({"label": "1", "bbox":rec})
+        rec = tag_diff
+        cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
+        img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=20)
+        out_cfg.append({"label": "1", "bbox":rec})
     
     out_data["data"] = out_cfg
 
@@ -83,7 +82,7 @@ def inspection_identify_defect(input_data):
 
 if __name__ == '__main__':
     ref_file = "/home/yh/image/python_codes/test/panbie/0005_normal.jpg"
-    tag_file = "/home/yh/image/python_codes/test/panbie/0005_3.jpg"
+    tag_file = "/home/yh/image/python_codes/test/panbie/0005_2.jpg"
 
     img_tag = img2base64(cv2.imread(tag_file))
     img_ref = img2base64(cv2.imread(ref_file))
