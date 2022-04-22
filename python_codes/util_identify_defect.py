@@ -12,6 +12,7 @@ import os
 import cv2
 import time
 import shutil
+import numpy as np
 
 yolov5_posun = load_yolov5_model("/data/inspection/yolov5/posun.pt") # 破损类缺陷
 yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
@@ -95,7 +96,7 @@ def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
         bbox_cfg_ref: 基准图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
         bbox_cfg_tag: 待分析图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
     return:
-        tag_diff: 不一致目标框列表
+        tag_diff: 不一致目标框,[xmin, ymin, xmax, ymax]
     """
     if len(bbox_cfg_tag) == 0:
         return []
@@ -116,8 +117,11 @@ def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
     
     if len(tag_diff) == 0:
         return []
-    else:
-        return tag_diff
+    
+    d = np.array(tag_diff, dtype=int)
+    tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
+    return tag_diff
+
 
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
@@ -128,7 +132,7 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         img_tag: 待分析图
         feat_tag: 待分析图的特征
     return:
-        tag_diff:不一致目标框列表,格式为[[x0, y0, x1, y1], ..]
+        tag_diff:不一致目标框,格式为[xmin, ymin, xmax, ymax]
     """
     tag_diff = []
     img_tag_ = img_tag.copy()
@@ -168,6 +172,8 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         tag_diff = []
         for cfg in bbox_cfg_tag:
             tag_diff.append(cfg["coor"])
+        d = np.array(tag_diff, dtype=int)
+        tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
         return tag_diff
 
     ## 旋钮开关异常判别
@@ -179,16 +185,13 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
             return tag_diff
 
     ## 指针读数变化太大
-    rec = indentify_pointer(img_ref, img_tag)
-    if len(rec) != 0:  
-        tag_diff = [rec]
-        d_ = rec
+    tag_diff = indentify_pointer(img_ref, img_tag)
+    if len(tag_diff) != 0:  
         return tag_diff
 
     # ## 像素相减类异常
-    rec = detect_diff(img_ref_, feat_ref, img_tag, feat_tag)
-    if len(rec) != 0:  
-        tag_diff = [rec]
+    tag_diff = detect_diff(img_ref_, feat_ref, img_tag, feat_tag)
+    if len(tag_diff) != 0:  
         return tag_diff
     
     return tag_diff
@@ -228,22 +231,14 @@ if __name__ == '__main__':
             tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
 
             ## 将tag_diff还原回原始大小
-            diffs = []
-            for diff in tag_diff:
-                d_ = [int(d / resize_rate) for d in diff]
-                diffs.append(d_)
-            tag_diff = diffs
+            tag_diff = [int(d / resize_rate) for d in tag_diff]
 
             ## 将结果写成txt
             if len(tag_diff) == 0:
                 s = "1," + tag_name + ",0,0\n"
             else:
-                s = ""
-                count = 0
-                for rec in tag_diff:
-                    count += 1
-                    rec = [str(rec[0]), str(rec[1]), str(rec[2]), str(rec[3])]
-                    s = s + str(count) + "," + tag_name + ",1," + ",".join(rec) + "\n"
+                tag_diff = [str(tag_diff[0]), str(tag_diff[1]), str(tag_diff[2]), str(tag_diff[3])]
+                s = "1," + tag_name + ",1," + ",".join(tag_diff) + "\n"
             out_file = os.path.join(out_dir, tag_name[:-4] + ".txt")
             f = open(out_file, "w", encoding='utf-8')
             f.write("ID,PATH,TYPE,XMIN,YMIN,XMAX,YMAX\n")
