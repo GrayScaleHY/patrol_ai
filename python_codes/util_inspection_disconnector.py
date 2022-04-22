@@ -37,7 +37,8 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
         bboxes: 框子信息,通常，前两个bbox表示ssim对比区域，后几个bbox表示OSD区域，
                 格式为[[xmin, ymin, xmax, ymax], ..]
     return: 
-        返回待分析图的当前状态,返回状态之一：[无法判别状态, 异常, 分, 合]
+        state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
+        bboxes_tag: 模板图上的两个框框映射到待分析图上的大概位置，[[xmin, ymin, xmax, ymax], ..]
     """
     feat_open = sift_create(img_open) # 提取参考图sift特征
     feat_tag = sift_create(img_tag) # 提取待分析图sift特征
@@ -45,6 +46,13 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
     M = sift_match(feat_open, feat_tag, rm_regs=bboxes[2:]) # 求偏移矩阵
     img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
 
+    ## 将模板图上的bbox映射到待分析图上，求bboxes_tag
+    bboxes_tag = []
+    for b in bboxes[:2]:
+        bbox = list(convert_coor((b[0], b[1]), M)) + list(convert_coor((b[2], b[3]), M))
+        bboxes_tag.append(bbox)
+
+    ## 分析两个bbox里面的刀闸状态
     states = []
     for bbox in bboxes[:2]:
         ## 判断bbox是否符合要求
@@ -52,7 +60,7 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
         if 0 < bbox[0] < bbox[2] < W and 0 < bbox[1] < bbox[3] < H:
             pass
         else:
-            return "无法判别状态"
+            return "无法判别状态", bboxes_tag
 
         ## 截取图片区域，并且用ssim算法比较相似性
         img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
@@ -69,13 +77,13 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
     
     ## 判断当前刀闸状态
     if states[0] != states[1]:
-        return "异常"
+        return "异常", bboxes_tag
     
     if states[0] == "open" and states[1] == "open":
-        return "分"
+        return "分", bboxes_tag
 
     if states[0] == "close" and states[1] == "close":
-        return "合"
+        return "合", bboxes_tag
 
 
 def video_states(tag_video, img_open, img_close, bboxes):
@@ -99,7 +107,7 @@ def video_states(tag_video, img_open, img_close, bboxes):
 
         if ret==True:
             if count % step == 0:
-                state = disconnector_state(img_open, img_close, img_tag, bboxes)
+                state, _ = disconnector_state(img_open, img_close, img_tag, bboxes)
                 states.append(state)
             count += 1
         else:
