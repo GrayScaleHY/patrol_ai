@@ -4,7 +4,7 @@ import os
 import cv2
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 
-yolov5_red_defect= load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
+yolov5_red_defect= load_yolov5_model("/data/inspection/yolov5/rec_defect.pt") # 送检的17类缺陷
 
 def get_contest_info():
     url = "http://10.85.XXX.XXX:XXX/contest/get_contest_info"
@@ -18,9 +18,8 @@ def post_submit_result(result_data):
     res = requests.post(url=url, data=result_text).json()
     print(res)
 
-
 if __name__ == '__main__':
-    img_dir = "tuilishuju"
+    img_dir = "test/tuilishuju"
     list_file = os.path.join(img_dir, "train_list.txt")
     contestantId = "49e6264e517d428796b532796b74a364"
 
@@ -52,4 +51,9 @@ if __name__ == '__main__':
     
     result_data = {"contestantId":contestantId,"isEnd":1,"results":result}
     post_submit_result(result_data)
+
+    # f = open("result.json", "w" ,encoding='utf-8')
+    # json.dump(result_data, f)
+    # f.close()
+    # print(len(result_data["results"]))
 
