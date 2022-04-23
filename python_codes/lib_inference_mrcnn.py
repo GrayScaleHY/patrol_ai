@@ -160,6 +160,7 @@ def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.5):
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_thresh
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
     cfg.DATASETS.TEST = ("meter", )
+    # cfg.MODEL.DEVICE='cpu'
     maskrcnn_weights = DefaultPredictor(cfg)
     return maskrcnn_weights
 
