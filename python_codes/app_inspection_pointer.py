@@ -8,11 +8,8 @@ from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
 from lib_sift_match import sift_match, convert_coor, sift_create
-feat_ref = sift_create(img_ref)
-feat_tag = sift_create(img_tag)
-M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 ## 加载模型
 maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
