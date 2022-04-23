@@ -117,7 +117,7 @@ def inspection_level_gauge(input_data):
     cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-5)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), thickness=1)     
 
     # 用maskrcnn检测油和空气的mask.
-    contours, _, (masks, classes) = inference_maskrcnn(maskrcnn_oil, img_roi)
+    contours, _, (masks, classes, scores) = inference_maskrcnn(maskrcnn_oil, img_roi)
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
         cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
