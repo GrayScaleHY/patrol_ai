@@ -65,6 +65,9 @@ def inspection_disconnector(input_data):
     TIME_START = time.strftime("%m-%d-%H-%M-%S")
     save_dir = os.path.join(os.path.join("inspection_result/disconnector",TIME_START)) #保存图片的路径
     os.makedirs(save_dir, exist_ok=True)
+    f = open(os.path.join(save_dir, "input_data.json"), "w")
+    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
     
     ## 提取data信息
     out_data = {"code": 0, "data":{}, "msg": "Success request disconnector"}
@@ -106,7 +109,7 @@ def inspection_disconnector(input_data):
     return out_data
 
 if __name__ == '__main__':
-    tag_file = "/home/yh/image/python_codes/test/test1/img_tag3.jpg"
+    tag_file = "/home/yh/image/python_codes/test/test1/img_tag2.jpg"
     open_file = "/home/yh/image/python_codes/test/test1/img_open.jpg"
     close_file = "/home/yh/image/python_codes/test/test1/img_close.jpg"
     
