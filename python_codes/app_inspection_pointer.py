@@ -7,14 +7,16 @@ import numpy as np
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
-from app_inspection_disconnector import sift_match, convert_coor
+from lib_sift_match import sift_match, convert_coor, sift_create
+feat_ref = sift_create(img_ref)
+feat_tag = sift_create(img_tag)
+M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 ## 加载模型
-yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
 maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
-
+yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -315,7 +317,9 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 求出目标图像的感兴趣区域
-    M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+    feat_ref = sift_create(img_ref)
+    feat_tag = sift_create(img_tag)
+    M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
     if roi is not None:
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
@@ -427,7 +431,7 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/home/yh/image/python_codes/inspection_result/input_data.json","r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/inspection_result/pointer/03-21-14-26-56/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)

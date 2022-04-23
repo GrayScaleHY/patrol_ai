@@ -4,7 +4,7 @@ import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
-from app_inspection_disconnector import sift_match, convert_coor
+from lib_sift_match import sift_match, convert_coor, sift_create
 import numpy as np
 import config_object_name
 from lib_help_base import color_list
@@ -82,7 +82,9 @@ def inspection_counter(input_data):
     if roi is None:
         M = None
     else:
-        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+        feat_ref = sift_create(img_ref)
+        feat_tag = sift_create(img_tag)
+        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
     if M is None:
         if input_data["type"] == "digital":

@@ -4,7 +4,7 @@ import time
 import json
 import numpy as np
 from lib_image_ops import base642img, img2base64, img_chinese
-from app_inspection_disconnector import sift_match, convert_coor
+from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import load_ppocr, inference_ppocr
 
@@ -83,7 +83,9 @@ def inspection_qrcode(input_data):
     if roi is None:
         M = None
     else:
-        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+        feat_ref = sift_create(img_ref)
+        feat_tag = sift_create(img_tag)
+        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
     if M is None:
         roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]

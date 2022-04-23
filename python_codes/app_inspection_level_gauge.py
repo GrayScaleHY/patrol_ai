@@ -3,13 +3,11 @@ import cv2
 import time
 import json
 import math
-from lib_image_ops import base642img, img2base64, img_chinese
+from lib_image_ops import base642img, img2base64
 from lib_help_base import oil_high
 import numpy as np
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
-from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
-from app_inspection_disconnector import sift_match, convert_coor
+from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn
+from lib_sift_match import sift_match, convert_coor, sift_create
 
 ## 加载模型
 maskrcnn_oil = load_maskrcnn_model("/data/inspection/maskrcnn/oil_air.pth",num_classes=2) # 加载油位的maskrcnn模型
@@ -94,7 +92,9 @@ def inspection_level_gauge(input_data):
     if roi is None:
         M = None
     else: 
-        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+        feat_ref = sift_create(img_ref)
+        feat_tag = sift_create(img_tag)
+        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
     
     if M is None:
         roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]

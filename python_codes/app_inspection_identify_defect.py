@@ -4,8 +4,7 @@ import cv2
 import json
 from util_identify_defect import identify_defect
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_help_base import color_list
-from lib_sift_match import _resize_feat, detect_diff, sift_match, sift_create
+from lib_sift_match import sift_create
 import numpy as np
 
 def get_input_data(input_data):

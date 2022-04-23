@@ -4,7 +4,7 @@ import cv2
 import time
 import numpy as np
 import shutil
-from app_inspection_disconnector import correct_offset, my_ssim, convert_coor
+from lib_sift_match import sift_match, convert_coor, sift_create, my_ssim, correct_offset
 
 
 dir_ = "disconnector"

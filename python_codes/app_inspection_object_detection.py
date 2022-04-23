@@ -5,7 +5,7 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_help_base import color_list
-from app_inspection_disconnector import sift_match, convert_coor
+from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 import numpy as np
 
@@ -168,7 +168,9 @@ def inspection_object_detection(input_data):
 
     ## 求出目标图像的感兴趣区域
     if roi is not None:
-        M = sift_match(img_ref, img_tag, ratio=0.5, ops="Perspective")
+        feat_ref = sift_create(img_ref)
+        feat_tag = sift_create(img_tag)
+        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi
