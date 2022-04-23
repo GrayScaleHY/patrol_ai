@@ -49,24 +49,24 @@ if __name__ == "__main__":
     import glob
     from lib_image_ops import img_chinese
 
-    det_model_dir = "/home/yh/PaddleOCR/ch_PP-OCRv2_det_infer/"
-    cls_model_dir = "/home/yh/PaddleOCR/ch_ppocr_mobile_v2.0_cls_infer/"
-    rec_model_dir = "/home/yh/PaddleOCR/ch_PP-OCRv2_rec_infer/"
+    det_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_det_infer/"
+    cls_model_dir = "/data/inspection/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+    rec_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_rec_infer/"
     text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
-    for image_file in glob.glob("/home/yh/image/python_codes/test/*.png"):
-        img = cv2.imread(image_file)
-        result = inference_ppocr(img, text_sys)
-        print("------------------------------")
-        print(image_file)
-        print(result)
-        for out_data in result:
-            bbox = out_data["bbox"]
-            content = out_data["content"]
-            cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
-                        (int(bbox[2]), int(bbox[3])), (0, 0, 255), thickness=2)
-            img = img_chinese(img, content, (int(bbox[0]), int(bbox[1]-20)),(0, 0, 255), size=20)
-        cv2.imwrite(image_file[:-4] + "_result.jpg", img)
+    image_file = "test/img_tag.jpg"
+    img = cv2.imread(image_file)
+    result = inference_ppocr(img, text_sys)
+    print("------------------------------")
+    print(image_file)
+    print(result)
+    for out_data in result:
+        bbox = out_data["bbox"]
+        content = out_data["content"]
+        cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                    (int(bbox[2]), int(bbox[3])), (0, 0, 255), thickness=2)
+        img = img_chinese(img, content, (int(bbox[0]), int(bbox[1]-20)),(0, 0, 255), size=20)
+    cv2.imwrite(image_file[:-4] + "_result.jpg", img)
 
 
 
