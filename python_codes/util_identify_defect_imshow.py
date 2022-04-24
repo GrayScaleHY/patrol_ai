@@ -116,8 +116,17 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     img_tag_ = img_tag.copy()
     img_ref_ = img_ref.copy()
     
+    ## 将图片中osd区域中的sift特征点去掉。
+    H, W = img_ref.shape[:2]
+    osd_boxes = [[0, 0, 1, 0.12], [0, 0.88, 1, 1]] # 将图像上下12%的区域内sift特征点去掉
+    # osd_boxes = [] # 不处理osd区域
+    rm_regs = []
+    for b in osd_boxes:
+        b_ = [int(b[0] * W), int(b[1] * H), int(b[2] * W), int(b[3] * H)]
+        rm_regs.append(b_)
+
     ## 基于tag对ref进行矫正
-    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+    M = sift_match(feat_tag, feat_ref, rm_regs=rm_regs, ratio=0.5, ops="Affine")
     img_ref = correct_offset(img_ref, M)
 
     # ## 箱门闭合异常判别
@@ -213,6 +222,11 @@ if __name__ == '__main__':
     in_dir = "test/panbie"  # 判别图像存放目录
     out_dir = "test/panbie_result" # 输出结果目录
     resize_rate = 0.5
+
+    osd_boxes = [[0, 0, 0.4, 0.1],
+                 [0.6, 0, 1, 0.1],
+                 [0, 0, 0.4, 0.1],
+                 [0, 0, 0.4, 0.1]]
 
     os.makedirs(out_dir, exist_ok=True)
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
