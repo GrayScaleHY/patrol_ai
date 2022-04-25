@@ -255,6 +255,13 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
     # cv2.imwrite("test1/tag_cut.jpg", img_tag)
     # cv2.imwrite("test1/ref_cut.jpg", img_ref)
 
+    ## 将img_tag_hsv的亮度(v)平均值调整为等于img_ref_hsv的亮度(v)平均值
+    img_ref_hsv = cv2.cvtColor(img_ref, cv2.COLOR_BGR2HSV)
+    img_tag_hsv = cv2.cvtColor(img_tag, cv2.COLOR_BGR2HSV)
+    rate = np.sum(img_ref_hsv[:, :, 2]) / np.sum(img_tag_hsv[:, :, 2])
+    img_tag_hsv[:, :, 2] = rate * img_tag_hsv[:, :, 2]
+    img_tag = cv2.cvtColor(img_tag_hsv, cv2.COLOR_HSV2BGR)
+
     ## 将图片转为灰度图后相减，再二值化，得到差异图片
     if len(img_ref.shape) == 3:
         img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
