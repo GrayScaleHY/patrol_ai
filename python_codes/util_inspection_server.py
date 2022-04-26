@@ -7,8 +7,8 @@ from app_inspection_disconnector import inspection_disconnector
 from app_inspection_counter import inspection_counter
 from app_inspection_object_detection import inspection_object_detection
 from app_inspection_qrcode import inspection_qrcode
-from app_inspection_level_gauge import inspection_level_gauge
-from app_inspection_xishiqi import inspection_xishiqi
+# from app_inspection_level_gauge import inspection_level_gauge
+# from app_inspection_xishiqi import inspection_xishiqi
 from app_inspection_identify_defect import inspection_identify_defect
 from config_version import code_version
 
@@ -134,35 +134,35 @@ def inspection_qrcode_server():
     print("----------------------------------------------")
     return jsonify(res)
 
-@app.route('/inspection_level_gauge/', methods=['POST'])
-def inspection_level_gauge_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_level_gauge(data)
-    print("meter_location result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# @app.route('/inspection_level_gauge/', methods=['POST'])
+# def inspection_level_gauge_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_level_gauge(data)
+#     print("meter_location result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
-@app.route('/inspection_xishiqi_color/', methods=['POST'])
-def inspection_xishiqi_color_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_xishiqi(data)
-    print("meter_location result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# @app.route('/inspection_xishiqi_color/', methods=['POST'])
+# def inspection_xishiqi_color_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_xishiqi(data)
+#     print("meter_location result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
 ## 目标检测
 @app.route('/inspection_pressplate/', methods=['POST'])
