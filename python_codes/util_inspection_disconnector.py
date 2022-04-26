@@ -51,6 +51,9 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
     for b in bboxes[:2]:
         bbox = list(convert_coor((b[0], b[1]), M)) + list(convert_coor((b[2], b[3]), M))
         bboxes_tag.append(bbox)
+    
+    if M is None:
+        return "无法判别状态", bboxes_tag
 
     ## 分析两个bbox里面的刀闸状态
     states = []
