@@ -2,6 +2,9 @@
 paddle paddle ocr 的推理方法。
 https://github.com/PaddlePaddle/PaddleOCR
 github源目录下的tools改名问ppocr_tools,为了避免detectron2冲突。
+
+安装paddlepaddle: https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html
+安装paddleocr: pip install "paddleocr>=2.0.1" -i https://mirror.baidu.com/pypi/simple
 """
 
 import ppocr_tools.infer.utility as utility
