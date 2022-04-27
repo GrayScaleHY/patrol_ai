@@ -159,6 +159,7 @@ if __name__ == "__main__":
     cfg_dir = "test/cfg"
     out_dir = "test/tuilishuju_output"
     os.makedirs(out_dir, exist_ok=True)
+    count = 0
 
     for ref_video in glob.glob(os.path.join(video_dir, "*_normal.mp4")):
 
@@ -184,9 +185,10 @@ if __name__ == "__main__":
 
             ## 保存比赛的格式
             tag_name = os.path.basename(tag_video)
-            id_ = int(tag_name.split("_")[-1][:-4])
+            id_ = count
             s = "ID,Name,Type\n"
             s = s + str(id_) + "," + tag_name + "," + str(f_state)
             f = open(os.path.join(out_dir, tag_name[:-4] + ".txt"), "w", encoding='utf-8')
             f.write(s)
             f.close()
+            count += 1
