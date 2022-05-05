@@ -13,7 +13,7 @@ import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
-device = select_device("cpu")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def load_yolov5_model(model_file):
     """
@@ -36,8 +36,11 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.4, iou_thres=0.
     # img = cv2.imread(img_file)
     img_raw = img.copy()  #由于需要resize，先拷贝一份备用。
 
-    ## 将numpy转成yolov5格式input data.
-    img = letterbox(img, new_shape=resize)[0] # resize图片
+    ## 将numpy转成yolov5格式input data. 
+    img_resize = letterbox(img, new_shape=resize)[0] # resize图片
+    img_zeros = np.zeros([resize, resize, 3], dtype=np.uint8) 
+    img_zeros[:img_resize.shape[0], :img_resize.shape[1], :img_resize.shape[2]] = img_resize
+    img = img_zeros # 将图片resize成正方形
     img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3 x 640 x 640
     img = torch.from_numpy(img.copy()).to(device) # numpy转tenso
     img = img.float()
@@ -51,7 +54,7 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.4, iou_thres=0.
 
     ## 使用NMS挑选预测结果
     pred_max = non_max_suppression(pred, conf_thres, iou_thres)[0] # Apply NMS
-    pred_max = scale_coords(img.shape[2:], pred_max, img_raw.shape) #bbox映射为resize之前的大小
+    pred_max = scale_coords(img_resize.shape, pred_max, img_raw.shape) #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
     labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
@@ -92,12 +95,13 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
 
     ## 批处理
     for img_file in img_list:
-        img = cv2.imread(img_file)
-        # [{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
-        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=640, conf_thres=conf_thres, iou_thres=iou_thres) #推理
         print("--------------------------------")
         print(img_file)
+        img = cv2.imread(img_file)
+
+        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=640, conf_thres=conf_thres, iou_thres=iou_thres) #推理
         print(bbox_cfg)
+
         ## 保存推理结果
         res_file = os.path.join(result_dir, os.path.basename(img_file)) 
         label_file = os.path.join(label_dir, os.path.basename(img_file)[:-4]+".txt")
@@ -120,11 +124,12 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
         f = open(label_file, "w", encoding='utf-8')
         f.write(s)
         f.close()
-        cv2.imwrite(res_file, img)
+        cv2.imwrite(res_file[:-4] + ".jpg", img)
 
 
 if __name__ == '__main__':
-    weights = '/data/home/zgl/yolov5/runs/train/class_7_focal_200/weights/best.pt'
-    source = "/home/yh/image/python_codes/test/test"
-    save_dir = "./result"
-    inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2)
+    weights = '/data/models/sh_data/9_1_datasplit7/weights/best.pt'
+    source = "/data/yolov5/nanjing_data/images"
+    save_dir = "/data/yolov5/nanjing_data/result_1"
+    inference_batch(weights, source, save_dir, conf_thres=0.3, iou_thres=0.3)
+
