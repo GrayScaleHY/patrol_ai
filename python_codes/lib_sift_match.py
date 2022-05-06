@@ -39,6 +39,19 @@ def _resize_feat(img):
     return img_resize, rate, feat
 
 
+
+def my_dft(im, eq=False, int=False):
+    eps = 1e-5
+    # imf = fft2(im)
+    # mag = np.abs(imf)
+    imf = cv2.dft(np.float32(im),flags = cv2.DFT_COMPLEX_OUTPUT)
+    mag = np.sqrt(np.square(imf[:, :, 0]) + np.square(imf[:, :, 1]))
+    # imp = np.log(mag + eps)
+    imp = 20 * np.log10(mag + eps) # convert to dB scale
+    imp = cv2.equalizeHist(imp.astype(np.uint8)) if eq else imp
+    imp = imp.astype(np.uint8) if int else imp
+    return imp
+
 def my_ssim(img1, img2):
     """
     python官方的计算ssim的包。
@@ -55,7 +68,11 @@ def my_ssim(img1, img2):
         img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
     if len(img2.shape) == 3:
         img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
-    score = sk_cpt_ssim(img1, img2) #输入灰度图 , multichannel=True
+
+    img1 = my_dft(img1, eq=False, int=False)
+    img2 = my_dft(img2, eq=False, int=False)
+
+    score = sk_cpt_ssim(img1, img2, multichannel=False) #输入灰度图 , multichannel=True
     return score
 
 
