@@ -4,9 +4,10 @@ import json
 import numpy as np
 import os
 import glob
+import time
 
 
-def json2bboxes(json_file):
+def json2bboxes(json_file, img_open):
     """
     将json_file里的框子信息提取出来。
     return:
@@ -27,7 +28,7 @@ def json2bboxes(json_file):
     return bboxes
 
 
-def disconnector_state(img_open, img_close, img_tag, bboxes):
+def disconnector_state(img_open, img_close, img_tag, bboxes, feat_open=[], feat_tag=[]):
     """
     刀闸分合判别
     args:
@@ -40,11 +41,18 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
         state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
         bboxes_tag: 模板图上的两个框框映射到待分析图上的大概位置，[[xmin, ymin, xmax, ymax], ..]
     """
-    feat_open = sift_create(img_open) # 提取参考图sift特征
-    feat_tag = sift_create(img_tag) # 提取待分析图sift特征
+    if len(feat_open) == 0:
+        feat_open = sift_create(img_open) # 提取参考图sift特征
+    if len(feat_tag) == 0:
+        feat_tag = sift_create(img_tag) # 提取待分析图sift特征
 
-    M = sift_match(feat_open, feat_tag, rm_regs=bboxes[2:]) # 求偏移矩阵
+    M = sift_match(feat_open, feat_tag, rm_regs=bboxes[2:], ratio=0.5, ops="Affine") # 求偏移矩阵
     img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
+
+    ## 将框子区域在open和close和tag文件中画出来，以方便查看矫正偏移对不对
+    # open_ = img_open.copy()
+    # close_ = img_close.copy()
+    # tag_ = img_tag_warped.copy()
 
     ## 将模板图上的bbox映射到待分析图上，求bboxes_tag
     bboxes_tag = []
@@ -57,6 +65,7 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
 
     ## 分析两个bbox里面的刀闸状态
     states = []
+    s = ""
     for bbox in bboxes[:2]:
         ## 判断bbox是否符合要求
         H, W = img_tag.shape[:2]
@@ -71,22 +80,44 @@ def disconnector_state(img_open, img_close, img_tag, bboxes):
         img_tag_warp = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
         score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
         score_close = my_ssim(img_tag_warp, img_cl)
+        # print(score_open, ":", score_close)
 
         ## 根据score_open和score_close对比，判断该框框的状态。
         if score_close > score_open:
-            states.append("close")
+            state_ = "close"
         else:
-            states.append("open")
+            state_ = "open"
+        states.append(state_)
+        
+        s = s + " [ " + str(round(score_close, 3)) + ", " + str(round(score_open,3)) + " ] "
+        
+        ## 将结果显示在图上，方便后面debug
+    #     b = bbox
+    #     s_= state_ + " [ " + str(round(score_close, 3)) + ", " + str(round(score_open,3)) + " ] "
+    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_op_"+str(round(score_open,3)) + ".jpg", img_op)
+    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_cl_"+str(round(score_close,3)) + ".jpg", img_cl)
+    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_tag_warp.jpg", img_tag_warp)
+    #     cv2.rectangle(open_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+    #     cv2.rectangle(close_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+    #     cv2.rectangle(tag_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
+    #     cv2.putText(tag_, s_, (b[0], b[1]-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), thickness=2)
+    # cv2.imwrite("test/cfg1/img_open_.jpg", open_)
+    # cv2.imwrite("test/cfg1/img_close_.jpg", close_)
+    # cv2.imwrite("test/cfg1/img_tag_.jpg", tag_)
     
     ## 判断当前刀闸状态
     if states[0] != states[1]:
-        return "异常", bboxes_tag
+        state = "异常"
     
     if states[0] == "open" and states[1] == "open":
-        return "分", bboxes_tag
+        state = "分"
 
     if states[0] == "close" and states[1] == "close":
-        return "合", bboxes_tag
+        state = "合"
+
+    print(state + s)
+
+    return state, bboxes_tag
 
 
 def video_states(tag_video, img_open, img_close, bboxes):
@@ -100,26 +131,40 @@ def video_states(tag_video, img_open, img_close, bboxes):
     return:
         states: 视频状态列表，例如：[分, 异常, 合]
     """
-    cap = cv2.VideoCapture(tag_video) ## 建立视频对象
-    states = []
-    step = 3
-    count = 0
-    while(cap.isOpened()):
+    step = 2 # 多少帧抽一帧
 
+    feat_open = sift_create(img_open)
+
+    cap = cv2.VideoCapture(tag_video) ## 建立视频对象
+    frame_number = cap.get(7)  # 视频文件的帧数
+
+    states = []
+    count = 0
+    counts = []
+    while(cap.isOpened()):
         ret, img_tag = cap.read() # 逐帧读取
 
         if ret==True:
-            if count % step == 0:
-                state, _ = disconnector_state(img_open, img_close, img_tag, bboxes)
+            # if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
+            if count % 2 == 0:
+                state, _ = disconnector_state(img_open, img_close, img_tag, bboxes, feat_open)
                 states.append(state)
+                counts.append(count)
+
+                # cv2.imwrite("test/out_file/" + str(count) + ".png", img_tag, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+
             count += 1
         else:
             break
 
+    print("frame indexs:", counts)
+    print("states list:", states)
+
     cap.release() # 释放内存
+
     return states
 
-def final_state(states, len_window=5):
+def final_state(states, len_window=3):
     """
     判断states列表的动状态。
     用固定大小的滑窗在states上滑动，当滑窗内的元素都相同，则表示为该时刻的状态，通过对比起始状态和结尾状态判断states的动状态。
@@ -160,28 +205,28 @@ if __name__ == "__main__":
     out_dir = "test/tuilishuju_output"
     os.makedirs(out_dir, exist_ok=True)
     count = 0
-
+    start = time.time()
     for ref_video in glob.glob(os.path.join(video_dir, "*_normal.mp4")):
 
         file_id = os.path.basename(ref_video).split("_")[0]
 
-        open_file = os.path.join(cfg_dir, file_id + "_normal_off.jpg")
-        close_file = os.path.join(cfg_dir, file_id + "_normal_on.jpg")
+        open_file = os.path.join(cfg_dir, file_id + "_normal_off.png")
+        close_file = os.path.join(cfg_dir, file_id + "_normal_on.png")
         json_file = os.path.join(cfg_dir, file_id + "_normal.json")
 
         img_open = cv2.imread(open_file)
         img_close = cv2.imread(close_file)
-        bboxes = json2bboxes(json_file) # 获取json文件中的bboxes信息
+        bboxes = json2bboxes(json_file, img_open) # 获取json文件中的bboxes信息
         
         for tag_video in glob.glob(os.path.join(video_dir, file_id + "_*.mp4")):
-
+            
             if tag_video.endswith("normal.mp4"):
                 continue
+            print("process video:", tag_video)
 
             states = video_states(tag_video, img_open, img_close, bboxes) # 求tag_video的状态列表
-            print("state list:", states)
-            f_state = final_state(states, len_window=5) # 求最终状态
-            print("final state:", f_state)
+            f_state = final_state(states, len_window=4) # 求最终状态
+            print(f_state)
 
             ## 保存比赛的格式
             tag_name = os.path.basename(tag_video)
@@ -192,3 +237,4 @@ if __name__ == "__main__":
             f.write(s)
             f.close()
             count += 1
+    print("spend time total:", time.time() - start)
