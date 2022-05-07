@@ -1,4 +1,4 @@
-from lib_sift_match import my_ssim, sift_create, sift_match, correct_offset, convert_coor
+from lib_sift_match import my_ssim, sift_create, sift_match, correct_offset, convert_coor, cw_ssim_index
 import cv2
 import json
 import numpy as np
@@ -78,8 +78,10 @@ def disconnector_state(img_open, img_close, img_tag, bboxes, feat_open=[], feat_
         img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
         img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
         img_tag_warp = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-        score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
-        score_close = my_ssim(img_tag_warp, img_cl)
+        # score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
+        # score_close = my_ssim(img_tag_warp, img_cl)
+        score_open = cw_ssim_index(img_tag_warp, img_op) #计算ssim结构相似性
+        score_close = cw_ssim_index(img_tag_warp, img_cl)
         # print(score_open, ":", score_close)
 
         ## 根据score_open和score_close对比，判断该框框的状态。
@@ -145,8 +147,8 @@ def video_states(tag_video, img_open, img_close, bboxes):
         ret, img_tag = cap.read() # 逐帧读取
 
         if ret==True:
-            # if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
-            if count % 2 == 0:
+            if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
+
                 state, _ = disconnector_state(img_open, img_close, img_tag, bboxes, feat_open)
                 states.append(state)
                 counts.append(count)
@@ -164,7 +166,7 @@ def video_states(tag_video, img_open, img_close, bboxes):
 
     return states
 
-def final_state(states, len_window=3):
+def final_state(states, len_window=5):
     """
     判断states列表的动状态。
     用固定大小的滑窗在states上滑动，当滑窗内的元素都相同，则表示为该时刻的状态，通过对比起始状态和结尾状态判断states的动状态。
@@ -225,7 +227,7 @@ if __name__ == "__main__":
             print("process video:", tag_video)
 
             states = video_states(tag_video, img_open, img_close, bboxes) # 求tag_video的状态列表
-            f_state = final_state(states, len_window=4) # 求最终状态
+            f_state = final_state(states, len_window=5) # 求最终状态
             print(f_state)
 
             ## 保存比赛的格式
