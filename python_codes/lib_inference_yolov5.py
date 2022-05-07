@@ -13,7 +13,7 @@ import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
-device = select_device("1")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("cpu")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def load_yolov5_model(model_file):
     """
