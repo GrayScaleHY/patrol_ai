@@ -13,7 +13,7 @@ import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
-device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("1")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def load_yolov5_model(model_file):
     """
@@ -114,8 +114,8 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
             c = bbox["coor"]
 
             ## 将结果画在图上
-            cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-            cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+            # cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+            # cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
 
             ## 输出结果
             result = [str(count),os.path.basename(img_file),label,str(score),str(c[0]),str(c[1]),str(c[2]),str(c[3])]
@@ -124,12 +124,15 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
         f = open(label_file, "w", encoding='utf-8')
         f.write(s)
         f.close()
-        cv2.imwrite(res_file[:-4] + ".jpg", img)
+        # cv2.imwrite(res_file[:-4] + ".jpg", img)
 
 
 if __name__ == '__main__':
-    weights = '/data/models/sh_data/9_1_datasplit7/weights/best.pt'
-    source = "/data/yolov5/nanjing_data/images"
+    import shutil
+    weights = '/data/yolov5/weights/yolov5l.pt'
+    source = "/data/dataset/ut+sh+sy/all_data"
     save_dir = "/data/yolov5/nanjing_data/result_1"
     inference_batch(weights, source, save_dir, conf_thres=0.3, iou_thres=0.3)
+                
+
 
