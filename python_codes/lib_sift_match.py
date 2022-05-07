@@ -10,6 +10,9 @@ try:
 except:
     from skimage.metrics import structural_similarity as sk_cpt_ssim
 from lib_image_ops import img_chinese
+import pyrtools as pt
+from scipy import signal
+from scipy.ndimage import uniform_filter, gaussian_filter
 
 
 def _resize(img):
@@ -37,8 +40,6 @@ def _resize_feat(img):
     img_resize, rate = _resize(img)
     feat = sift_create(img_resize)
     return img_resize, rate, feat
-
-
 
 def my_dft(im, eq=False, int=False):
     eps = 1e-5
@@ -75,6 +76,59 @@ def my_ssim(img1, img2):
     score = sk_cpt_ssim(img1, img2, multichannel=False) #输入灰度图 , multichannel=True
     return score
 
+
+def gkern(height=7, width=7, std=3, scale=True):
+    """Returns a 2D Gaussian kernel array."""
+    gkernh = signal.gaussian(height, std=std).reshape(height, 1)
+    gkernv = signal.gaussian(width, std=std).reshape(width, 1)
+    gkern2d = np.outer(gkernh, gkernv)
+    gkern2d = gkern2d / np.sum(gkern2d) * gkern2d.size if scale else gkern2d
+    return gkern2d
+
+def ssim_(band1, band2):
+  
+    K = 1e-5
+    win_size = 7
+    fargs = {'size': win_size}
+    corr = np.abs(band1 * band2.conj())
+    varr = np.abs(band1) ** 2 + np.abs(band2) ** 2
+    corr_band = uniform_filter(corr, **fargs)
+    varr_band = uniform_filter(varr, **fargs)
+    cssim_map = (2 * corr_band + K) / (varr_band + K)
+    gauss_kern = gkern(height=corr.shape[0], width=corr.shape[1], std=np.max(corr.shape) / 4)
+    if len(cssim_map.shape) == 3:
+        nchan = cssim_map.shape[2]
+        gauss_kern = np.expand_dims(gauss_kern, axis=-1)
+        gauss_kern = np.tile(gauss_kern, [1, 1, nchan])
+    cssim_map = cssim_map * gauss_kern
+    res = np.mean(cssim_map)
+    return res
+
+def cw_ssim_index(im1, im2, height='auto', order=4):
+    """
+    连续小波变换ssim。
+    """
+    if len(im1.shape) == 3:
+        im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2GRAY)
+    if len(im2.shape) == 3:
+        im2 = cv2.cvtColor(im2, cv2.COLOR_RGB2GRAY)
+
+    assert im1.shape == im2.shape, "im1.shape == im2.shape"
+    nrow, ncol = im1.shape
+    pyr1 = pt.pyramids.SteerablePyramidFreq(im1, height=height, order=order, is_complex=True)
+    pyr2 = pt.pyramids.SteerablePyramidFreq(im2, height=height, order=order, is_complex=True)
+    level = pyr1.num_scales
+    nori = pyr1.num_orientations 
+    ssims = []
+  
+    for i in range(level):
+        for j in range(nori):
+            band1 = pyr1.pyr_coeffs[(i, j)]
+            band2 = pyr2.pyr_coeffs[(i, j)]
+            ssims.append(ssim_(band1, band2))
+
+    res = np.mean(ssims)
+    return res
 
 def sift_create(img):
     """
