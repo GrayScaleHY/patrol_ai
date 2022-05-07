@@ -10,7 +10,7 @@ try:
 except:
     from skimage.metrics import structural_similarity as sk_cpt_ssim
 from lib_image_ops import img_chinese
-import pyrtools as pt
+import pyrtools as pt  # pip install pyrtools
 from scipy import signal
 from scipy.ndimage import uniform_filter, gaussian_filter
 
