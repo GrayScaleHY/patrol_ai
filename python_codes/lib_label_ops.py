@@ -10,6 +10,33 @@ import json
 import xmltodict
 # from xml import etree
 
+def convert_rec(img, box):
+    """
+    args:
+        img: img_data
+        box: [ox, oy, w, h] 或者 [xmin, ymin, xmax, ymax]
+    return:
+        与输入的box格式相反。
+    """
+    H, W = img.shape[:2]
+
+    ## [ox, oy, w, x] -> [xmin, ymin, xmax, ymax]
+    if 0 < float(box[0]) < 1:
+        ox = box[0] * W; oy = box[1] * H
+        w = box[2] * W; h = box[3] * H
+        xmin = int(ox - w / 2)
+        ymin = int(oy - h / 2)
+        xmax = int(ox + w / 2)
+        ymax = int(oy + h / 2)
+        return [xmin, ymin, xmax, ymax]
+
+    ## [xmin, ymin, xmax, ymax] -> [ox, oy, w, x]
+    else:
+        ox = (box[0] + box[2]) / (2 * W)
+        oy = (box[1] + box[3]) / (2 * H)
+        w = abs(box[2] - box[0]) / W
+        h = abs(box[3] - box[1]) / H
+        return [ox, oy, w, h]
 
 def convert_points(points, bbox):
     """
