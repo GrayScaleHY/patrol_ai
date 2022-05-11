@@ -148,9 +148,7 @@ def sift_create(img):
     # sift = cv2.xfeatures2d.SIFT_create()
     # kps: 关键点，包括 angle, class_id, octave, pt, response, size
     # feat: 特征值，每个特征点的特征值是128维
-    start = time.time()
     kps, feat = sift.detectAndCompute(img, None) #提取sift特征
-    # print("sift len of img:", len(kps))
     return (kps, feat)
 
 
@@ -302,7 +300,7 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
 
     ## 对待分析图进行纠偏
     ref_warped = correct_offset(img_ref, M)
-    # cv2.imwrite("test1/ref_swarped.jpg", ref_warped)
+    # cv2.imwrite("test/test1/ref_swarped.jpg", ref_warped)
 
     ## 将矫正图与外边缘切掉,并且将基准图的相应位置切掉
     coors = [[0,0],[W,0],[0,H],[W,H]]
@@ -323,8 +321,8 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
     rec_cut = [xmin, ymin, xmax, ymax]
     img_ref = ref_warped[ymin:ymax, xmin:xmax, :]
     img_tag = img_tag[ymin:ymax, xmin:xmax, :]
-    # cv2.imwrite("test1/tag_cut.jpg", img_tag)
-    # cv2.imwrite("test1/ref_cut.jpg", img_ref)
+    # cv2.imwrite("test/test1/tag_cut.jpg", img_tag)
+    # cv2.imwrite("test/test1/ref_cut.jpg", img_ref)
 
     ## 将img_tag_hsv的亮度(v)平均值调整为等于img_ref_hsv的亮度(v)平均值
     img_ref_hsv = cv2.cvtColor(img_ref, cv2.COLOR_BGR2HSV)
@@ -340,13 +338,16 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
         img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
     dif_img = img_tag.astype(float) - img_ref.astype(float)
     dif_img = np.abs(dif_img).astype(np.uint8)
+    # cv2.imwrite("test/test1/tag_diff.jpg",dif_img)
+    # dif_img = cv2.GaussianBlur(dif_img,(7,7),2.5)  ## 加个高斯滤波
+    # cv2.imwrite("test/test1/tag_diff_gauss.jpg",dif_img)
     _, dif_img = cv2.threshold(dif_img, 100, 255, cv2.THRESH_BINARY) # 二值化
-    # cv2.imwrite("test1/tag_diff.jpg",dif_img)
+    # cv2.imwrite("test/test1/tag_diff_thre.jpg",dif_img)
 
     ## 对差异性图片进行腐蚀操作，去除零星的点。
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
     dif_img = cv2.erode(dif_img,kernel,iterations=1)
-    # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
+    # cv2.imwrite("test/test1/tag_diff_erode.jpg",dif_img)
 
     ## 用最小外接矩阵框出差异的地方
     H, W = dif_img.shape
@@ -366,20 +367,20 @@ def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
         return []
 
     # cv2.rectangle(dif_img, (rec_dif[0], rec_dif[1]), (rec_dif[2], rec_dif[3]), (255), 1)
-    # cv2.imwrite("test1/tag_diff_rec.jpg",dif_img)
+    # cv2.imwrite("test/test1/tag_diff_rec.jpg",dif_img)
 
     ## 将矩形框映射回原待分析图
     rec_real = [rec_dif[0] + rec_cut[0], rec_dif[1] + rec_cut[1], 
                 rec_dif[2]+ rec_cut[0], rec_dif[3] + rec_cut[1]]
 
     # cv2.rectangle(img_tag_, (rec_real[0], rec_real[1]), (rec_real[2], rec_real[3]), (0,0,255), 5)
-    # cv2.imwrite("test1/tag_rec_real.jpg", img_tag_)
+    # cv2.imwrite("test/test1/tag_rec_real.jpg", img_tag_)
 
     return rec_real
 
 if __name__ == '__main__':
-    ref_file = "test/test1/0001_normal_off.jpg"
-    tag_file = "test/test1/0001_normal_on.jpg"
+    ref_file = "test/test1/0001_normal.jpg"
+    tag_file = "test/test1/0001_2_2.jpg"
     img_ref = cv2.imread(ref_file)
     img_tag = cv2.imread(tag_file)
 
