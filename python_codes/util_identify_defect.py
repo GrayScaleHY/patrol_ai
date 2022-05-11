@@ -14,6 +14,7 @@ import time
 import shutil
 import numpy as np
 
+yolov5_xf_yw = load_yolov5_model("/data/inspection/yolov5/xf_yw.pt") # 消防_异物类缺陷
 yolov5_posun = load_yolov5_model("/data/inspection/yolov5/posun.pt") # 破损类缺陷
 yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
 yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
@@ -123,6 +124,53 @@ def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
     return tag_diff
 
 
+def identify_move(bbox_cfg_ref, bbox_cfg_tag):
+    """
+    判断bbox_cfg_ref和bbox_cfg_tag是否发生了位置变化。
+    args:
+        bbox_cfg_ref: 基准图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        bbox_cfg_tag: 待分析图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+    return:
+        tag_diff: 不一致目标框,[xmin, ymin, xmax, ymax]
+    """
+    
+    ## 判断对应位置的目标物是否标签一致，如果不一致,将目标看放入到tag_diff中。
+    tag_diff = []
+
+    ## 判断tag中的目标是否在cfg中存在
+    for cfg_tag in bbox_cfg_tag:
+        c_tag = cfg_tag["coor"]
+        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+        is_exist = False
+        for cfg_ref in bbox_cfg_ref:
+            c_ref = cfg_ref["coor"]
+            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
+                if cfg_ref["label"] == cfg_tag["label"]:
+                    is_exist = True
+        if not is_exist:
+            tag_diff.append(c_tag)
+    
+    ## 判断ref中的目标是否在tag中存在
+    for cfg_tag in bbox_cfg_ref:
+        c_tag = cfg_tag["coor"]
+        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+        is_exist = False
+        for cfg_ref in bbox_cfg_tag:
+            c_ref = cfg_ref["coor"]
+            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
+                if cfg_ref["label"] == cfg_tag["label"]:
+                    is_exist = True
+        if not is_exist:
+            tag_diff.append(c_tag)
+    
+    if len(tag_diff) == 0:
+        return []
+    
+    d = np.array(tag_diff, dtype=int)
+    tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
+    return tag_diff
+
+
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
     判别算法
@@ -175,6 +223,14 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         if len(tag_diff) != 0:
             return tag_diff
 
+    ## 判断消防设备、异物是否发生位置变化
+    ## 判断消防设备、异物是否发生位置变化
+    bbox_cfg_tag = inference_yolov5(yolov5_xf_yw, img_tag)
+    bbox_cfg_ref = inference_yolov5(yolov5_xf_yw, img_ref)
+    tag_diff = identify_move(bbox_cfg_ref, bbox_cfg_tag)
+    if len(tag_diff) != 0:  
+        return tag_diff
+
     ## 破损类异常判别
     bbox_cfg_tag = inference_yolov5(yolov5_posun, img_tag)
     if len(bbox_cfg_tag) != 0:
@@ -209,7 +265,7 @@ if __name__ == '__main__':
 
     in_dir = "test/panbie"  # 判别测试图片存放目录
     out_dir = "test/panbie_result" # 判别算法输出目录
-    resize_rate = 0.5
+    resize_limit = 640   ## 图像最小缩放到多少
 
     start = time.time()
 
@@ -221,7 +277,8 @@ if __name__ == '__main__':
 
         ## resize, 降低分别率，加快特征提取的速度。
         H, W = img_ref.shape[:2]
-        img_ref = cv2.resize(img_ref, (int(W * resize_rate), int(H * resize_rate)))
+        resize_rate = max(1, int(max(H, W) / resize_limit))  ## 缩放倍数
+        img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
@@ -233,18 +290,19 @@ if __name__ == '__main__':
             img_tag = cv2.imread(tag_file)
 
             H, W = img_tag.shape[:2]  ## resize
-            img_tag = cv2.resize(img_tag, (int(W * resize_rate), int(H * resize_rate)))
+            img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
 
             feat_tag = sift_create(img_tag) # 提取sift特征
 
             tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
 
             ## 将tag_diff还原回原始大小
-            tag_diff = [int(d / resize_rate) for d in tag_diff]
+            tag_diff = [int(d * resize_rate) for d in tag_diff]
 
             ## 将结果写成txt
             if len(tag_diff) == 0:
-                s = "1," + tag_name + ",0,0\n"
+                # s = "1," + tag_name + ",0,0\n"
+                s = "1," + tag_name + ",0,0,0,0,0\n"
             else:
                 tag_diff = [str(tag_diff[0]), str(tag_diff[1]), str(tag_diff[2]), str(tag_diff[3])]
                 s = "1," + tag_name + ",1," + ",".join(tag_diff) + "\n"
