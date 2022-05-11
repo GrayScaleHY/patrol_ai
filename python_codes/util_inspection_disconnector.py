@@ -188,16 +188,17 @@ def final_state(states, len_window=5):
                 state_start = list(s_types)[0]
 
     ## 根据state_start合state_end的组合判断该states的最终状态
-    if state_start == "分" and state_end == "合":
+    if state_end == "合":
         return 1 # 合闸正常
-    if state_start == "分" and state_end != "合":
-        return 2 # 合闸异常
-    if state_start == "合" and state_end == "分":
+    elif state_end == "分":
         return 3 # 分闸正常
-    if state_start == "合" and state_end != "分":
-        return 4 # 分闸异常
-    else:
-        return 0 # 无法判别状态
+    else: 
+        if state_start == "分":
+            return 2 # 合闸异常
+        elif state_start == "合":
+            return 4 # 分闸异常
+        else:
+            return 4 # 无法判别状态
     
 
 if __name__ == "__main__":
