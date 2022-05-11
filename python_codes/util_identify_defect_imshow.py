@@ -6,6 +6,7 @@ from lib_analysis_meter import segment2angle
 from lib_image_ops import img_chinese
 import numpy as np
 
+yolov5_xf_yw = load_yolov5_model("/data/inspection/yolov5/xf_yw.pt") # 消防_异物类缺陷
 yolov5_posun = load_yolov5_model("/data/inspection/yolov5/posun.pt") # 破损类缺陷
 yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
 yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
@@ -107,6 +108,52 @@ def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
     else:
         return tag_diff
 
+def identify_move(bbox_cfg_ref, bbox_cfg_tag):
+    """
+    判断bbox_cfg_ref和bbox_cfg_tag是否发生了位置变化。
+    args:
+        bbox_cfg_ref: 基准图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        bbox_cfg_tag: 待分析图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+    return:
+        tag_diff: 不一致目标框,[xmin, ymin, xmax, ymax]
+    """
+    
+    ## 判断对应位置的目标物是否标签一致，如果不一致,将目标看放入到tag_diff中。
+    tag_diff = []
+
+    ## 判断tag中的目标是否在cfg中存在
+    for cfg_tag in bbox_cfg_tag:
+        c_tag = cfg_tag["coor"]
+        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+        is_exist = False
+        for cfg_ref in bbox_cfg_ref:
+            c_ref = cfg_ref["coor"]
+            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
+                if cfg_ref["label"] == cfg_tag["label"]:
+                    is_exist = True
+        if not is_exist:
+            tag_diff.append(c_tag)
+    
+    ## 判断ref中的目标是否在tag中存在
+    for cfg_tag in bbox_cfg_ref:
+        c_tag = cfg_tag["coor"]
+        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+        is_exist = False
+        for cfg_ref in bbox_cfg_tag:
+            c_ref = cfg_ref["coor"]
+            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
+                if cfg_ref["label"] == cfg_tag["label"]:
+                    is_exist = True
+        if not is_exist:
+            tag_diff.append(c_tag)
+    
+    if len(tag_diff) == 0:
+        return []
+    
+    d = np.array(tag_diff, dtype=int)
+    tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
+    return tag_diff
+
 
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
@@ -164,6 +211,16 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
                 cv2.rectangle(img_tag_, (d_[0], d_[1]),(d_[2], d_[3]), (255,0,0), thickness=2)
                 img_tag_ = img_chinese(img_tag_, "指示灯类异常", (d_[0], d_[1]+20), color=(255,0,0), size=20)
             # return tag_diff
+
+    ## 判断消防设备、异物是否发生位置变化
+    bbox_cfg_tag = inference_yolov5(yolov5_xf_yw, img_tag)
+    bbox_cfg_ref = inference_yolov5(yolov5_xf_yw, img_ref)
+    tag_diff = identify_move(bbox_cfg_ref, bbox_cfg_tag)
+    if len(tag_diff) != 0:  
+        d_ = tag_diff
+        cv2.rectangle(img_tag_, (d_[0], d_[1]),(d_[2], d_[3]), (0,0,255), thickness=2)
+        img_tag_ = img_chinese(img_tag_, "消防异物类", (d_[0], d_[1]+20), color=(0,0,255), size=20)
+        # return tag_diff
 
     ## 破损类异常判别
     bbox_cfg_tag = inference_yolov5(yolov5_posun, img_tag)
@@ -223,11 +280,6 @@ if __name__ == '__main__':
     out_dir = "test/panbie_result" # 输出结果目录
     resize_rate = 0.5
 
-    osd_boxes = [[0, 0, 0.4, 0.1],
-                 [0.6, 0, 1, 0.1],
-                 [0, 0, 0.4, 0.1],
-                 [0, 0, 0.4, 0.1]]
-
     os.makedirs(out_dir, exist_ok=True)
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
 
@@ -242,6 +294,7 @@ if __name__ == '__main__':
         feat_ref = sift_create(img_ref)
 
         for tag_file in glob.glob(os.path.join(in_dir, file_id + "_*.jpg")):
+            print(tag_file)
             tag_name = os.path.basename(tag_file)
 
             if tag_file.endswith("normal.jpg"):
