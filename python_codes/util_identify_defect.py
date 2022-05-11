@@ -196,7 +196,7 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         rm_regs.append(b_)
     
     ## 基于tag对ref进行矫正
-    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+    M = sift_match(feat_tag, feat_ref, rm_regs=rm_regs, ratio=0.5, ops="Affine")
     img_ref = correct_offset(img_ref, M)
 
     # ## 箱门闭合异常判别
@@ -223,7 +223,6 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         if len(tag_diff) != 0:
             return tag_diff
 
-    ## 判断消防设备、异物是否发生位置变化
     ## 判断消防设备、异物是否发生位置变化
     bbox_cfg_tag = inference_yolov5(yolov5_xf_yw, img_tag)
     bbox_cfg_ref = inference_yolov5(yolov5_xf_yw, img_ref)
@@ -265,7 +264,7 @@ if __name__ == '__main__':
 
     in_dir = "test/panbie"  # 判别测试图片存放目录
     out_dir = "test/panbie_result" # 判别算法输出目录
-    resize_limit = 640   ## 图像最小缩放到多少
+    resize_limit = 960   ## 图像最小缩放到多少
 
     start = time.time()
 
@@ -283,10 +282,12 @@ if __name__ == '__main__':
         feat_ref = sift_create(img_ref) # 提取sift特征
 
         for tag_file in glob.glob(os.path.join(in_dir, file_id + "_*.jpg")):
+            
             tag_name = os.path.basename(tag_file)
 
             if tag_file.endswith("normal.jpg"):
                 continue
+            print(tag_file)
             img_tag = cv2.imread(tag_file)
 
             H, W = img_tag.shape[:2]  ## resize
@@ -298,6 +299,7 @@ if __name__ == '__main__':
 
             ## 将tag_diff还原回原始大小
             tag_diff = [int(d * resize_rate) for d in tag_diff]
+            print(tag_diff)
 
             ## 将结果写成txt
             if len(tag_diff) == 0:
