@@ -48,7 +48,11 @@ def img_rotate_batch(dir):
                 print(img_file, "remove already !")
 
             img = Image.open(img_file)
-            exif = img._getexif()
+            try:
+                exif = img._getexif()
+            except:
+                print("Warning:",img_file," AttributeError: BmpImageFile object has no attribute _getexif")
+                continue
             if exif == None or 274 not in exif:
                 img.close()
                 continue
