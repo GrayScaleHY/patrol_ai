@@ -3,11 +3,11 @@ from label_ops.yolo_io import YoloReader, YOLOWriter
 from PIL import Image
 import os
 import cv2
-import labelme2coco # pip install labelme2coco
+# import labelme2coco # pip install labelme2coco
 import numpy as np
 from lib_image_ops import img2base64
 import json
-import xmltodict
+# import xmltodict
 # from xml import etree
 
 def convert_rec(img, box):
