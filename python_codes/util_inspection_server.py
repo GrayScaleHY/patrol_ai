@@ -166,17 +166,17 @@ def inspection_qrcode_server():
 
 ## 目标检测
 @app.route('/inspection_pressplate/', methods=['POST'])
-@app.route('/inspection_led/', methods=['POST'])
-@app.route('/inspection_fire_smoke/', methods=['POST'])
-@app.route('/inspection_air_switch/', methods=['POST'])
-@app.route('/inspection_fangpaiqi/', methods=['POST'])
-@app.route('/inspection_helmet/', methods=['POST'])
+# @app.route('/inspection_led/', methods=['POST'])
+# @app.route('/inspection_fire_smoke/', methods=['POST'])
+# @app.route('/inspection_air_switch/', methods=['POST'])
+# @app.route('/inspection_fangpaiqi/', methods=['POST'])
+# @app.route('/inspection_helmet/', methods=['POST'])
 @app.route('/inspection_meter/', methods=['POST'])
-@app.route('/inspection_arrow/', methods=['POST'])
-@app.route('/inspection_rotary_switch/', methods=['POST'])
-@app.route('/inspection_door/', methods=['POST'])
-@app.route('/inspection_key/', methods=['POST'])
-@app.route('/inspection_robot/', methods=['POST'])
+# @app.route('/inspection_arrow/', methods=['POST'])
+# @app.route('/inspection_rotary_switch/', methods=['POST'])
+# @app.route('/inspection_door/', methods=['POST'])
+# @app.route('/inspection_key/', methods=['POST'])
+# @app.route('/inspection_robot/', methods=['POST'])
 @app.route('/inspection_rec_defect/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
