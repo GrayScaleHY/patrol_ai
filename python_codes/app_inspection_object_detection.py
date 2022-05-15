@@ -71,17 +71,17 @@ def get_input_data(input_data):
     return img_tag, img_ref, roi, status_map
 
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
-yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") # 空气开关
-yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
-yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
+# yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") # 空气开关
+# yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
+# yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
 yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
-yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
-yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
-yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
-yolov5_door = load_yolov5_model("/data/inspection/yolov5/door.pt") # 箱门闭合
-yolov5_key = load_yolov5_model("/data/inspection/yolov5/key.pt") # 箱门闭合
-yolov5_robot = load_yolov5_model("/data/inspection/yolov5/robot.pt") # 机器人送检缺陷
-yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect.pt") # 北京送检17类缺陷
+# yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
+# yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
+# yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
+# yolov5_door = load_yolov5_model("/data/inspection/yolov5/door.pt") # 箱门闭合
+# yolov5_key = load_yolov5_model("/data/inspection/yolov5/key.pt") # 钥匙
+# yolov5_robot = load_yolov5_model("/data/inspection/yolov5/robot.pt") # 机器人送检缺陷
+yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect_x6.pt") # 北京送检17类缺陷
 
 def inspection_object_detection(input_data):
     """
@@ -114,26 +114,26 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_pressplate
     elif input_data["type"] == "meter":
         yolov5_model = yolov5_meter
-    elif input_data["type"] == "air_switch":
-        yolov5_model = yolov5_air_switch
-    elif input_data["type"] == "fire_smoke":
-        yolov5_model = yolov5_fire_smoke
-    elif input_data["type"] == "led":
-        yolov5_model = yolov5_led
-    elif input_data["type"] == "helmet":
-        yolov5_model = yolov5_helmet
-    elif input_data["type"] == "fanpaiqi":
-        yolov5_model = yolov5_fanpaiqi
-    elif input_data["type"] == "rotary_switch":
-        yolov5_model = yolov5_rotary_switch
-    elif input_data["type"] == "arrow":
-        yolov5_model = yolov5_rotary_switch
-    elif input_data["type"] == "door":
-        yolov5_model = yolov5_door
-    elif input_data["type"] == "key":
-        yolov5_model = yolov5_key
-    elif input_data["type"] == "robot":
-        yolov5_model = yolov5_robot
+    # elif input_data["type"] == "air_switch":
+    #     yolov5_model = yolov5_air_switch
+    # elif input_data["type"] == "fire_smoke":
+    #     yolov5_model = yolov5_fire_smoke
+    # elif input_data["type"] == "led":
+    #     yolov5_model = yolov5_led
+    # elif input_data["type"] == "helmet":
+    #     yolov5_model = yolov5_helmet
+    # elif input_data["type"] == "fanpaiqi":
+    #     yolov5_model = yolov5_fanpaiqi
+    # elif input_data["type"] == "rotary_switch":
+    #     yolov5_model = yolov5_rotary_switch
+    # elif input_data["type"] == "arrow":
+    #     yolov5_model = yolov5_rotary_switch
+    # elif input_data["type"] == "door":
+    #     yolov5_model = yolov5_door
+    # elif input_data["type"] == "key":
+    #     yolov5_model = yolov5_key
+    # elif input_data["type"] == "robot":
+    #     yolov5_model = yolov5_robot
     elif input_data["type"] == "rec_defect":
         yolov5_model = yolov5_rec_defect
     else:
@@ -141,7 +141,11 @@ def inspection_object_detection(input_data):
         return out_data
 
     ## 生成目标检测信息
-    boxes = inference_yolov5(yolov5_model, img_tag, resize=640) # inference
+    
+    if input_data["type"] == "rec_defect":
+        boxes = inference_yolov5(yolov5_model, img_tag, resize=1280) # inference
+    else:
+        boxes = inference_yolov5(yolov5_model, img_tag, resize=640) # inference
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
