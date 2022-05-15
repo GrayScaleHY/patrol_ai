@@ -98,8 +98,7 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
         print("--------------------------------")
         print(img_file)
         img = cv2.imread(img_file)
-
-        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=640, conf_thres=conf_thres, iou_thres=iou_thres) #推理
+        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=1280, conf_thres=conf_thres, iou_thres=iou_thres) #推理
         print(bbox_cfg)
 
         ## 保存推理结果
@@ -114,8 +113,8 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
             c = bbox["coor"]
 
             ## 将结果画在图上
-            # cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-            # cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+            cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+            cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
 
             ## 输出结果
             result = [str(count),os.path.basename(img_file),label,str(score),str(c[0]),str(c[1]),str(c[2]),str(c[3])]
@@ -124,15 +123,15 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
         f = open(label_file, "w", encoding='utf-8')
         f.write(s)
         f.close()
-        # cv2.imwrite(res_file[:-4] + ".jpg", img)
+        cv2.imwrite(res_file[:-4] + ".jpg", img)
 
 
 if __name__ == '__main__':
     import shutil
-    weights = '/data/yolov5/weights/yolov5l.pt'
-    source = "/data/dataset/ut+sh+sy/all_data"
-    save_dir = "/data/yolov5/nanjing_data/result_1"
-    inference_batch(weights, source, save_dir, conf_thres=0.3, iou_thres=0.3)
+    weights = '/data/models/octal_2080Ti/after_speed_trial3/weights/best.pt'
+    source = "/home/yh/image/python_codes/test/1"
+    save_dir = "/home/yh/image/python_codes/test/1_result"
+    inference_batch(weights, source, save_dir, conf_thres=0.2, iou_thres=0.2)
                 
 
 
