@@ -23,7 +23,7 @@ def load_yolov5_model(model_file):
     yolov5_weights = attempt_load(model_file , map_location=device) # 加载模型
     return yolov5_weights
 
-def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.4, iou_thres=0.2):
+def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.2):
     """
     使用yolov5对图片做推理，返回bbox信息。
     args:
