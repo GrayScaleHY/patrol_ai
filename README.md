@@ -30,7 +30,7 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 +-------------------------------+----------------------+----------------------+
 ```
 ##### 2. 安装docker 和 nvidia-docker
-若服务器连接外网，且docker版本高于19，终端输入以下命令安装即可。若docker版本低于19，则需要离线安装docker和nvidia-docker,首先下载下载[安装包](http://192.168.69.36/d/a76899fa3851456587bd/)，解压后运行```sudo ./run.sh```，然后等待安装完成。
+若服务器连接外网，且docker版本高于19，终端输入以下命令安装即可。若docker版本低于19，则需要离线安装docker和nvidia-docker,首先下载下载[安装包](http://192.168.69.36/d/a76899fa3851456587bd/)，解压后运行```sudo ./run.sh```，然后等待安装完成。注意，安装完之后要重启服务器nvidia-docker才能生效。
 ```
 ## 安装docker
 curl -sSL https://get.daocloud.io/docker | sh
