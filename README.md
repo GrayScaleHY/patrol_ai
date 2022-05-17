@@ -52,7 +52,7 @@ sudo gpasswd -a ${USER} docker
 sudo service docker restart
 ```
 ##### 3. 将算法服务需要的代码和模型放入服务器
-在根目录下新建/data文件夹，链接了公司内网的情况下，下载[inspection](http://192.168.69.36/d/c8340061061a41369159/)文件夹，将inspection文件夹放入/data目录下。
+在根目录下新建/data文件夹，链接了公司内网的情况下，下载[inspection](http://192.168.69.36/d/dcbe421c6c744b899db6/)文件夹，将inspection文件夹放入/data目录下。
 ##### 4. 拉取并启动巡检docker
 如果没有docker镜像，在链接了公司内网的情况下，输入以下命令拉取巡检docker镜像。（镜像较大，请耐心等待拉去完成）
 ```
