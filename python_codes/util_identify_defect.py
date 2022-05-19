@@ -14,12 +14,9 @@ import time
 import shutil
 import numpy as np
 
-yolov5_xf_yw = load_yolov5_model("/data/inspection/yolov5/xf_yw.pt") # 消防_异物类缺陷
-yolov5_posun = load_yolov5_model("/data/inspection/yolov5/posun.pt") # 破损类缺陷
-yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
-yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
-yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
-yolov5_door = load_yolov5_model("/data/inspection/yolov5/door.pt") # 箱门闭合
+yolov5_ErCiSheBei = load_yolov5_model("/data/inspection/yolov5/ErCiSheBei.pt") ## 二次设备状态模型
+yolov5_coco = load_yolov5_model("/data/inspection/yolov5/coco.pt") # coco模型
+yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect_x6.pt") # x6的17类缺陷模型
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
 maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
 
@@ -199,54 +196,45 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     M = sift_match(feat_tag, feat_ref, rm_regs=rm_regs, ratio=0.5, ops="Affine")
     img_ref = correct_offset(img_ref, M)
 
-    # ## 箱门闭合异常判别
-    bbox_cfg_tag = inference_yolov5(yolov5_door, img_tag)
+    ## 判断是否有异物、是否有破损、是否箱门闭合异常
+    bbox_cfg_tag = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.3, iou_thres=0.2)
+    for cfg in bbox_cfg_tag:
+        if cfg["label"] == "xmbhyc":
+            return cfg["coor"]
+        if cfg["label"] == "yw_gkxfw" or cfg["label"] == "yw_nc":
+            return cfg["coor"]
+        if cfg["label"] == "jyz_pl" or cfg["label"] == "bj_bpps" or cfg["label"] == "hxq_gjtps":
+            return cfg["coor"]
+
+    ## 判断是否有人
+    bbox_cfg_tag = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2)
+    for cfg in bbox_cfg_tag:
+        if cfg["label"] == "person":
+            return cfg["coor"]
+    
+    ## 判断二次设备是否变化
+    bbox_cfg_tag = inference_yolov5(yolov5_ErCiSheBei, img_tag)
     if len(bbox_cfg_tag) != 0:
-        bbox_cfg_ref = inference_yolov5(yolov5_door, img_ref)
+        bbox_cfg_ref = inference_yolov5(yolov5_ErCiSheBei, img_ref)
         tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
         if len(tag_diff) != 0:
             return tag_diff
 
     # ## 压板异常判别
-    bbox_cfg_tag = inference_yolov5(yolov5_pressplate, img_tag)
-    if len(bbox_cfg_tag) != 0:
-        bbox_cfg_ref = inference_yolov5(yolov5_pressplate, img_ref)
-        tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-        if len(tag_diff) != 0:
-            return tag_diff
+    # bbox_cfg_tag = inference_yolov5(yolov5_pressplate, img_tag)
+    # if len(bbox_cfg_tag) != 0:
+    #     bbox_cfg_ref = inference_yolov5(yolov5_pressplate, img_ref)
+    #     tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
+    #     if len(tag_diff) != 0:
+    #         return tag_diff
 
-    ## 指示灯异常判别
-    bbox_cfg_tag = inference_yolov5(yolov5_led, img_tag)
-    if len(bbox_cfg_tag) != 0:
-        bbox_cfg_ref = inference_yolov5(yolov5_led, img_ref)
-        tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-        if len(tag_diff) != 0:
-            return tag_diff
-
-    ## 判断消防设备、异物是否发生位置变化
-    bbox_cfg_tag = inference_yolov5(yolov5_xf_yw, img_tag)
-    bbox_cfg_ref = inference_yolov5(yolov5_xf_yw, img_ref)
-    tag_diff = identify_move(bbox_cfg_ref, bbox_cfg_tag)
-    if len(tag_diff) != 0:  
-        return tag_diff
-
-    ## 破损类异常判别
-    bbox_cfg_tag = inference_yolov5(yolov5_posun, img_tag)
-    if len(bbox_cfg_tag) != 0:
-        tag_diff = []
-        for cfg in bbox_cfg_tag:
-            tag_diff.append(cfg["coor"])
-        d = np.array(tag_diff, dtype=int)
-        tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
-        return tag_diff
-
-    ## 旋钮开关异常判别
-    bbox_cfg_tag = inference_yolov5(yolov5_rotary_switch, img_tag)
-    if len(bbox_cfg_tag) != 0:
-        bbox_cfg_ref = inference_yolov5(yolov5_rotary_switch, img_ref)
-        tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-        if len(tag_diff) != 0:
-            return tag_diff
+    # ## 指示灯异常判别
+    # bbox_cfg_tag = inference_yolov5(yolov5_led, img_tag)
+    # if len(bbox_cfg_tag) != 0:
+    #     bbox_cfg_ref = inference_yolov5(yolov5_led, img_ref)
+    #     tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
+    #     if len(tag_diff) != 0:
+    #         return tag_diff
 
     ## 指针读数变化太大
     tag_diff = indentify_pointer(img_ref, img_tag)
