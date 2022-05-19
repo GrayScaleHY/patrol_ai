@@ -23,7 +23,7 @@ def load_yolov5_model(model_file):
     yolov5_weights = attempt_load(model_file , map_location=device) # 加载模型
     return yolov5_weights
 
-def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.2):
+def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.3, iou_thres=0.2, pre_labels=None):
     """
     使用yolov5对图片做推理，返回bbox信息。
     args:
@@ -60,9 +60,10 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
     labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
     bbox_cfg = []
     for res in pred_max.cpu().numpy():
-        bbox = {"label": labels[int(res[-1])], "coor": (res[:4]).astype(int).tolist(), "score": res[4]}
-        bbox_cfg.append(bbox)
-
+        label = labels[int(res[-1])]
+        bbox = {"label": label, "coor": (res[:4]).astype(int).tolist(), "score": res[4]}
+        if pre_labels is None or label in pre_labels:
+            bbox_cfg.append(bbox)
     # lib_image_ops.draw_bboxs(img_file, bbox_cfg, is_write=True)
 
     return bbox_cfg
@@ -79,7 +80,8 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
     if os.path.isfile(source):
         img_list = [source]
     elif os.path.isdir(source):
-        img_list = glob.glob(os.path.join(source,"*.jpg"))
+        # img_list = glob.glob(os.path.join(source,"*.jpg"))
+        img_list = os.listdir(source)
     else:
         print(source, "not exists!")
         return 0
@@ -94,7 +96,8 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
     os.makedirs(result_dir, exist_ok=True)
 
     ## 批处理
-    for img_file in img_list:
+    for img_name in img_list:
+        img_file = os.path.join(source, img_name)
         print("--------------------------------")
         print(img_file)
         img = cv2.imread(img_file)
@@ -128,10 +131,23 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
 
 if __name__ == '__main__':
     import shutil
-    weights = '/data/models/octal_2080Ti/after_speed_trial3/weights/best.pt'
-    source = "/home/yh/image/python_codes/test/1"
-    save_dir = "/home/yh/image/python_codes/test/1_result"
-    inference_batch(weights, source, save_dir, conf_thres=0.2, iou_thres=0.2)
+    weights = "/data/inspection/yolov5/meter.pt"
+    source = "/home/yh/image/python_codes/test/1/meter"
+    save_dir = "/home/yh/image/python_codes/test/1/meter_cut"
+    # inference_batch(weights, source, save_dir, conf_thres=0.2, iou_thres=0.2)
+    weights_yolov5 = load_yolov5_model(weights)
+    for img_file in glob.glob(os.path.join(source, "*.jpg")):
+        img = cv2.imread(img_file)
+        cfgs = inference_yolov5(weights_yolov5, img)
+        count = 0
+        for cfg in cfgs:
+            c = cfg["coor"]
+            out_img = img[c[1]:c[3], c[0]:c[2], :]
+            out_file = img_file[:-4] + "_" + str(count) + ".jpg"
+            cv2.imwrite(out_file, out_img)
+            count += 1
+
+
                 
 
 
