@@ -8,6 +8,7 @@ from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
 from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_help_base import color_area
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -197,22 +198,26 @@ def get_input_data(input_data):
     
     return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp
 
-def select_pointer(img, segments, number, length, width, color):
+def select_pointer(img, seg_cfgs, number, length, width, color):
     """
     根据指针长短，粗细，颜色来筛选指针
     返回index
     """
-    if number is None or number == 1 or len(segments) <= 1:
+    if len(seg_cfgs) == 0:
+        return 0
+
+    if number is None or number == 1:
         return 0
     
-    segments = segments[:int(number)]
-    bboxes = []
-    for s in segments:
-        bbox = [min(s[0],s[2]), min(s[1],s[3]), max(s[0],s[2]), max(s[1],s[3])]
-        bboxes.append(bbox)
+    seg_cfgs = seg_cfgs[:int(number)]
+    segs = []
+    for cfg in seg_cfgs:
+        s = cfg["seg"]
+        seg = [min(s[0],s[2]), min(s[1],s[3]), max(s[0],s[2]), max(s[1],s[3])]
+        segs.append(seg)
 
     if length is not None:
-        lengths = [(a[2]-a[1])**2 + (a[3]-a[0])**2 for a in bboxes]
+        lengths = [(a[2]-a[1])**2 + (a[3]-a[0])**2 for a in segs]
         if length == 0:
             return lengths.index(min(lengths))
         elif length == 2:
@@ -220,8 +225,9 @@ def select_pointer(img, segments, number, length, width, color):
         else:
             lengths.pop(lengths.index(min(lengths)))
             return lengths.index(min(lengths))
+
     elif width is not None:
-        widths = [min(a[2]-a[1], a[3]-a[0]) for a in bboxes]
+        widths = [min(a[2]-a[1], a[3]-a[0]) for a in segs]
         if length == 0:
             return widths.index(min(widths))
         elif length == 2:
@@ -229,14 +235,26 @@ def select_pointer(img, segments, number, length, width, color):
         else:
             widths.pop(widths.index(min(widths)))
             return widths.index(min(widths))
+    
     elif color is not None:
-        color_list = [[0,0,0],[255,255,255],[0,0,255]] # 黑，白，红
-        c_ref = np.array(color_list[color], dtype=float)
-        d_list = []
-        for b in bboxes:
-            c_tag = np.array(img[int((b[0] + b[2]) / 2), int((b[1] + b[3]) / 2), :], dtype=float)
-            d_list.append(np.linalg.norm(c_ref - c_tag))
-        return d_list.index(min(d_list))
+        area_max = 0
+        i_max = 0
+        for i in range(len(seg_cfgs)):
+            c = seg_cfgs[i]["box"]
+            img_b = img[int(c[1]):int(c[3]), int(c[0]):int(c[2]), :]
+            color_ = color_area(img_b, color_list=["black","white","red","red2"])
+            print(color_)
+            cv2.imwrite("color_" + str(i) + ".jpg", img_b)
+            if int(color) == 0:
+                c_area = color_["black"] / (color_["red"] + color_["red2"])
+            elif int(color) == 1:
+                c_area = color_["white"] / (color_["red"] + color_["red2"])
+            elif int(color) == 2:
+                c_area = (color_["red"] + color_["red2"]) / color_["black"]
+            if c_area > area_max:
+                area_max = c_area
+                i_max = i
+        return i_max
     else:
         return 0
     
@@ -281,16 +299,17 @@ def inspection_pointer(input_data):
     roi_tag = bboxes[0]["coor"]
 
     ## 找到bboxes中的所有指针
-    segments_cfg = []
+    seg_cfgs = []
     for bbox in bboxes:
         c = np.array(bbox["coor"],dtype=int)
         img = img_tag[c[1]:c[3], c[0]:c[2]]
         contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
         segments = contour2segment(contours, boxes)
         for i in range(len(scores)):
-            s = segments[i]
+            s = segments[i]; score = scores[i]; b = boxes[i]
+            box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
             seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
-            segments_cfg.append([scores[i]] + seg)
+            seg_cfgs.append({"seg": seg, "box": box, "score": score})
 
     ## 将所有表盘画出来
     for bbox in bboxes:
@@ -298,19 +317,14 @@ def inspection_pointer(input_data):
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    if len(segments_cfg) == 0:
+    if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
         cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    ## 对segments根据得分排序
-    segments_cfg = np.array(segments_cfg, dtype=float)
-    segments_cfg = segments_cfg[np.argsort(segments_cfg[:, 0])]
-    segments = segments_cfg[:,1:].tolist()  # 置信度从小到大排序
-    segments = [segments[-i-1] for i in range(len(segments))] # 置信度从大到小排序
-
     ## 将所有指针画出来
-    for seg in segments:
+    for cfg in seg_cfgs:
+        seg = cfg["seg"]
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 求出目标图像的感兴趣区域
@@ -339,20 +353,27 @@ def inspection_pointer(input_data):
 
     ## 将不在感兴趣区域的指针筛选出去
     if roi is not None:
-        segments_r = []
-        for seg in segments:
+        _seg_cfgs = []
+        for cfg in seg_cfgs:
+            seg = cfg["seg"]
             if is_include(seg, roi_tag, srate=0.8):
-                segments_r.append(seg)
-        segments = segments_r
+                _seg_cfgs.append(cfg)
+        seg_cfgs = _seg_cfgs
     
     if len(segments) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
+    
+    ## 将指针按score从大到小排列
+    scores = [cfg["score"] for cfg in seg_cfgs]
+    i_sort = np.argsort(np.array(scores))
+    seg_cfgs = [seg_cfgs[i_sort[i]] for i in range(len(i_sort))]
+
     ## 筛选指针
-    i = select_pointer(img_tag, segments, number, length, width, color)
-    seg = segments[i]
+    i = select_pointer(img_tag, seg_cfgs, number, length, width, color)
+    seg = seg_cfgs[i]["seg"]
     cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
     ## 使用映射变换矫正目标图，并且转换坐标点。
@@ -362,7 +383,7 @@ def inspection_pointer(input_data):
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
         cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    ## 根据与表盘中心的距离更正segment的头尾
+    ## 根据与表盘中心的距离更正seg的头尾
     b = bboxes[0]["coor"]
     xo = (b[2]-b[0]) / 2; yo = (b[3]-b[1]) / 2
     if (seg[0]-xo)**2+(seg[1]-yo)**2 < (seg[2]-xo)**2+(seg[3]-yo)**2:
@@ -428,7 +449,7 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/home/yh/image/python_codes/inspection_result/pointer/03-21-14-26-56/input_data.json","r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/test/disconnetor_test/pointer/05-18-16-27-24/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
