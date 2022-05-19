@@ -243,8 +243,6 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
             c = seg_cfgs[i]["box"]
             img_b = img[int(c[1]):int(c[3]), int(c[0]):int(c[2]), :]
             color_ = color_area(img_b, color_list=["black","white","red","red2"])
-            print(color_)
-            cv2.imwrite("color_" + str(i) + ".jpg", img_b)
             if int(color) == 0:
                 c_area = color_["black"] / (color_["red"] + color_["red2"])
             elif int(color) == 1:
@@ -453,7 +451,6 @@ def main():
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
-    print(1)
 
 
 if __name__ == '__main__':
