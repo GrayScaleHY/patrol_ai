@@ -67,20 +67,20 @@ def get_input_data(input_data):
     if "status_map" in input_data["config"]:
         if isinstance(input_data["config"]["status_map"], dict):
             status_map = input_data["config"]["status_map"]
-
-    return img_tag, img_ref, roi, status_map
+    
+    ## 是否附真实值。
+    real_val = None
+    if "real_val" in input_data["config"]:
+        if isinstance(input_data["config"]["real_val"], dict):
+            real_val = input_data["config"]["real_val"]
+    
+    return img_tag, img_ref, roi, status_map, real_val
 
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
-# yolov5_air_switch = load_yolov5_model("/data/inspection/yolov5/air_switch.pt") # 空气开关
+yolov5_ErCiSheBei = load_yolov5_model("/data/inspection/yolov5/ErCiSheBei.pt") ## 二次设备状态模型
 # yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
-# yolov5_led = load_yolov5_model("/data/inspection/yolov5/led.pt") # led灯
-yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
+# yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
 # yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
-# yolov5_fanpaiqi = load_yolov5_model("/data/inspection/yolov5/fanpaiqi.pt") # 翻拍器
-# yolov5_rotary_switch = load_yolov5_model("/data/inspection/yolov5/rotary_switch.pt") # 切换把手(旋钮开关)
-# yolov5_door = load_yolov5_model("/data/inspection/yolov5/door.pt") # 箱门闭合
-# yolov5_key = load_yolov5_model("/data/inspection/yolov5/key.pt") # 钥匙
-# yolov5_robot = load_yolov5_model("/data/inspection/yolov5/robot.pt") # 机器人送检缺陷
 yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect_x6.pt") # 北京送检17类缺陷
 
 def inspection_object_detection(input_data):
@@ -96,7 +96,7 @@ def inspection_object_detection(input_data):
     f.close()
 
     ## 初始化输入输出信息。
-    img_tag, img_ref, roi, status_map = get_input_data(input_data)
+    img_tag, img_ref, roi, status_map, real_val = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
@@ -110,48 +110,55 @@ def inspection_object_detection(input_data):
         cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
     ## 选择模型
-    if input_data["type"] == "pressplate": # ["air_switch", "fire_smoke", "led", "pressplate"]:
-        yolov5_model = yolov5_pressplate
-    elif input_data["type"] == "meter":
+    if input_data["type"] == "meter":
         yolov5_model = yolov5_meter
-    # elif input_data["type"] == "air_switch":
-    #     yolov5_model = yolov5_air_switch
+        labels = ["meter"]
+    elif input_data["type"] == "pressplate": 
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["kgg_ybh", "kgg_ybf"]
+    elif input_data["type"] == "air_switch":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["kqkg_hz", "kqkg_fz"]
     # elif input_data["type"] == "fire_smoke":
     #     yolov5_model = yolov5_fire_smoke
-    # elif input_data["type"] == "led":
-    #     yolov5_model = yolov5_led
+    elif input_data["type"] == "led":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["zsd_lvdl", "zsd_lvdm", "zsd_hongdl", "zsd_hongdm", "zsd_baidl", "zsd_baidm", "zsd_huangdl", "zsd_huangdm", "zsd_heidm"]
     # elif input_data["type"] == "helmet":
     #     yolov5_model = yolov5_helmet
-    # elif input_data["type"] == "fanpaiqi":
-    #     yolov5_model = yolov5_fanpaiqi
-    # elif input_data["type"] == "rotary_switch":
-    #     yolov5_model = yolov5_rotary_switch
+    elif input_data["type"] == "fanpaiqi":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["fpq_h", "fpq_f", "fpq_jd"]
+    elif input_data["type"] == "rotary_switch":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z"]
     # elif input_data["type"] == "arrow":
     #     yolov5_model = yolov5_rotary_switch
-    # elif input_data["type"] == "door":
-    #     yolov5_model = yolov5_door
-    # elif input_data["type"] == "key":
-    #     yolov5_model = yolov5_key
+    elif input_data["type"] == "door":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["xmbhyc", "xmbhzc"]
+    elif input_data["type"] == "key":
+        yolov5_model = yolov5_ErCiSheBei
+        labels = ["xmbhyc", "xmbhzc"]
     # elif input_data["type"] == "robot":
     #     yolov5_model = yolov5_robot
     elif input_data["type"] == "rec_defect":
         yolov5_model = yolov5_rec_defect
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
 
     ## 生成目标检测信息
-    
     if input_data["type"] == "rec_defect":
-        boxes = inference_yolov5(yolov5_model, img_tag, resize=1280) # inference
+        cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
     else:
-        boxes = inference_yolov5(yolov5_model, img_tag, resize=640) # inference
-    if len(boxes) == 0: #没有检测到目标
+        cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
+    if len(cfgs) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
 
     ## labels 列表 和 color 列表
-    labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
     colors = color_list(len(labels))
     color_dict = {}
     name_dict = {}
@@ -163,9 +170,9 @@ def inspection_object_detection(input_data):
             name_dict[label] = config_object_name.OBJECT_MAP[input_data["type"]][label]
             
     ## 画出boxes
-    for bbox in boxes:
-        c = bbox["coor"]; label = bbox["label"]
-        s = int((c[2] - c[0]) / 3) # 根据框子大小决定字号和线条粗细。
+    for cfg in cfgs:
+        c = cfg["coor"]; label = cfg["label"]
+        s = int((c[2] - c[0]) / 4) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]-s), color=color_dict[label], size=s)
@@ -196,11 +203,11 @@ def inspection_object_detection(input_data):
 
     ## 判断bbox是否在roi中
     bboxes = []
-    for bbox in boxes:
-        if roi is None or is_include(bbox["coor"], roi_tag, srate=0.5):
-            cfg = {"label": name_dict[bbox["label"]], "bbox": bbox["coor"], "score": float(bbox["score"])}
-            out_data["data"].append(cfg)
-            bboxes.append(bbox["coor"])
+    for cfg in cfgs:
+        if roi is None or is_include(cfg["coor"], roi_tag, srate=0.5):
+            cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
+            out_data["data"].append(cfg_out)
+            bboxes.append(cfg["coor"])
 
     if input_data["type"] == "key":
         out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
@@ -216,7 +223,6 @@ def inspection_object_detection(input_data):
     
     return out_data
 
-
 if __name__ == '__main__':
     # tag_file = "/home/yh/inspection/python_codes/inspection_result/led/09-29-20-01-59/img_ref.jpg"
     # ref_file = "test/p2.jpg"
@@ -228,8 +234,9 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/home/yh/image/python_codes/inspection_result/input_data.json", "r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/test/disconnetor_test/pressplate/05-18-15-55-40/input_data.json", "r", encoding='utf-8')
     input_data = json.load(f)
+    f.close()
     out_data = inspection_object_detection(input_data)
     print("inspection_object_detection result:")
     print("-----------------------------------------------")
