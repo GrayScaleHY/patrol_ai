@@ -113,38 +113,47 @@ def inspection_object_detection(input_data):
     if input_data["type"] == "meter":
         yolov5_model = yolov5_meter
         labels = ["meter"]
+        model_type = "meter"
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
+        model_type = "ErCiSheBei"
     elif input_data["type"] == "air_switch":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kqkg_hz", "kqkg_fz"]
+        model_type = "ErCiSheBei"
     # elif input_data["type"] == "fire_smoke":
     #     yolov5_model = yolov5_fire_smoke
     elif input_data["type"] == "led":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["zsd_lvdl", "zsd_lvdm", "zsd_hongdl", "zsd_hongdm", "zsd_baidl", "zsd_baidm", "zsd_huangdl", "zsd_huangdm", "zsd_heidm"]
+        model_type = "ErCiSheBei"
     # elif input_data["type"] == "helmet":
     #     yolov5_model = yolov5_helmet
     elif input_data["type"] == "fanpaiqi":
         yolov5_model = yolov5_ErCiSheBei
+        model_type = "ErCiSheBei"
         labels = ["fpq_h", "fpq_f", "fpq_jd"]
     elif input_data["type"] == "rotary_switch":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z"]
+        model_type = "ErCiSheBei"
     # elif input_data["type"] == "arrow":
     #     yolov5_model = yolov5_rotary_switch
     elif input_data["type"] == "door":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["xmbhyc", "xmbhzc"]
+        model_type = "ErCiSheBei"
     elif input_data["type"] == "key":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["xmbhyc", "xmbhzc"]
+        model_type = "ErCiSheBei"
     # elif input_data["type"] == "robot":
     #     yolov5_model = yolov5_robot
     elif input_data["type"] == "rec_defect":
         yolov5_model = yolov5_rec_defect
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        model_type = "rec_defect"
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
@@ -167,7 +176,7 @@ def inspection_object_detection(input_data):
         if status_map is not None and label in status_map:
             name_dict[label] = status_map[label]
         else:
-            name_dict[label] = config_object_name.OBJECT_MAP[input_data["type"]][label]
+            name_dict[label] = config_object_name.OBJECT_MAP[model_type][label]
             
     ## 画出boxes
     for cfg in cfgs:
