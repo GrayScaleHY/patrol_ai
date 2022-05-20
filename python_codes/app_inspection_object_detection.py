@@ -177,7 +177,11 @@ def inspection_object_detection(input_data):
             name_dict[label] = status_map[label]
         else:
             name_dict[label] = config_object_name.OBJECT_MAP[model_type][label]
-            
+
+        ## 如果有"real_val"，则输出real_val的值
+        if "real_val" in input_data["config"]:
+            name_dict[label] = input_data["config"]["real_val"]
+
     ## 画出boxes
     for cfg in cfgs:
         c = cfg["coor"]; label = cfg["label"]
