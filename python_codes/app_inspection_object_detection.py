@@ -68,13 +68,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["status_map"], dict):
             status_map = input_data["config"]["status_map"]
     
-    ## 是否附真实值。
-    real_val = None
-    if "real_val" in input_data["config"]:
-        if isinstance(input_data["config"]["real_val"], dict):
-            real_val = input_data["config"]["real_val"]
-    
-    return img_tag, img_ref, roi, status_map, real_val
+    return img_tag, img_ref, roi, status_map
 
 yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
 yolov5_ErCiSheBei = load_yolov5_model("/data/inspection/yolov5/ErCiSheBei.pt") ## 二次设备状态模型
@@ -96,7 +90,7 @@ def inspection_object_detection(input_data):
     f.close()
 
     ## 初始化输入输出信息。
-    img_tag, img_ref, roi, status_map, real_val = get_input_data(input_data)
+    img_tag, img_ref, roi, status_map = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
@@ -179,7 +173,7 @@ def inspection_object_detection(input_data):
             name_dict[label] = config_object_name.OBJECT_MAP[model_type][label]
 
         ## 如果有"real_val"，则输出real_val的值
-        if "real_val" in input_data["config"]:
+        if "real_val" in input_data["config"] and isinstance(input_data["config"]["real_val"], str):
             name_dict[label] = input_data["config"]["real_val"]
 
     ## 画出boxes
