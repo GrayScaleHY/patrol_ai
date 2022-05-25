@@ -13,7 +13,10 @@ from lib_image_ops import img_chinese
 import pyrtools as pt  # pip install pyrtools
 from scipy import signal
 from scipy.ndimage import uniform_filter, gaussian_filter
-
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from collections import Counter
+from skimage import exposure
 
 def _resize(img):
     """
@@ -241,22 +244,46 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
         return None
 
 
-def correct_offset(tag_img, M):
+def correct_offset(tag_img, M, b=False):
     """
     根据偏移矩阵矫正图片。
     args:
+        tag_img: 待矫正图片
         M: 偏移矩阵
+        b: bool， 是否返回黑边范围
     return:
-        img_tag_warped: 矫正之后的tag_img
+        if b == False:
+            img_tag_warped: 矫正之后的tag_img
+        else:
+            (img_tag_warped, [xmin, ymin, xmax, ymax])
     """
     if M is None:
-        return tag_img
+        if b:
+            return tag_img, [0,0,tag_img.shape[1], tag_img.shape[0]]
+        else:
+            return tag_img
     
     ## 矫正图片
     if M.shape == (2, 3):  # warp affine
         img_tag_warped = cv2.warpAffine(tag_img, M, (tag_img.shape[1], tag_img.shape[0]), flags=cv2.WARP_INVERSE_MAP)
     elif M.shape == (3, 3):  # warp perspective
         img_tag_warped = cv2.warpPerspective(tag_img, M, (tag_img.shape[1], tag_img.shape[0]), flags=cv2.WARP_INVERSE_MAP)
+
+    if b:
+        Mi = cv2.invertAffineTransform(M)
+        x0, y0 = 0, 0
+        x2, y2 = img_tag_warped.shape[1] - 1, img_tag_warped.shape[0] - 1
+        x1, y1 = x0, y2
+        x3, y3 = x2, y0
+        points = np.stack([[[x0, y0]],[[x1, y1]],[[x2, y2]],[[x3, y3]]])
+        res = cv2.transform(points, Mi)
+        (x0t, y0t), (x1t, y1t), (x2t, y2t), (x3t, y3t) = np.squeeze(res, 1)
+        xmin = max(x0, x0t, x1t)
+        xmax = min(x2, x2t, x3t)
+        ymin = max(y0, y0t, y3t)
+        ymax = min(y2, y2t, y1t)
+        
+        return img_tag_warped, [xmin, ymin, xmax, ymax]
 
     return img_tag_warped
 
@@ -286,105 +313,157 @@ def convert_coor(coor_ref, M):
 
     return tuple(coor_tag.astype(int))
 
+def find_vector_set(diff_image, new_size):
+    """
+    主成分分析
+    """
+    i = 0
+    j = 0
+    vector_set = np.zeros((int(new_size[0] * new_size[1] / 25), 25))
 
-def detect_diff(img_ref, feat_ref, img_tag, feat_tag):
+    for j in range(0, new_size[0], 5):
+        for k in range(0, new_size[1], 5):
+            block = diff_image[j:j+5, k:k+5]
+            #print(i,j,k,block.shape)
+            feature = block.ravel()
+            vector_set[i, :] = feature
+            i += 1
+        
+    mean_vec   = np.mean(vector_set, axis = 0)    
+    vector_set = vector_set - mean_vec
+    
+    return vector_set, mean_vec
+
+def find_FVS(EVS, pca, diff_image, mean_vec, new):
+    
+    i = 2 
+    feature_vector_set = []
+    
+    while i < new[0] - 2:
+        j = 2
+        while j < new[1] - 2:
+            block = diff_image[i-2:i+3, j-2:j+3]
+            feature = block.flatten()
+            feature_vector_set.append(feature)
+            j = j+1
+        i = i+1
+        
+    # FVS = np.dot(feature_vector_set, EVS)
+    # FVS = FVS - mean_vec
+    FVS = pca.transform(feature_vector_set)
+    return FVS
+
+def clustering(FVS, components, new):
+    
+    kmeans = KMeans(components, verbose = 0)
+    kmeans.fit(FVS)
+    output = kmeans.predict(FVS)
+    count  = Counter(output)
+
+    least_index = min(count, key = count.get)            
+    change_map  = np.reshape(output,(new[0] - 4, new[1] - 4))
+    
+    return least_index, change_map
+
+def detect_diff(img_ref, img_tag):
     """
     判别算法，检测出待分析图与基准图的差异区域
     return:
         rec_real: 差异区域，若判定没差异，则返回[]
     """
     img_tag_ = img_tag.copy()
-    H,W = img_tag.shape[:2]
-    ## 求偏移矩阵
-    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
-
-    ## 对待分析图进行纠偏
-    ref_warped = correct_offset(img_ref, M)
-    # cv2.imwrite("test/test1/ref_swarped.jpg", ref_warped)
-
-    ## 将矫正图与外边缘切掉,并且将基准图的相应位置切掉
-    coors = [[0,0],[W,0],[0,H],[W,H]]
-    off_c = []
-    for c in coors:
-        try:
-            d = np.linalg.inv(M[:,:-1])
-        except:
-            return []
-        e = np.array([c[0]-M[0][-1], c[1] - M[1][-1]])
-        f = np.dot(d, e)
-        off_c.append([f[0], f[1]])
-    off_c = np.array(off_c,dtype=int)
-    xmin = max(0, off_c[0][0], off_c[2][0])
-    ymin = max(0, off_c[0][1], off_c[1][1])
-    xmax = min(W, off_c[1][0], off_c[3][0])
-    ymax = min(H, off_c[2][1], off_c[3][1])
-    rec_cut = [xmin, ymin, xmax, ymax]
-    img_ref = ref_warped[ymin:ymax, xmin:xmax, :]
-    img_tag = img_tag[ymin:ymax, xmin:xmax, :]
-    # cv2.imwrite("test/test1/tag_cut.jpg", img_tag)
-    # cv2.imwrite("test/test1/ref_cut.jpg", img_ref)
-
     ## 将img_tag_hsv的亮度(v)平均值调整为等于img_ref_hsv的亮度(v)平均值
-    img_ref_hsv = cv2.cvtColor(img_ref, cv2.COLOR_BGR2HSV)
-    img_tag_hsv = cv2.cvtColor(img_tag, cv2.COLOR_BGR2HSV)
-    rate = np.sum(img_ref_hsv[:, :, 2]) / np.sum(img_tag_hsv[:, :, 2])
-    img_tag_hsv[:, :, 2] = rate * img_tag_hsv[:, :, 2]
-    img_tag = cv2.cvtColor(img_tag_hsv, cv2.COLOR_HSV2BGR)
+    # img_ref_hsv = cv2.cvtColor(img_ref, cv2.COLOR_BGR2HSV)
+    # img_tag_hsv = cv2.cvtColor(img_tag, cv2.COLOR_BGR2HSV)
+    # rate = np.sum(img_ref_hsv[:, :, 2]) / np.sum(img_tag_hsv[:, :, 2])
+    # img_tag_hsv[:, :, 2] = rate * img_tag_hsv[:, :, 2]
+    # img_tag = cv2.cvtColor(img_tag_hsv, cv2.COLOR_HSV2BGR)
 
-    ## 将图片转为灰度图后相减，再二值化，得到差异图片
+    ## 将图片转为灰度图后相减，得到差异图片
     if len(img_ref.shape) == 3:
         img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
     if len(img_tag.shape) == 3:
         img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
+    r = 1
+    maxlen = 500
+    raw_size = img_tag.shape[:2]
+    if max(raw_size) > maxlen:
+        r = maxlen / max(raw_size)
+    img_size = (np.asarray(img_tag.shape) * r / 5).astype(np.int) * 5
+    img_tag = cv2.resize(img_tag, (img_size[1], img_size[0]))
+    img_ref = cv2.resize(img_ref, (img_size[1], img_size[0]))
+
+    (score,dif_img) = sk_cpt_ssim(img_tag,img_ref,full = True)
+    print("ssim between img_tag and img_ref is:", score)
+    if score > 0.995:
+        return []
+    # dif_img = (255 - dif_img * 255).astype(np.uint8)
+    # img_tag = cv2.equalizeHist(img_tag)
+    # img_ref = cv2.equalizeHist(img_ref)
+    img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8)
     dif_img = img_tag.astype(float) - img_ref.astype(float)
     dif_img = np.abs(dif_img).astype(np.uint8)
-    # cv2.imwrite("test/test1/tag_diff.jpg",dif_img)
-    # dif_img = cv2.GaussianBlur(dif_img,(7,7),2.5)  ## 加个高斯滤波
-    # cv2.imwrite("test/test1/tag_diff_gauss.jpg",dif_img)
-    _, dif_img = cv2.threshold(dif_img, 100, 255, cv2.THRESH_BINARY) # 二值化
-    # cv2.imwrite("test/test1/tag_diff_thre.jpg",dif_img)
+    # cv2.imwrite("test1/tag_diff.jpg", dif_img)
+
+    ## 对差异图进行二值化
+    # _, dif_img = cv2.threshold(dif_img, 80, 255, cv2.THRESH_BINARY) # 二值化
+    # cv2.imwrite("test1/tag_diff_thre.jpg",dif_img)
+
+    ## 基于PCA+Kmean的变化检测
+    ## https://appliedmachinelearning.blog/2017/11/25/unsupervised-changed-detection-in-multi-temporal-satellite-images-using-pca-k-means-python-code/
+    vector_set, mean_vec = find_vector_set(dif_img, img_size)
+    pca = PCA() # n_components=25
+    pca.fit(vector_set)
+    EVS = pca.components_
+    FVS = find_FVS(EVS, pca, dif_img, mean_vec, img_size)
+    components = 3
+    least_index, dif_img = clustering(FVS, components, img_size)
+    dif_img[dif_img == least_index] = 255
+    dif_img[dif_img != 255] = 0
+    dif_img = dif_img.astype(np.uint8)
+    # cv2.imwrite("test1/tag_diff_thre.jpg",dif_img)
 
     ## 对差异性图片进行腐蚀操作，去除零星的点。
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
+    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
+    kernel  = np.asarray(((0,0,1,0,0),(0,1,1,1,0),(1,1,1,1,1),(0,1,1,1,0),(0,0,1,0,0)), dtype=np.uint8)
     dif_img = cv2.erode(dif_img,kernel,iterations=1)
-    # cv2.imwrite("test/test1/tag_diff_erode.jpg",dif_img)
-
+    # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
+    
     ## 用最小外接矩阵框出差异的地方
+    ymin = min(np.where(dif_img == 255)[0])
+    xmin = min(np.where(dif_img == 255)[1])
+    ymax = max(np.where(dif_img == 255)[0])
+    xmax = max(np.where(dif_img == 255)[1])
+    rec_dif = [xmin, ymin, xmax, ymax]
+
+    ## 若最终框面积不在0.1 - 0.7 之间，返回空。
     H, W = dif_img.shape
-    contours, _ = cv2.findContours(dif_img,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE) # 根据连通域求每个轮廓
-    list_ = []
-    for cont in contours:
-        x, y, w, h = cv2.boundingRect(cont) # 轮廓的最小外接矩阵
-        list_.append([x, y, x+w, y+w])
-    if len(list_) > 0:
-        list_ = np.array(list_)
-        xmin = np.min(list_[:,0])
-        ymin = np.min(list_[:,1])
-        xmax = np.max(list_[:,2])
-        ymax = np.max(list_[:,3])
-        rec_dif = [xmin, ymin, xmax, ymax]
-    else:
+    dif_area = (rec_dif[2] - rec_dif[0]) * (rec_dif[3] - rec_dif[1])
+    if dif_area / (H * W) > 0.8:
         return []
 
-    # cv2.rectangle(dif_img, (rec_dif[0], rec_dif[1]), (rec_dif[2], rec_dif[3]), (255), 1)
-    # cv2.imwrite("test/test1/tag_diff_rec.jpg",dif_img)
+    ## 将矩形框还原回原始大小
+    r = img_tag_.shape[0] / dif_img.shape[0]
+    rec_dif = [int(r*rec_dif[0]), int(r*rec_dif[1]), int(r*rec_dif[2]), int(r*rec_dif[3])]
+    # cv2.rectangle(img_tag_, (rec_dif[0], rec_dif[1]), (rec_dif[2], rec_dif[3]), (0,0,255), 2)
+    # cv2.imwrite("test1/tag_diff_rec.jpg",img_tag_)
 
-    ## 将矩形框映射回原待分析图
-    rec_real = [rec_dif[0] + rec_cut[0], rec_dif[1] + rec_cut[1], 
-                rec_dif[2]+ rec_cut[0], rec_dif[3] + rec_cut[1]]
-
-    # cv2.rectangle(img_tag_, (rec_real[0], rec_real[1]), (rec_real[2], rec_real[3]), (0,0,255), 5)
-    # cv2.imwrite("test/test1/tag_rec_real.jpg", img_tag_)
-
-    return rec_real
+    return rec_dif
 
 if __name__ == '__main__':
-    ref_file = "test/test1/0001_normal.jpg"
-    tag_file = "test/test1/0001_2_2.jpg"
-    img_ref = cv2.imread(ref_file)
-    img_tag = cv2.imread(tag_file)
+    import os
+    import glob
 
+    ref_file = "/home/yh/image/python_codes/test/panbie/0013_normal.jpg"
+    tag_file = "/home/yh/image/python_codes/test/panbie/0013_3.jpg"
+    img_ref = cv2.imread(ref_file) 
+    img_tag = cv2.imread(tag_file)
     feat_ref = sift_create(img_ref)
-    feat_tag = sift_create(img_tag)
-    
-    rec_real = detect_diff(img_ref, feat_ref, img_tag, feat_tag)
+    feat_tag = sift_create(img_tag) # 提取sift特征
+    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+    img_ref, cut = correct_offset(img_ref, M, b=True)
+    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
+    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
+    diff_area = detect_diff(img_ref, img_tag)
+
+    # rec_real = [rec_dif[0] + c[0], rec_dif[1] + c[1],rec_dif[2] + c[0],rec_dif[3] + c[1]]
