@@ -239,10 +239,10 @@ if __name__ == '__main__':
         file_id = os.path.basename(ref_file).split("_")[0]
         img_ref = cv2.imread(ref_file) 
 
-        ## resize, 降低分别率，加快特征提取的速度。
-        # H, W = img_ref.shape[:2]
-        # resize_rate = max(H, W) / resize_max  ## 缩放倍数
-        # img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+        # resize, 降低分别率，加快特征提取的速度。
+        H, W = img_ref.shape[:2]
+        resize_rate = max(H, W) / resize_max  ## 缩放倍数
+        img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
@@ -255,13 +255,13 @@ if __name__ == '__main__':
             print(tag_file)
             img_tag = cv2.imread(tag_file)
 
-            # H, W = img_tag.shape[:2]  ## resize
-            # img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
+            H, W = img_tag.shape[:2]  ## resize
+            img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
             feat_tag = sift_create(img_tag) # 提取sift特征
             tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
 
             ## 将tag_diff还原回原始大小
-            # tag_diff = [int(d * resize_rate) for d in tag_diff]
+            tag_diff = [int(d * resize_rate) for d in tag_diff]
             print(tag_diff)
 
             ## 将结果写成txt
