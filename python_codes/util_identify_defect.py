@@ -24,106 +24,81 @@ def indentify_pointer(img_ref, img_tag):
     """
     判断指针读数是否过大
     """
-    bbox_cfg_tag = inference_yolov5(yolov5_meter, img_tag)
-    if len(bbox_cfg_tag) == 0:
+    cfgs_tag = inference_yolov5(yolov5_meter, img_tag)
+    if len(cfgs_tag) == 0:
         return []
     
-    bbox_cfg_ref = inference_yolov5(yolov5_meter, img_ref)
-    if len(bbox_cfg_ref) == 0:
+    cfgs_ref = inference_yolov5(yolov5_meter, img_ref)
+    if len(cfgs_ref) == 0:
         return []
 
-    ## 取最大的bbox
-    s_max = 0 
-    for cfg in bbox_cfg_tag:
-        c = cfg["coor"]
-        s = (c[2] - c[0]) * (c[3] - c[1])
-        if s > s_max:
-            s_max = s 
-            label_tag = cfg["label"]
-            coor_tag = c
-    
-    s_max = 0 
-    for cfg in bbox_cfg_ref:
-        c = cfg["coor"]
-        s = (c[2] - c[0]) * (c[3] - c[1])
-        if s > s_max:
-            s_max = s 
-            label_ref = cfg["label"]
-            coor_ref = c
+    cfg_tag = cfgs_tag[0]; cfg_ref = cfgs_ref[0]
+    c_tag = cfg_tag["coor"]; c_ref = cfg_ref["coor"]
+    tag_meter = img_tag[c_tag[1]:c_tag[3], c_tag[0]:c_tag[2],:]
+    ref_meter = img_ref[c_ref[1]:c_ref[3], c_ref[0]:c_ref[2],:]
 
-    img_tag_meter = img_tag[coor_tag[1]:coor_tag[3], coor_tag[0]:coor_tag[2],:]
-    img_ref_meter = img_ref[coor_ref[1]:coor_ref[3], coor_ref[0]:coor_ref[2],:]
-    contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img_tag_meter)
-    segments_tag = contour2segment(contours, boxes)
-    contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img_ref_meter)
-    segments_ref = contour2segment(contours, boxes)
-    if len(segments_ref) == 0 or len(segments_tag) == 0:
+    ## 求出指针
+    contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, tag_meter)
+    segs_tag = contour2segment(contours, boxes)
+    if len(segs_tag) == 0:
         return []
-    else:
-        seg_tag = segments_tag[0]
-        seg_ref = segments_ref[0]
-    
-    xo = (coor_tag[2]-coor_tag[0]) / 2; yo = (coor_tag[3]-coor_tag[1]) / 2
-    if (seg_tag[0]-xo)**2+(seg_tag[1]-yo)**2 < (seg_tag[2]-xo)**2+(seg_tag[3]-yo)**2:
-        seg_tag = [seg_tag[2], seg_tag[3], seg_tag[0], seg_tag[1]]
-    
-    xo = (coor_ref[2]-coor_ref[0]) / 2; yo = (coor_ref[3]-coor_ref[1]) / 2
-    if (seg_ref[0]-xo)**2+(seg_ref[1]-yo)**2 < (seg_ref[2]-xo)**2+(seg_ref[3]-yo)**2:
-        seg_ref = [seg_ref[2], seg_ref[3], seg_ref[0], seg_ref[1]]
-    
-    angle_tag = segment2angle(seg_tag[:2], seg_tag[-2:])
-    angle_ref = segment2angle(seg_ref[:2], seg_ref[-2:])
-
-    angle_dif1 = abs(angle_tag - angle_ref)
-    angle_dif2 = 360 - abs(angle_tag - angle_ref)
-    angle_dif = min(angle_dif1, angle_dif2)
-    if angle_dif < 30:
+    contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, ref_meter)
+    segs_ref = contour2segment(contours, boxes)
+    if len(segs_ref) == 0:
         return []
-    xmin = int(min(seg_tag[0]+coor_tag[0], seg_tag[2]+coor_tag[0]))
-    ymin = int(min(seg_tag[1]+coor_tag[1], seg_tag[3]+coor_tag[1]))
-    xmax = int(max(seg_tag[0]+coor_tag[0], seg_tag[2]+coor_tag[0]))
-    ymax = int(max(seg_tag[1]+coor_tag[1], seg_tag[3]+coor_tag[1]))
+    # seg_tag = segs_tag[0]
+    # seg_ref = segs_ref[0]
+    
+    ## 计算图片中的指针角度
+    angles_tag = []
+    xo = tag_meter.shape[1] / 2; yo = tag_meter.shape[0] / 2
+    for seg_tag in segs_tag:
+        if (seg_tag[0]-xo)**2+(seg_tag[1]-yo)**2 < (seg_tag[2]-xo)**2+(seg_tag[3]-yo)**2:
+            seg_tag = [seg_tag[2], seg_tag[3], seg_tag[0], seg_tag[1]]
+        angle = segment2angle(seg_tag[:2], seg_tag[-2:])
+        angles_tag.append(angle)
+    
+    angles_ref = []
+    xo = ref_meter.shape[1] / 2; yo = ref_meter.shape[0] / 2
+    for seg_ref in segs_ref:
+        if (seg_ref[0]-xo)**2+(seg_ref[1]-yo)**2 < (seg_ref[2]-xo)**2+(seg_ref[3]-yo)**2:
+            seg_ref = [seg_ref[2], seg_ref[3], seg_ref[0], seg_ref[1]]
+        angle = segment2angle(seg_ref[:2], seg_ref[-2:])
+        angles_ref.append(angle)
+    
+    ## 判断angles_tag中是否存在指针相对于angles_ref角度偏差大于15的
+    ang_dif = True
+    for angle_tag in angles_tag:
+        ang_sam = False
+        for angle_ref in angles_ref:
+            angle_dif1 = abs(angle_tag - angle_ref)
+            angle_dif2 = 360 - abs(angle_tag - angle_ref)
+            angle_dif = min(angle_dif1, angle_dif2)
+            if angle_dif < 15:
+                ang_sam = True
+        if not ang_sam:
+            ang_dif = False
+    if ang_dif:
+        return []
 
-    return [xmin, ymin, xmax, ymax]
+    # seg_all = []
+    # for seg in segs_tag:
+    #     seg_all.append([seg[0]+c_tag[0], seg[1]+c_tag[1]])
+    #     seg_all.append([seg[2]+c_tag[0], seg[3]+c_tag[1]])
+    # for seg in segs_ref:
+    #     seg_all.append([seg[0]+c_ref[0], seg[1]+c_ref[1]])
+    #     seg_all.append([seg[2]+c_ref[0], seg[3]+c_ref[1]])
+    # ca = np.array(seg_all, dtype=int)
+    # xmin = np.min(ca[:,0])
+    # ymin = np.min(ca[:,1])
+    # xmax = np.max(ca[:,0])
+    # ymax = np.max(ca[:,1])
 
+    return c_tag
 
-def identify_yolov5(bbox_cfg_ref, bbox_cfg_tag):
+def labels_diff_area(cfgs_ref, cfgs_tag):
     """
-    判断ref的目标物信息和tag的目标物信息是否一致，不一致的话返回不一致的目标框列表。
-    args:
-        bbox_cfg_ref: 基准图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
-        bbox_cfg_tag: 待分析图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
-    return:
-        tag_diff: 不一致目标框,[xmin, ymin, xmax, ymax]
-    """
-    if len(bbox_cfg_tag) == 0:
-        return []
-    
-    if len(bbox_cfg_ref) == 0:
-        return []
-    
-    ## 判断对应位置的目标物是否标签一致，如果不一致,将目标看放入到tag_diff中。
-    tag_diff = []
-    for cfg_tag in bbox_cfg_tag:
-        c_tag = cfg_tag["coor"]
-        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
-        for cfg_ref in bbox_cfg_ref:
-            c_ref = cfg_ref["coor"]
-            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
-                if cfg_ref["label"] != cfg_tag["label"]:
-                    tag_diff.append(c_tag)
-    
-    if len(tag_diff) == 0:
-        return []
-    
-    d = np.array(tag_diff, dtype=int)
-    tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
-    return tag_diff
-
-
-def identify_move(bbox_cfg_ref, bbox_cfg_tag):
-    """
-    判断bbox_cfg_ref和bbox_cfg_tag是否发生了位置变化。
+    判断cfgs_ref和cfgs_tag是否发生了位置变化。
     args:
         bbox_cfg_ref: 基准图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
         bbox_cfg_tag: 待分析图的yolov5推理信息，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
@@ -132,41 +107,39 @@ def identify_move(bbox_cfg_ref, bbox_cfg_tag):
     """
     
     ## 判断对应位置的目标物是否标签一致，如果不一致,将目标看放入到tag_diff中。
-    tag_diff = []
+    diff_boxes = []
 
-    ## 判断tag中的目标是否在cfg中存在
-    for cfg_tag in bbox_cfg_tag:
-        c_tag = cfg_tag["coor"]
-        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+    ## 判断tag中的目标在ref中是否有改变
+    for cfg in cfgs_tag:
+        c = cfg["coor"]; l = cfg["label"]
+        xo = (c[2] + c[0]) / 2; yo = (c[3] + c[1]) / 2
         is_exist = False
-        for cfg_ref in bbox_cfg_ref:
-            c_ref = cfg_ref["coor"]
-            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
-                if cfg_ref["label"] == cfg_tag["label"]:
-                    is_exist = True
+        for cfg_ in cfgs_ref:
+            c_ = cfg_["coor"]; l_ = cfg_["label"]
+            if l == l_ and  c_[0] < xo < c_[2] and c_[1] < yo < c_[3]:
+                is_exist = True
         if not is_exist:
-            tag_diff.append(c_tag)
+            diff_boxes.append(c)
     
-    ## 判断ref中的目标是否在tag中存在
-    for cfg_tag in bbox_cfg_ref:
-        c_tag = cfg_tag["coor"]
-        xo = (c_tag[2] + c_tag[0]) / 2; yo = (c_tag[3] + c_tag[1]) / 2
+    ## 判断ref中的目标在tag中是否有改变
+    for cfg in cfgs_ref:
+        c = cfg["coor"]; l = cfg["label"]
+        xo = (c[2] + c[0]) / 2; yo = (c[3] + c[1]) / 2
         is_exist = False
-        for cfg_ref in bbox_cfg_tag:
-            c_ref = cfg_ref["coor"]
-            if c_ref[0] < xo < c_ref[2] and c_ref[1] < yo < c_ref[3]:
-                if cfg_ref["label"] == cfg_tag["label"]:
-                    is_exist = True
+        for cfg_ in cfgs_tag:
+            c_ = cfg_["coor"]; l_ = cfg_["label"]
+            if l == l_ and  c_[0] < xo < c_[2] and c_[1] < yo < c_[3]:
+                is_exist = True
         if not is_exist:
-            tag_diff.append(c_tag)
+            diff_boxes.append(c)
     
-    if len(tag_diff) == 0:
+    if len(diff_boxes) == 0:
         return []
     
-    d = np.array(tag_diff, dtype=int)
-    tag_diff = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
-    return tag_diff
-
+    ## 将多个box合并
+    d = np.array(diff_boxes, dtype=int)
+    diff_area = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
+    return diff_area
 
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
@@ -177,82 +150,86 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
         img_tag: 待分析图
         feat_tag: 待分析图的特征
     return:
-        tag_diff:不一致目标框,格式为[xmin, ymin, xmax, ymax]
+        diff_area:不一致目标框,格式为[xmin, ymin, xmax, ymax]
     """
     tag_diff = []
-    img_tag_ = img_tag.copy()
-    img_ref_ = img_ref.copy()
 
     ## 将图片中osd区域中的sift特征点去掉。
-    H, W = img_ref.shape[:2]
-    osd_boxes = [[0, 0, 1, 0.12], [0, 0.88, 1, 1]] # 将图像上下12%的区域内sift特征点去掉
-    # osd_boxes = [] # 不处理osd区域
-    rm_regs = []
-    for b in osd_boxes:
-        b_ = [int(b[0] * W), int(b[1] * H), int(b[2] * W), int(b[3] * H)]
-        rm_regs.append(b_)
+    # H, W = img_ref.shape[:2]
+    # osd_boxes = [[0, 0, 1, 0.12], [0, 0.88, 1, 1]] # 将图像上下12%的区域内sift特征点去掉
+    # # osd_boxes = [] # 不处理osd区域
+    # rm_regs = []
+    # for b in osd_boxes:
+    #     b_ = [int(b[0] * W), int(b[1] * H), int(b[2] * W), int(b[3] * H)]
+    #     rm_regs.append(b_)
     
     ## 基于tag对ref进行矫正
-    M = sift_match(feat_tag, feat_ref, rm_regs=rm_regs, ratio=0.5, ops="Affine")
-    img_ref = correct_offset(img_ref, M)
+    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+    img_ref, cut = correct_offset(img_ref, M, b=True)
 
-    ## 判断是否有异物、是否有破损、是否箱门闭合异常
-    bbox_cfg_tag = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.3, iou_thres=0.2)
-    for cfg in bbox_cfg_tag:
-        if cfg["label"] == "xmbhyc":
+    ## 用yolov5检测待测图和基准图的目标物和状态
+    cfgs_tag = []
+    cfgs_ref = []
+    # 缺陷
+    pre_labels = ["yw_gkxfw", "yw_nc", "bj_bpps"] 
+    cfgs = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_tag = cfgs_tag + cfgs
+    for cfg in cfgs_tag:
+        if cfg["label"] == "jyz_pl" or cfg["label"] == "hxq_gjtps":
             return cfg["coor"]
-        if cfg["label"] == "yw_gkxfw" or cfg["label"] == "yw_nc":
-            return cfg["coor"]
-        if cfg["label"] == "jyz_pl" or cfg["label"] == "bj_bpps" or cfg["label"] == "hxq_gjtps":
-            return cfg["coor"]
+    cfgs = inference_yolov5(yolov5_rec_defect, img_ref, resize=1280, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = cfgs_ref + cfgs
+    # coco
+    pre_labels = ["person", "car", "bus", "truck"] 
+    cfgs = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_tag = cfgs_tag + cfgs
+    cfgs = inference_yolov5(yolov5_coco, img_ref, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = cfgs_ref + cfgs
+    # 二次设备
+    pre_labels = ["kgg_ybh", "kgg_ybf", "kqkg_hz", "kqkg_fz", "xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", 
+                  "zsd_lvdl", "zsd_lvdm", "zsd_hongdl", "zsd_hongdm", "zsd_baidl", "zsd_baidm", "zsd_huangdl", "zsd_huangdm", "zsd_heidm"] 
+    cfgs = inference_yolov5(yolov5_ErCiSheBei, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_tag = cfgs_tag + cfgs
+    cfgs = inference_yolov5(yolov5_ErCiSheBei, img_ref, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = cfgs_ref + cfgs
 
-    ## 判断是否有人
-    bbox_cfg_tag = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2)
-    for cfg in bbox_cfg_tag:
-        if cfg["label"] == "person":
-            return cfg["coor"]
+    # for cfg in cfgs_tag:
+    #     c = cfg["coor"]; score = cfg["score"]; label = cfg["label"]
+    #     cv2.rectangle(img_tag, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+    #     cv2.putText(img_tag, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+    # cv2.imwrite("test1/img_tag.jpg", img_tag)
+    # for cfg in cfgs_ref:
+    #     c = cfg["coor"]; score = cfg["score"]; label = cfg["label"]
+    #     cv2.rectangle(img_ref, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+    #     cv2.putText(img_ref, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+    # cv2.imwrite("test1/img_ref.jpg", img_ref)
+
+    ## 计算cfgs_tag和cfgs_ref的不相同区域
+    diff_area = labels_diff_area(cfgs_ref, cfgs_tag)
+    if len(diff_area) != 0:
+        return diff_area
     
-    ## 判断二次设备是否变化
-    bbox_cfg_tag = inference_yolov5(yolov5_ErCiSheBei, img_tag)
-    if len(bbox_cfg_tag) != 0:
-        bbox_cfg_ref = inference_yolov5(yolov5_ErCiSheBei, img_ref)
-        tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-        if len(tag_diff) != 0:
-            return tag_diff
+    ## 计算指针是否读数变化幅度过大
+    diff_area = indentify_pointer(img_ref, img_tag)
+    if len(diff_area) != 0:  
+        return diff_area
 
-    # ## 压板异常判别
-    # bbox_cfg_tag = inference_yolov5(yolov5_pressplate, img_tag)
-    # if len(bbox_cfg_tag) != 0:
-    #     bbox_cfg_ref = inference_yolov5(yolov5_pressplate, img_ref)
-    #     tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-    #     if len(tag_diff) != 0:
-    #         return tag_diff
-
-    # ## 指示灯异常判别
-    # bbox_cfg_tag = inference_yolov5(yolov5_led, img_tag)
-    # if len(bbox_cfg_tag) != 0:
-    #     bbox_cfg_ref = inference_yolov5(yolov5_led, img_ref)
-    #     tag_diff = identify_yolov5(bbox_cfg_ref, bbox_cfg_tag)
-    #     if len(tag_diff) != 0:
-    #         return tag_diff
-
-    ## 指针读数变化太大
-    tag_diff = indentify_pointer(img_ref, img_tag)
-    if len(tag_diff) != 0:  
-        return tag_diff
-
-    # ## 像素相减类异常
-    tag_diff = detect_diff(img_ref_, feat_ref, img_tag, feat_tag)
-    if len(tag_diff) != 0:  
-        return tag_diff
+    ## 像素相减类异常
+    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
+    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
+    diff_area = detect_diff(img_ref, img_tag)
+    if len(diff_area) != 0:  
+        diff_area = [diff_area[0] + cut[0], diff_area[1] + cut[1], diff_area[2] + cut[0], diff_area[3] + cut[1]]
+        return diff_area
     
     return tag_diff
 
 if __name__ == '__main__':
 
+
     in_dir = "test/panbie"  # 判别测试图片存放目录
     out_dir = "test/panbie_result" # 判别算法输出目录
-    resize_limit = 960   ## 图像最小缩放到多少
+    resize_max = 1280   ## 图像最长边缩放到多少
 
     start = time.time()
 
@@ -263,9 +240,9 @@ if __name__ == '__main__':
         img_ref = cv2.imread(ref_file) 
 
         ## resize, 降低分别率，加快特征提取的速度。
-        H, W = img_ref.shape[:2]
-        resize_rate = max(1, int(max(H, W) / resize_limit))  ## 缩放倍数
-        img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+        # H, W = img_ref.shape[:2]
+        # resize_rate = max(H, W) / resize_max  ## 缩放倍数
+        # img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
@@ -278,15 +255,13 @@ if __name__ == '__main__':
             print(tag_file)
             img_tag = cv2.imread(tag_file)
 
-            H, W = img_tag.shape[:2]  ## resize
-            img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
-
+            # H, W = img_tag.shape[:2]  ## resize
+            # img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
             feat_tag = sift_create(img_tag) # 提取sift特征
-
             tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
 
             ## 将tag_diff还原回原始大小
-            tag_diff = [int(d * resize_rate) for d in tag_diff]
+            # tag_diff = [int(d * resize_rate) for d in tag_diff]
             print(tag_diff)
 
             ## 将结果写成txt
