@@ -428,18 +428,37 @@ def detect_diff(img_ref, img_tag):
     kernel  = np.asarray(((0,0,1,0,0),(0,1,1,1,0),(1,1,1,1,1),(0,1,1,1,0),(0,0,1,0,0)), dtype=np.uint8)
     dif_img = cv2.erode(dif_img,kernel,iterations=1)
     # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
+
+    contours, hierarchy = cv2.findContours(dif_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) > 1:
+        contours = np.array(contours, dtype=object)
+    else:
+        contours = np.array(contours)
+    areas = np.array([cv2.contourArea(c) for c in contours])
+    inds = np.argsort(-areas)
+    inds_size = areas[inds] > 1
+    inds = inds[inds_size]
+    contours = contours[inds]
+    areas = areas[inds]
+    scales = 10**(np.arange(0,5))
+    bins = np.arange(1, 10, 5)
+    bins = np.concatenate([bins * s for s in scales])
+    max_area = areas[0]
+    ratio = 0.01
+    retained = areas >= max_area * ratio
+    dif_img = cv2.drawContours(np.zeros_like(dif_img), contours[retained], -1, 255, -1)
     
     ## 用最小外接矩阵框出差异的地方
-    ymin = min(np.where(dif_img == 255)[0])
-    xmin = min(np.where(dif_img == 255)[1])
-    ymax = max(np.where(dif_img == 255)[0])
-    xmax = max(np.where(dif_img == 255)[1])
+    ymin = max(0, min(np.where(dif_img == 255)[0])-3)
+    xmin = max(0, min(np.where(dif_img == 255)[1])-3)
+    ymax = min(dif_img.shape[0], max(np.where(dif_img == 255)[0])+3)
+    xmax = min(dif_img.shape[1], max(np.where(dif_img == 255)[1])+3)
     rec_dif = [xmin, ymin, xmax, ymax]
 
     ## 若最终框面积不在0.1 - 0.7 之间，返回空。
     H, W = dif_img.shape
     dif_area = (rec_dif[2] - rec_dif[0]) * (rec_dif[3] - rec_dif[1])
-    if dif_area / (H * W) > 0.8:
+    if dif_area / (H * W) > 0.5:
         return []
 
     ## 将矩形框还原回原始大小
@@ -454,13 +473,23 @@ if __name__ == '__main__':
     import os
     import glob
 
-    ref_file = "/home/yh/image/python_codes/test/panbie/0013_normal.jpg"
-    tag_file = "/home/yh/image/python_codes/test/panbie/0013_3.jpg"
+    ref_file = "test1/0996_normal.jpg"
+    tag_file = "test1/0996_3.jpg"
     img_ref = cv2.imread(ref_file) 
     img_tag = cv2.imread(tag_file)
+
+    # resize, 降低分别率，加快特征提取的速度。
+    resize_max = 1280
+    H, W = img_ref.shape[:2]
+    resize_rate = max(H, W) / resize_max  ## 缩放倍数
+    img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+    H, W = img_tag.shape[:2]  ## resize
+    img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
+
     feat_ref = sift_create(img_ref)
     feat_tag = sift_create(img_tag) # 提取sift特征
     M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+
     img_ref, cut = correct_offset(img_ref, M, b=True)
     img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
     img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
