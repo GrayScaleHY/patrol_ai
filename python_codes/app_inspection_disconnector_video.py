@@ -19,7 +19,7 @@ def inspection_disconnector_video(input_data):
     """
     刀闸识别
     """
-    cfg_dir = "/data/inspection/disconnector_video"
+    cfg_dir = "/export/patrolservice/VIDEO"
 
     TIME_START = time.strftime("%m-%d-%H-%M-%S")
     save_dir = os.path.join(os.path.join("inspection_result/disconnector_video",TIME_START)) #保存图片的路径
