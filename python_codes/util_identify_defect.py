@@ -180,10 +180,11 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     cfgs = inference_yolov5(yolov5_rec_defect, img_ref, resize=1280, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
     cfgs_ref = cfgs_ref + cfgs
     # coco
-    pre_labels = ["person", "car", "bus", "truck"] 
-    cfgs = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    # pre_labels = ["person", "car", "bus", "truck"] 
+    pre_labels = ["person"]
+    cfgs = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
     cfgs_tag = cfgs_tag + cfgs
-    cfgs = inference_yolov5(yolov5_coco, img_ref, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs = inference_yolov5(yolov5_coco, img_ref, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
     cfgs_ref = cfgs_ref + cfgs
     # 二次设备
     pre_labels = ["kgg_ybh", "kgg_ybf", "kqkg_hz", "kqkg_fz", "xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", 
