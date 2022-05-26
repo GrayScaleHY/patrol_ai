@@ -148,8 +148,8 @@ OBJECT_MAP = {
     "ErCiSheBei":{
         'xmbhyc': '箱门异常',
         'xmbhzc': '箱门正常',
-        'kgg_ybh': '压板合',
-        'kgg_ybf': '压板分',
+        'kgg_ybh': '合',
+        'kgg_ybf': '分',
         'kqkg_hz': '合闸',
         'kqkg_fz': '分闸',
         'fpq_h': '翻牌器合',
