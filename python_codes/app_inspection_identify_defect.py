@@ -49,12 +49,22 @@ def inspection_identify_defect(input_data):
     cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
     cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
 
+    # resize, 降低分别率，加快特征提取的速度。
+    resize_max = 1280
+    H, W = img_ref.shape[:2]
+    resize_rate = max(H, W) / resize_max  ## 缩放倍数
+    img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+    H, W = img_tag.shape[:2]  ## resize
+    img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
+
     ## 提取sift特征
     feat_ref = sift_create(img_ref) 
     feat_tag = sift_create(img_tag)
 
     tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag)
-    tag_diff = np.array(tag_diff, dtype=float).tolist() ## 将int改为float
+
+    ## 将tag_diff还原回原始大小
+    tag_diff = [float(int(d * resize_rate)) for d in tag_diff]
 
     out_cfg = []
     if len(tag_diff) == 0:
@@ -80,15 +90,17 @@ def inspection_identify_defect(input_data):
     return out_data
 
 if __name__ == '__main__':
-    ref_file = "/home/yh/image/python_codes/test/panbie/0005_normal.jpg"
-    tag_file = "/home/yh/image/python_codes/test/panbie/0005_2.jpg"
+    ref_file = "/home/yh/image/python_codes/test/panbie/0002_normal.jpg"
+    tag_file = "/home/yh/image/python_codes/test/panbie/0002_1.jpg"
 
     img_tag = img2base64(cv2.imread(tag_file))
     img_ref = img2base64(cv2.imread(ref_file))
 
     input_data = {"image": img_tag, "config":{"img_ref": img_ref}, "type": "identify_defect"}
 
+    start = time.time()
     out_data = inspection_identify_defect(input_data)
+    print(time.time() - start)
     for c_ in out_data:
         if c_ != "img_result":
             print(c_,":",out_data[c_])

@@ -11,6 +11,7 @@ from app_inspection_qrcode import inspection_qrcode
 # from app_inspection_xishiqi import inspection_xishiqi
 from app_inspection_identify_defect import inspection_identify_defect
 from config_version import code_version
+from app_inspection_disconnector_video import inspection_disconnector_video
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -43,6 +44,22 @@ def inspection_disconnector_server():
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
     res = inspection_disconnector(data)
+    print("inspection_pointer result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 视频分析刀闸分合状态
+@app.route('/inspection_disconnector_video/', methods=['POST'])
+def inspection_disconnector_video_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_disconnector_video(data)
     print("inspection_pointer result:")
     print("-----------------------------------------------")
     for s in res:
