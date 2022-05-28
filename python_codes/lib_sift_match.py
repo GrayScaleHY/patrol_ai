@@ -198,6 +198,9 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
         kps2 = kps
         feat2 = np.delete(feat2, rm_ids, axis=0)
 
+    if  feat1 is None or feat2 is None or len(feat1) == 0 or len(feat2) == 0:
+        print("warning: img have no sift feat!")
+        return None
     ## 画出siftt特征点
     # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
     # tar_sift = cv2.drawKeypoints(tag_img,kps2,tag_img,color=(255,0,255))
