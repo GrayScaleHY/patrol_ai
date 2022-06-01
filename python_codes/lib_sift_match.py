@@ -13,10 +13,22 @@ from lib_image_ops import img_chinese
 import pyrtools as pt  # pip install pyrtools
 from scipy import signal
 from scipy.ndimage import uniform_filter, gaussian_filter
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
+try:
+    ## https://github.com/h2oai/h2o4gpu
+    from h2o4gpu.solvers.pca import PCAH2O as PCA
+    from h2o4gpu import KMeans
+except:
+    from sklearn.decomposition import PCA
+    from sklearn.cluster import KMeans
+
+try:
+    ## https://github.com/zldrobit/pycudasift/tree/Maxwell-fix
+    import cudasift
+except:
+    print("Warning: cudasift not installed")
 from collections import Counter
 from skimage import exposure
+from pack_vector_set import pack_vector_set
 
 def _resize(img):
     """
@@ -44,6 +56,7 @@ def _resize_feat(img):
     feat = sift_create(img_resize)
     return img_resize, rate, feat
 
+
 def my_dft(im, eq=False, int=False):
     eps = 1e-5
     # imf = fft2(im)
@@ -55,6 +68,7 @@ def my_dft(im, eq=False, int=False):
     imp = cv2.equalizeHist(imp.astype(np.uint8)) if eq else imp
     imp = imp.astype(np.uint8) if int else imp
     return imp
+
 
 def my_ssim(img1, img2):
     """
@@ -145,13 +159,27 @@ def sift_create(img):
     ## 直方图均衡化，增加图片的对比度
     # img = cv2.equalizeHist(img)
 
-    ## 提取sift特征 
-    sift = cv2.SIFT_create() # 创建sift对象
+    ## 使用cudasift提取sift特征
+    try:
+        numOctaves = 5;   # /* Number of octaves in Gaussian pyramid */
+        initBlur = 1.6;  # /* Amount of initial Gaussian blurring in standard deviations */
+        thresh = 2;    # 3.5 /* Threshold on difference of Gaussians for feature pruning */
+        minScale = 0.0;  # /* Minimum acceptable scale to remove fine-scale features */
+        upScale = True;  # /* Whether to upscale image before extraction */
+        data = cudasift.PySiftData(25000)
+        cudasift.ExtractKeypoints(img, data, numOctaves, initBlur, thresh, minScale, upScale)
+        df, feat = data.to_data_frame()
+        feat = np.ascontiguousarray(feat)
+        points = zip(df['xpos'], df['ypos'])
+        kps = [cv2.KeyPoint(p[0], p[1], size=1) for p in points]
 
-    # sift = cv2.xfeatures2d.SIFT_create()
-    # kps: 关键点，包括 angle, class_id, octave, pt, response, size
-    # feat: 特征值，每个特征点的特征值是128维
-    kps, feat = sift.detectAndCompute(img, None) #提取sift特征
+    ## 使用opencv提取sift特征
+    except:
+        sift = cv2.SIFT_create() # 创建sift对象
+        # sift = cv2.xfeatures2d.SIFT_create()
+        # kps: 关键点，包括 angle, class_id, octave, pt, response, size
+        # feat: 特征值，每个特征点的特征值是128维
+        kps, feat = sift.detectAndCompute(img, None) #提取sift特征
     return (kps, feat)
 
 
@@ -338,27 +366,29 @@ def find_vector_set(diff_image, new_size):
     return vector_set, mean_vec
 
 def find_FVS(EVS, pca, diff_image, mean_vec, new):
+    ## 求FVS, 使用cython的版本
+    diff_image = diff_image.astype(np.uint8)
+    feature_vector_set = pack_vector_set(diff_image, np.array(new))
+    feature_vector_set = np.array(feature_vector_set)
+    ## FVS的完整计算过程
+    # i = 2 
+    # feature_vector_set = []
     
-    i = 2 
-    feature_vector_set = []
-    
-    while i < new[0] - 2:
-        j = 2
-        while j < new[1] - 2:
-            block = diff_image[i-2:i+3, j-2:j+3]
-            feature = block.flatten()
-            feature_vector_set.append(feature)
-            j = j+1
-        i = i+1
+    # while i < new[0] - 2:
+    #     j = 2
+    #     while j < new[1] - 2:
+    #         block = diff_image[i-2:i+3, j-2:j+3]
+    #         feature = block.flatten()
+    #         feature_vector_set.append(feature)
+    #         j = j+1
+    #     i = i+1
         
-    # FVS = np.dot(feature_vector_set, EVS)
-    # FVS = FVS - mean_vec
     FVS = pca.transform(feature_vector_set)
     return FVS
 
-def clustering(FVS, components, new):
+def clustering(FVS, components, new, max_iter=100):
     
-    kmeans = KMeans(components, verbose = 0)
+    kmeans = KMeans(components, verbose = 0, max_iter=max_iter, tol=1e-2)
     kmeans.fit(FVS)
     output = kmeans.predict(FVS)
     count  = Counter(output)
@@ -415,7 +445,7 @@ def detect_diff(img_ref, img_tag):
     ## 基于PCA+Kmean的变化检测
     ## https://appliedmachinelearning.blog/2017/11/25/unsupervised-changed-detection-in-multi-temporal-satellite-images-using-pca-k-means-python-code/
     vector_set, mean_vec = find_vector_set(dif_img, img_size)
-    pca = PCA() # n_components=25
+    pca = PCA(n_components=25) # n_components=25
     pca.fit(vector_set)
     EVS = pca.components_
     FVS = find_FVS(EVS, pca, dif_img, mean_vec, img_size)
@@ -433,16 +463,18 @@ def detect_diff(img_ref, img_tag):
     # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
 
     contours, hierarchy = cv2.findContours(dif_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if len(contours) > 1:
-        contours = np.array(contours, dtype=object)
-    else:
-        contours = np.array(contours)
+    # if len(contours) > 1:
+    #     contours = np.array(contours, dtype=object)
+    # else:
+    contours = np.array(contours)
     areas = np.array([cv2.contourArea(c) for c in contours])
     inds = np.argsort(-areas)
     inds_size = areas[inds] > 1
     inds = inds[inds_size]
     contours = contours[inds]
     areas = areas[inds]
+    if len(areas) < 1:
+        return []
     scales = 10**(np.arange(0,5))
     bins = np.arange(1, 10, 5)
     bins = np.concatenate([bins * s for s in scales])
