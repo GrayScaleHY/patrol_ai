@@ -8,6 +8,8 @@ from lib_help_base import color_list
 from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 import numpy as np
+## 表计， 二次设备，17类缺陷
+from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -69,13 +71,6 @@ def get_input_data(input_data):
             status_map = input_data["config"]["status_map"]
     
     return img_tag, img_ref, roi, status_map
-
-yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
-yolov5_ErCiSheBei = load_yolov5_model("/data/inspection/yolov5/ErCiSheBei.pt") ## 二次设备状态模型
-# yolov5_fire_smoke = load_yolov5_model("/data/inspection/yolov5/fire_smoke.pt") # 烟火
-# yolov5_pressplate = load_yolov5_model("/data/inspection/yolov5/pressplate.pt") # 压板
-# yolov5_helmet = load_yolov5_model("/data/inspection/yolov5/helmet.pt") # 安全帽
-yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect_x6.pt") # 北京送检17类缺陷
 
 def inspection_object_detection(input_data):
     """

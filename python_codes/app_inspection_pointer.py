@@ -4,17 +4,16 @@ import time
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, draw_result
-from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment, intersection_arc
+from lib_inference_yolov5 import inference_yolov5
+from lib_analysis_meter import angle_scale, segment2angle, angle2sclae
+from lib_inference_mrcnn import inference_maskrcnn, contour2segment, intersection_arc
 from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_help_base import color_area
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-## 加载模型
-maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
-yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
+## 指针模型， 表计
+from config_load_models_var import yolov5_meter, maskrcnn_pointer
 
 def is_include(sub_box, par_box, srate=0.8):
     

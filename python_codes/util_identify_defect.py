@@ -2,9 +2,9 @@
 用于判别算法的测试。
 """
 
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
+from lib_inference_yolov5 import inference_yolov5
 from lib_sift_match import detect_diff, sift_match, correct_offset, sift_create
-from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn, contour2segment
+from lib_inference_mrcnn import inference_maskrcnn, contour2segment
 from lib_analysis_meter import segment2angle
 from lib_image_ops import img_chinese
 import glob
@@ -14,11 +14,8 @@ import time
 import shutil
 import numpy as np
 
-yolov5_ErCiSheBei = load_yolov5_model("/data/inspection/yolov5/ErCiSheBei.pt") ## 二次设备状态模型
-yolov5_coco = load_yolov5_model("/data/inspection/yolov5/coco.pt") # coco模型
-yolov5_rec_defect = load_yolov5_model("/data/inspection/yolov5/rec_defect_x6.pt") # x6的17类缺陷模型
-yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 表盘
-maskrcnn_pointer = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 加载指针的maskrcnn模型
+## 二次设备， coco， 17类缺陷， 表计， 指针
+from config_load_models_var import yolov5_ErCiSheBei, yolov5_coco, yolov5_rec_defect, yolov5_meter, maskrcnn_pointer
 
 def indentify_pointer(img_ref, img_tag):
     """
@@ -167,48 +164,31 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
     img_ref, cut = correct_offset(img_ref, M, b=True)
 
-    ## 用yolov5检测待测图和基准图的目标物和状态
-    cfgs_tag = []
-    cfgs_ref = []
+    # ## 用yolov5检测待测图和基准图的目标物和状态
     # 缺陷
-    pre_labels = ["yw_gkxfw", "yw_nc", "bj_bpps"] 
-    cfgs = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_tag = cfgs_tag + cfgs
-    for cfg in cfgs_tag:
-        if cfg["label"] == "jyz_pl" or cfg["label"] == "hxq_gjtps":
-            return cfg["coor"]
-    cfgs = inference_yolov5(yolov5_rec_defect, img_ref, resize=1280, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_ref = cfgs_ref + cfgs
-    # coco
-    # pre_labels = ["person", "car", "bus", "truck"] 
-    pre_labels = ["person"]
-    cfgs = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_tag = cfgs_tag + cfgs
-    cfgs = inference_yolov5(yolov5_coco, img_ref, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_ref = cfgs_ref + cfgs
-    # 二次设备
-    pre_labels = ["kgg_ybh", "kgg_ybf", "kqkg_hz", "kqkg_fz", "xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", 
-                  "zsd_lvdl", "zsd_lvdm", "zsd_hongdl", "zsd_hongdm", "zsd_baidl", "zsd_baidm", "zsd_huangdl", "zsd_huangdm", "zsd_heidm"] 
-    cfgs = inference_yolov5(yolov5_ErCiSheBei, img_tag, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_tag = cfgs_tag + cfgs
-    cfgs = inference_yolov5(yolov5_ErCiSheBei, img_ref, resize=640, conf_thres=0.5, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_ref = cfgs_ref + cfgs
-
-    # for cfg in cfgs_tag:
-    #     c = cfg["coor"]; score = cfg["score"]; label = cfg["label"]
-    #     cv2.rectangle(img_tag, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-    #     cv2.putText(img_tag, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-    # cv2.imwrite("test1/img_tag.jpg", img_tag)
-    # for cfg in cfgs_ref:
-    #     c = cfg["coor"]; score = cfg["score"]; label = cfg["label"]
-    #     cv2.rectangle(img_ref, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-    #     cv2.putText(img_ref, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-    # cv2.imwrite("test1/img_ref.jpg", img_ref)
-
-    ## 计算cfgs_tag和cfgs_ref的不相同区域
+    pre_labels = ["yw_gkxfw", "yw_nc", "bj_bpps", "jyz_pl", "hxq_gjtps"] 
+    cfgs_tag = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = inference_yolov5(yolov5_rec_defect, img_ref, resize=1280, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
     diff_area = labels_diff_area(cfgs_ref, cfgs_tag)
     if len(diff_area) != 0:
         return diff_area
+        
+    # coco
+    pre_labels = ["person"]
+    cfgs_tag = inference_yolov5(yolov5_coco, img_tag, resize=640, conf_thres=0.85, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = inference_yolov5(yolov5_coco, img_ref, resize=640, conf_thres=0.85, iou_thres=0.2, pre_labels=pre_labels)
+    diff_area = labels_diff_area(cfgs_ref, cfgs_tag)
+    if len(diff_area) != 0:
+        return diff_area
+
+    # 二次设备
+    pre_labels = ["kgg_ybh", "kgg_ybf", "kqkg_hz", "kqkg_fz", "xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", "zsd_l", "zsd_m"] 
+    cfgs_tag = inference_yolov5(yolov5_ErCiSheBei, img_tag, resize=640, conf_thres=0.75, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = inference_yolov5(yolov5_ErCiSheBei, img_ref, resize=640, conf_thres=0.75, iou_thres=0.2, pre_labels=pre_labels)
+    diff_area = labels_diff_area(cfgs_ref, cfgs_tag)
+    if len(diff_area) != 0:
+        return diff_area
+
     
     ## 计算指针是否读数变化幅度过大
     diff_area = indentify_pointer(img_ref, img_tag)
@@ -226,13 +206,14 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     return tag_diff
 
 if __name__ == '__main__':
-
+    # from lib_sift_match import init_data
+    # init_data()
 
     in_dir = "test/panbie"  # 判别测试图片存放目录
     out_dir = "test/panbie_result" # 判别算法输出目录
     resize_max = 1280   ## 图像最长边缩放到多少
 
-    start = time.time()
+    start_all = time.time()
 
     os.makedirs(out_dir, exist_ok=True)
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
@@ -240,14 +221,16 @@ if __name__ == '__main__':
         file_id = os.path.basename(ref_file).split("_")[0]
         img_ref = cv2.imread(ref_file) 
 
-        # resize, 降低分别率，加快特征提取的速度。
-        H, W = img_ref.shape[:2]
-        resize_rate = max(H, W) / resize_max  ## 缩放倍数
-        img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+        # # resize, 降低分别率，加快特征提取的速度。
+        # H, W = img_ref.shape[:2]
+        # resize_rate = max(H, W) / resize_max  ## 缩放倍数
+        # img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
         for tag_file in glob.glob(os.path.join(in_dir, file_id + "_*.jpg")):
+            loop_start = time.time()
+            print("-------------------------------")
             
             tag_name = os.path.basename(tag_file)
 
@@ -256,13 +239,13 @@ if __name__ == '__main__':
             print(tag_file)
             img_tag = cv2.imread(tag_file)
 
-            H, W = img_tag.shape[:2]  ## resize
-            img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
+            # H, W = img_tag.shape[:2]  ## resize
+            # img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
             feat_tag = sift_create(img_tag) # 提取sift特征
             tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
 
             ## 将tag_diff还原回原始大小
-            tag_diff = [int(d * resize_rate) for d in tag_diff]
+            # tag_diff = [int(d * resize_rate) for d in tag_diff]
             print(tag_diff)
 
             ## 将结果写成txt
@@ -277,5 +260,7 @@ if __name__ == '__main__':
             f.write("ID,PATH,TYPE,XMIN,YMIN,XMAX,YMAX\n")
             f.write(s)
             f.close()
+            print("loop time:", time.time() - loop_start)
+            print("--------------------------")
 
-    print("spend times:", time.time() - start)
+    print("Total spend times:", time.time() - start_all)

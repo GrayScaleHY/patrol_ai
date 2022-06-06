@@ -13,7 +13,7 @@ import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 
-device = select_device("cpu")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def load_yolov5_model(model_file):
     """
@@ -131,21 +131,17 @@ def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
 
 if __name__ == '__main__':
     import shutil
-    weights = "/data/inspection/yolov5/meter.pt"
-    source = "/home/yh/image/python_codes/test/1/meter"
-    save_dir = "/home/yh/image/python_codes/test/1/meter_cut"
-    # inference_batch(weights, source, save_dir, conf_thres=0.2, iou_thres=0.2)
-    weights_yolov5 = load_yolov5_model(weights)
-    for img_file in glob.glob(os.path.join(source, "*.jpg")):
-        img = cv2.imread(img_file)
-        cfgs = inference_yolov5(weights_yolov5, img)
-        count = 0
-        for cfg in cfgs:
-            c = cfg["coor"]
-            out_img = img[c[1]:c[3], c[0]:c[2], :]
-            out_file = img_file[:-4] + "_" + str(count) + ".jpg"
-            cv2.imwrite(out_file, out_img)
-            count += 1
+    img_file = "/home/yh/image/python_codes/test/source_0.bmp"
+    weight = "/data/inspection/yolov5/rec_defect_x6.pt"
+    img = cv2.imread(img_file)
+    model_yolov5 = load_yolov5_model(weight)
+    cfgs = inference_yolov5(model_yolov5, img, resize=1280, conf_thres=0.1, iou_thres=0.2)
+    for cfg in cfgs:
+        c = cfg["coor"]; label = cfg["label"]; score = cfg["score"]
+        cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
+        cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+    cv2.imwrite(img_file[:-4] + "result.jpg", img)
+    print(cfgs)
 
 
                 

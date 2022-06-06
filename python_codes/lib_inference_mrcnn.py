@@ -6,7 +6,7 @@ from detectron2.engine import DefaultPredictor
 import sys
 import math
 from lib_analysis_meter import segment2angle
-sys.path.append('./detectron2')
+# sys.path.append('./detectron2')
 
 def intersection_arc(line, arc):
     """

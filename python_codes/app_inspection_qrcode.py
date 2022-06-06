@@ -8,10 +8,8 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import load_ppocr, inference_ppocr
 
-det_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_det_infer/"
-cls_model_dir = "/data/inspection/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
-rec_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_rec_infer/"
-text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir) ## 加载ppocr模型
+## 加载padpad模型
+from config_load_models_var import text_sys
 
 def get_input_data(input_data):
     """

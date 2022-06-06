@@ -3,11 +3,14 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
+from lib_inference_yolov5 import inference_yolov5
 from lib_sift_match import sift_match, convert_coor, sift_create
 import numpy as np
 import config_object_name
 from lib_help_base import color_list
+
+## 表计模型， 动作次数模型， led数字模型
+from config_load_models_var import yolov5_meter, yolov5_counter, yolov5_digital 
 
 def get_input_data(input_data):
     """
@@ -38,10 +41,6 @@ def get_input_data(input_data):
                         roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]   
     
     return img_tag, img_ref, roi
-
-yolov5_meter = load_yolov5_model("/data/inspection/yolov5/meter.pt") # 加载仪表yolov5模型
-yolov5_counter= load_yolov5_model("/data/inspection/yolov5/counter.pt") # 加载记数yolov5模型
-yolov5_digital= load_yolov5_model("/data/inspection/yolov5/digital.pt") # 加载led数字yolov5模型
 
 def inspection_counter(input_data):
     """

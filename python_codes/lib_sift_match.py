@@ -50,9 +50,9 @@ if sift_lib == "cudasift":
     sift_data = cudasift.PySiftData(25000)
 
 if kmeans_lib == "cuml":
-    kmeans = KMeans(n_clusters=3, max_iter=100, tol=1e-2)
+    kmeans = KMeans(n_clusters=2, max_iter=100, tol=1e-2)
 else:
-    kmeans = KMeans(3, verbose = 0, max_iter=100, tol=1e-2)
+    kmeans = KMeans(2, verbose = 0, max_iter=100, tol=1e-2)
 
 
 cuda_source = open('change_map.cu').read()
@@ -493,12 +493,12 @@ def detect_diff(img_ref, img_tag):
     # dif_img = (255 - dif_img * 255).astype(np.uint8) ## ssim差异
 
     img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8) ## 
-    dif_img = img_tag.astype(float) - img_ref.astype(float) ## 直接相减的差异
-    dif_img = np.abs(dif_img).astype(np.uint8)
-    # tol = 0.01
-    # dif_img = get_change_map(img_ref, img_tag, tol=tol) ## 周围像素相减，取最小值
-    # dif_img = cv2.resize(dif_img, (img_size[1], img_size[0]))
-    # dif_img = dif_img.astype(np.uint8)
+    # dif_img = img_tag.astype(float) - img_ref.astype(float) ## 直接相减的差异
+    # dif_img = np.abs(dif_img).astype(np.uint8)
+    tol = 0.01
+    dif_img = get_change_map(img_ref, img_tag, tol=tol) ## 周围像素相减，取最小值
+    dif_img = cv2.resize(dif_img, (img_size[1], img_size[0]))
+    dif_img = dif_img.astype(np.uint8)
 
     # cv2.imwrite("test1/tag_diff.jpg", dif_img)
 
