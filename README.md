@@ -71,16 +71,16 @@ utdnn/inspection   yolov5-detectron2-paddle-trail-04-18   de9fc58182f4   2 weeks
 输入以下命令启动docker， 注意，--cpus的数量设置为服务器cpu核数的一半。
 ```
 ## docker低于19版本，则运行以下命令
-sudo nvidia-docker run -it --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
+sudo nvidia-docker run -it --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
 ## docker高于19版本，则运行以下命令
-sudo docker run -it --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
+sudo docker run -it --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
 ```
 进入docker后，编辑~/.bashrc文件，使得启动docker时会自动开启服务。
 ```
 vim ~/.bashrc 
 ## 将以下两行拷贝到.bashrc文件的末尾，并保存
 cd /data/inspection/image/python_codes
-python util_inspection_server.py
+/root/miniconda3/envs/rapids-22.04/bin/python util_inspection_server.py
 ```
 同时按Ctrl+P+Q退出docker，输入以下命令，使得巡检docker会随开机自启动
 ```
