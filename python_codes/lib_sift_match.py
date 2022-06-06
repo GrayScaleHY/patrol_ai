@@ -8,27 +8,81 @@ import time
 try:
     from skimage.measure import compare_ssim as sk_cpt_ssim # pip install scikit-image
 except:
-    from skimage.metrics import structural_similarity as sk_cpt_ssim
+    from skimage.metrics import structural_similarity as sk_cpt_ssim # pip install scikit-image
 from lib_image_ops import img_chinese
 import pyrtools as pt  # pip install pyrtools
 from scipy import signal
 from scipy.ndimage import uniform_filter, gaussian_filter
+from collections import Counter
+from skimage import exposure
+import cupy as cp ## pip install cupy-cuda114
+
 try:
-    ## https://github.com/h2oai/h2o4gpu
-    from h2o4gpu.solvers.pca import PCAH2O as PCA
-    from h2o4gpu import KMeans
+    ## https://rapids.ai/start.html#get-rapids
+    ## https://docs.rapids.ai/api/cuml/stable/api.html?highlight=kmeans#cuml.KMeans
+    import cudf
+    from cuml import PCA
+    from cuml.cluster import KMeans
+    kmeans_lib = "cuml"
+    print("Notice: PCA an KMeans use cuml !!!")
 except:
     from sklearn.decomposition import PCA
     from sklearn.cluster import KMeans
+    kmeans_lib = "sklearn"
+    print("Notice: PCA an KMeans use sklearn !!!")
 
 try:
     ## https://github.com/zldrobit/pycudasift/tree/Maxwell-fix
     import cudasift
+    sift_lib = "cudasift"
+    print("Notice: sift create use cudasift !!!")
 except:
-    print("Warning: cudasift not installed")
-from collections import Counter
-from skimage import exposure
-from pack_vector_set import pack_vector_set
+    sift_lib = "opencv"
+    print("Notice: sift create use cv2 !!!")
+
+try:
+    from pack_vector_set import pack_vector_set
+    vector_lib = "cython"
+except:
+    vector_lib = "python"
+
+if sift_lib == "cudasift":
+    sift_data = cudasift.PySiftData(25000)
+
+if kmeans_lib == "cuml":
+    kmeans = KMeans(n_clusters=3, max_iter=100, tol=1e-2)
+else:
+    kmeans = KMeans(3, verbose = 0, max_iter=100, tol=1e-2)
+
+
+cuda_source = open('change_map.cu').read()
+module=cp.RawModule(code=cuda_source)
+cuda_change_map = module.get_function('cuda_change_map')
+
+
+def get_change_map(im1, im2, tol=0.02, return_numpy=True):
+    BLOCK_SIZE = 256
+    assert im1.shape == im2.shape
+
+    height, width = im1.shape
+    xm = int(width * tol)
+    ym = int(height * tol)
+    print(f"xm = {xm}, ym = {ym}, {height - 2 * ym}, {width - 2 * xm}")
+    diff_res = cp.empty([height - 2 * ym, width - 2 * xm], dtype=cp.float32)
+
+    cuda_change_map(((diff_res.shape[0] * diff_res.shape[1] + BLOCK_SIZE - 1) // BLOCK_SIZE,), 
+                    (BLOCK_SIZE,),
+                    (cp.asarray(im1, dtype=cp.float32), 
+                     cp.asarray(im2, dtype=cp.float32),
+                     diff_res,
+                     width, height, xm, ym))
+
+    if return_numpy:
+        np_diff_res = cp.asnumpy(diff_res)
+        return np_diff_res
+    else:
+        return diff_res
+
 
 def _resize(img):
     """
@@ -43,7 +97,6 @@ def _resize(img):
         rate = W / 640
     img = cv2.resize(img, (int(W / rate), int(H / rate)))
     return img, rate
-
 
 def _resize_feat(img):
     """
@@ -152,6 +205,7 @@ def sift_create(img):
     提取sift特征
     return: (kps, feat)
     """
+    
     ## 彩图转灰度图，灰度图是二维的
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -160,21 +214,20 @@ def sift_create(img):
     # img = cv2.equalizeHist(img)
 
     ## 使用cudasift提取sift特征
-    try:
+    if sift_lib == "cudasift":
         numOctaves = 5;   # /* Number of octaves in Gaussian pyramid */
         initBlur = 1.6;  # /* Amount of initial Gaussian blurring in standard deviations */
         thresh = 2;    # 3.5 /* Threshold on difference of Gaussians for feature pruning */
         minScale = 0.0;  # /* Minimum acceptable scale to remove fine-scale features */
         upScale = True;  # /* Whether to upscale image before extraction */
-        data = cudasift.PySiftData(25000)
-        cudasift.ExtractKeypoints(img, data, numOctaves, initBlur, thresh, minScale, upScale)
-        df, feat = data.to_data_frame()
+        cudasift.ExtractKeypoints(img, sift_data, numOctaves, initBlur, thresh, minScale, upScale)
+        df, feat = sift_data.to_data_frame()
         feat = np.ascontiguousarray(feat)
         points = zip(df['xpos'], df['ypos'])
-        kps = [cv2.KeyPoint(p[0], p[1], size=1) for p in points]
+        kps = [cv2.KeyPoint(p[0], p[1], size=1) for p in points] ## 注意，改代码需要cv2的4.5.5版本以上
 
     ## 使用opencv提取sift特征
-    except:
+    else:
         sift = cv2.SIFT_create() # 创建sift对象
         # sift = cv2.xfeatures2d.SIFT_create()
         # kps: 关键点，包括 angle, class_id, octave, pt, response, size
@@ -367,30 +420,35 @@ def find_vector_set(diff_image, new_size):
 
 def find_FVS(EVS, pca, diff_image, mean_vec, new):
     ## 求FVS, 使用cython的版本
-    diff_image = diff_image.astype(np.uint8)
-    feature_vector_set = pack_vector_set(diff_image, np.array(new))
-    feature_vector_set = np.array(feature_vector_set)
+    if vector_lib == "cython":
+        diff_image = diff_image.astype(np.uint8)
+        feature_vector_set = pack_vector_set(diff_image, np.array(new))
+        feature_vector_set = np.array(feature_vector_set, dtype=np.float64)
+
     ## FVS的完整计算过程
-    # i = 2 
-    # feature_vector_set = []
-    
-    # while i < new[0] - 2:
-    #     j = 2
-    #     while j < new[1] - 2:
-    #         block = diff_image[i-2:i+3, j-2:j+3]
-    #         feature = block.flatten()
-    #         feature_vector_set.append(feature)
-    #         j = j+1
-    #     i = i+1
+    else:
+        i = 2 
+        feature_vector_set = []
         
+        while i < new[0] - 2:
+            j = 2
+            while j < new[1] - 2:
+                block = diff_image[i-2:i+3, j-2:j+3]
+                feature = block.flatten()
+                feature_vector_set.append(feature)
+                j = j+1
+            i = i+1
     FVS = pca.transform(feature_vector_set)
     return FVS
 
-def clustering(FVS, components, new, max_iter=100):
-    
-    kmeans = KMeans(components, verbose = 0, max_iter=max_iter, tol=1e-2)
+def clustering(FVS, new):
+    if kmeans_lib == "cuml":
+        FVS = FVS.astype(np.float32)
+        FVS = cudf.DataFrame(FVS)
     kmeans.fit(FVS)
     output = kmeans.predict(FVS)
+    if kmeans_lib == "cuml":
+        output = output.to_numpy()
     count  = Counter(output)
 
     least_index = min(count, key = count.get)            
@@ -430,12 +488,18 @@ def detect_diff(img_ref, img_tag):
     print("ssim between img_tag and img_ref is:", score)
     if score > 0.995:
         return []
-    # dif_img = (255 - dif_img * 255).astype(np.uint8)
-    # img_tag = cv2.equalizeHist(img_tag)
-    # img_ref = cv2.equalizeHist(img_ref)
-    img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8)
-    dif_img = img_tag.astype(float) - img_ref.astype(float)
+    
+    ## 像素相减获取差异图片
+    # dif_img = (255 - dif_img * 255).astype(np.uint8) ## ssim差异
+
+    img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8) ## 
+    dif_img = img_tag.astype(float) - img_ref.astype(float) ## 直接相减的差异
     dif_img = np.abs(dif_img).astype(np.uint8)
+    # tol = 0.01
+    # dif_img = get_change_map(img_ref, img_tag, tol=tol) ## 周围像素相减，取最小值
+    # dif_img = cv2.resize(dif_img, (img_size[1], img_size[0]))
+    # dif_img = dif_img.astype(np.uint8)
+
     # cv2.imwrite("test1/tag_diff.jpg", dif_img)
 
     ## 对差异图进行二值化
@@ -449,8 +513,7 @@ def detect_diff(img_ref, img_tag):
     pca.fit(vector_set)
     EVS = pca.components_
     FVS = find_FVS(EVS, pca, dif_img, mean_vec, img_size)
-    components = 3
-    least_index, dif_img = clustering(FVS, components, img_size)
+    least_index, dif_img = clustering(FVS, img_size)
     dif_img[dif_img == least_index] = 255
     dif_img[dif_img != 255] = 0
     dif_img = dif_img.astype(np.uint8)
