@@ -71,9 +71,9 @@ utdnn/inspection   yolov5-detectron2-paddle-trail-04-18   de9fc58182f4   2 weeks
 输入以下命令启动docker， 注意，--cpus的数量设置为服务器cpu核数的一半。
 ```
 ## docker低于19版本，则运行以下命令
-sudo nvidia-docker run -it --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
+sudo nvidia-docker run -it --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:cuda11.4-conda-cuml /bin/bash
 ## docker高于19版本，则运行以下命令
-sudo docker run -it --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:yolov5-detectron2-paddle-trail-04-18 /bin/bash
+sudo docker run -it --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always ut-inspection -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:cuda11.4-conda-cuml /bin/bash
 ```
 进入docker后，编辑~/.bashrc文件，使得启动docker时会自动开启服务。
 ```
