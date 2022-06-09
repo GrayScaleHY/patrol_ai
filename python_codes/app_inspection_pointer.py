@@ -243,11 +243,11 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
             img_b = img[int(c[1]):int(c[3]), int(c[0]):int(c[2]), :]
             color_ = color_area(img_b, color_list=["black","white","red","red2"])
             if int(color) == 0:
-                c_area = color_["black"] / (color_["red"] + color_["red2"])
+                c_area = color_["black"] / max(1, (color_["red"] + color_["red2"]))
             elif int(color) == 1:
-                c_area = color_["white"] / (color_["red"] + color_["red2"])
+                c_area = color_["white"] / max(1, (color_["red"] + color_["red2"]))
             elif int(color) == 2:
-                c_area = (color_["red"] + color_["red2"]) / color_["black"]
+                c_area = (color_["red"] + color_["red2"]) / max(1, color_["black"])
             if c_area > area_max:
                 area_max = c_area
                 i_max = i
@@ -293,7 +293,9 @@ def inspection_pointer(input_data):
     bboxes = inference_yolov5(yolov5_meter, img_tag, resize=640)
     if len(bboxes) == 0:
         bboxes = [{"label": "meter", "coor": [0, 0, img_tag.shape[1],img_tag.shape[0]], "score": 1.0}]
-    roi_tag = bboxes[0]["coor"]
+    # roi_tag = bboxes[0]["coor"]
+    b = np.array([cfg["coor"] for cfg in bboxes], dtype=int)
+    roi_tag = [min(b[:,0]), min(b[:,1]), max(b[:,2]),max(b[:,3])]
 
     ## 找到bboxes中的所有指针
     seg_cfgs = []
@@ -446,10 +448,15 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/home/yh/image/python_codes/test/disconnetor_test/pointer/05-18-16-27-24/input_data.json","r", encoding='utf-8')
+    f = open("/data/inspection/image/python_codes/inspection_result/pointer/06-09-07-33-22/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
+    print("------------------------------")
+    for s in out_data:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("------------------------------")
 
 
 if __name__ == '__main__':
