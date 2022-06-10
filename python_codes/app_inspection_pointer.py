@@ -311,10 +311,10 @@ def inspection_pointer(input_data):
             seg_cfgs.append({"seg": seg, "box": box, "score": score})
 
     ## 将所有表盘画出来
-    for bbox in bboxes:
-        c = bbox["coor"]
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    # for bbox in bboxes:
+    #     c = bbox["coor"]
+    #     cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
+    #     cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
@@ -345,21 +345,20 @@ def inspection_pointer(input_data):
             xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
             roi_tag = [xmin, ymin, xmax, ymax]
 
-        ## 画出roi_tag
-        c = roi_tag
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
-        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    ## 画出roi_tag
+    c = roi_tag
+    cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
+    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 将不在感兴趣区域的指针筛选出去
-    if roi is not None:
-        _seg_cfgs = []
-        for cfg in seg_cfgs:
-            seg = cfg["seg"]
-            if is_include(seg, roi_tag, srate=0.8):
-                _seg_cfgs.append(cfg)
-        seg_cfgs = _seg_cfgs
+    _seg_cfgs = []
+    for cfg in seg_cfgs:
+        seg = cfg["seg"]
+        if is_include(seg, roi_tag, srate=0.8):
+            _seg_cfgs.append(cfg)
+    seg_cfgs = _seg_cfgs
     
-    if len(segments) == 0:
+    if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -448,14 +447,14 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/data/inspection/image/python_codes/inspection_result/pointer/06-09-07-33-22/input_data.json","r", encoding='utf-8')
+    f = open("inspection_result/pointer/06-10-09-03-30/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
     print("------------------------------")
     for s in out_data:
         if s != "img_result":
-            print(s,":",res[s])
+            print(s,":",out_data[s])
     print("------------------------------")
 
 
