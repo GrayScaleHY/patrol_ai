@@ -288,11 +288,16 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     
     ## flann 快速最近邻搜索算法，计算两张特征的正确匹配点。
     ## https://www.cnblogs.com/shuimuqingyang/p/14789534.html
-    flann_index_katree = 1
-    index_params = dict(algorithm=flann_index_katree, trees=5) # trees:指定待处理核密度树的数量
-    search_params = dict(checks=50) # checks: 指定递归遍历迭代的次数
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-    matches = flann.knnMatch(feat1, feat2, k=2)
+    if len(feat1) < 10000 and len(feat2) < 10000:
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(feat1, feat2, k=2)
+    else:
+        flann_index_katree = 1
+        index_params = dict(algorithm=flann_index_katree, trees=5) # trees:指定待处理核密度树的数量
+        search_params = dict(checks=50) # checks: 指定递归遍历迭代的次数
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(feat1, feat2, k=2)
+
     # 画出匹配图
     # img_match = cv2.drawMatchesKnn(ref_img,kps1,tag_img,kps2,matches,None,flags=2)
     # cv2.imwrite("images/test_match.jpg",img_match)
