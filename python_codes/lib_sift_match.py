@@ -54,11 +54,9 @@ if kmeans_lib == "cuml":
 else:
     kmeans = KMeans(2, verbose = 0, max_iter=100, tol=1e-2)
 
-
 cuda_source = open('change_map.cu').read()
 module=cp.RawModule(code=cuda_source)
 cuda_change_map = module.get_function('cuda_change_map')
-
 
 def get_change_map(im1, im2, tol=0.02, return_numpy=True):
     BLOCK_SIZE = 256
@@ -456,6 +454,67 @@ def clustering(FVS, new):
     
     return least_index, change_map
 
+def pca_kmeans(dif_img):
+    """
+    对图片做pca-kmeans，获得二值图
+    https://appliedmachinelearning.blog/2017/11/25/unsupervised-changed-detection-in-multi-temporal-satellite-images-using-pca-k-means-python-code/
+    args:
+        dif_img: img_data
+    return:
+        dif_img:pca-kmeans后的二值图
+    """
+    if len(dif_img.shape) == 3:
+        dif_img = cv2.cvtColor(dif_img, cv2.COLOR_RGB2GRAY)
+    img_size= dif_img.shape
+    vector_set, mean_vec = find_vector_set(dif_img, img_size)
+    pca = PCA(n_components=25) # n_components=25
+    pca.fit(vector_set)
+    EVS = pca.components_
+    FVS = find_FVS(EVS, pca, dif_img, mean_vec, img_size)
+    least_index, dif_img = clustering(FVS, img_size)
+    dif_img[dif_img == least_index] = 255
+    dif_img[dif_img != 255] = 0
+    dif_img = dif_img.astype(np.uint8)
+    return dif_img
+
+def process_binary_img(dif_img):
+    """
+    对二值图做后处理，例如，去除零星的点
+    args:
+        dif_img: 二值图
+    return:
+        dif_img: 处理后的二值图
+    """
+    ## 对差异性图片进行腐蚀操作，去除零星的点。
+    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
+    kernel  = np.asarray(((0,0,1,0,0),(0,1,1,1,0),(1,1,1,1,1),(0,1,1,1,0),(0,0,1,0,0)), dtype=np.uint8)
+    dif_img = cv2.erode(dif_img,kernel,iterations=1)
+    # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
+
+    ## 去除轮廓面积小的点
+    contours, hierarchy = cv2.findContours(dif_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # if len(contours) > 1:
+    #     contours = np.array(contours, dtype=object)
+    # else:
+    contours = np.array(contours)
+    areas = np.array([cv2.contourArea(c) for c in contours])
+    inds = np.argsort(-areas)
+    inds_size = areas[inds] > 1
+    inds = inds[inds_size]
+    contours = contours[inds]
+    areas = areas[inds]
+    if len(areas) < 1:
+        return dif_img
+    scales = 10**(np.arange(0,5))
+    bins = np.arange(1, 10, 5)
+    bins = np.concatenate([bins * s for s in scales])
+    max_area = areas[0]
+    ratio = 0.01
+    retained = areas >= max_area * ratio
+    dif_img = cv2.drawContours(np.zeros_like(dif_img), contours[retained], -1, 255, -1)
+    return dif_img
+    
+
 def detect_diff(img_ref, img_tag):
     """
     判别算法，检测出待分析图与基准图的差异区域
@@ -490,78 +549,45 @@ def detect_diff(img_ref, img_tag):
         return []
     
     ## 像素相减获取差异图片
-    # dif_img = (255 - dif_img * 255).astype(np.uint8) ## ssim差异
-
-    img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8) ## 
+    # img_ref = exposure.match_histograms(img_ref, img_tag).astype(np.uint8) ## 
     # dif_img = img_tag.astype(float) - img_ref.astype(float) ## 直接相减的差异
     # dif_img = np.abs(dif_img).astype(np.uint8)
     tol = 0.01
     dif_img = get_change_map(img_ref, img_tag, tol=tol) ## 周围像素相减，取最小值
     dif_img = cv2.resize(dif_img, (img_size[1], img_size[0]))
     dif_img = dif_img.astype(np.uint8)
-
     # cv2.imwrite("test1/tag_diff.jpg", dif_img)
 
     ## 对差异图进行二值化
+    dif_img = pca_kmeans(dif_img) # pca-kmeans求二值图
     # _, dif_img = cv2.threshold(dif_img, 80, 255, cv2.THRESH_BINARY) # 二值化
     # cv2.imwrite("test1/tag_diff_thre.jpg",dif_img)
 
-    ## 基于PCA+Kmean的变化检测
-    ## https://appliedmachinelearning.blog/2017/11/25/unsupervised-changed-detection-in-multi-temporal-satellite-images-using-pca-k-means-python-code/
-    vector_set, mean_vec = find_vector_set(dif_img, img_size)
-    pca = PCA(n_components=25) # n_components=25
-    pca.fit(vector_set)
-    EVS = pca.components_
-    FVS = find_FVS(EVS, pca, dif_img, mean_vec, img_size)
-    least_index, dif_img = clustering(FVS, img_size)
-    dif_img[dif_img == least_index] = 255
-    dif_img[dif_img != 255] = 0
-    dif_img = dif_img.astype(np.uint8)
+    ## 对二值图做后处理，去除零星的点
+    dif_img = process_binary_img(dif_img)
     # cv2.imwrite("test1/tag_diff_thre.jpg",dif_img)
 
-    ## 对差异性图片进行腐蚀操作，去除零星的点。
-    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
-    kernel  = np.asarray(((0,0,1,0,0),(0,1,1,1,0),(1,1,1,1,1),(0,1,1,1,0),(0,0,1,0,0)), dtype=np.uint8)
-    dif_img = cv2.erode(dif_img,kernel,iterations=1)
-    # cv2.imwrite("test1/tag_diff_erode.jpg",dif_img)
-
-    contours, hierarchy = cv2.findContours(dif_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # if len(contours) > 1:
-    #     contours = np.array(contours, dtype=object)
-    # else:
-    contours = np.array(contours)
-    areas = np.array([cv2.contourArea(c) for c in contours])
-    inds = np.argsort(-areas)
-    inds_size = areas[inds] > 1
-    inds = inds[inds_size]
-    contours = contours[inds]
-    areas = areas[inds]
-    if len(areas) < 1:
-        return []
-    scales = 10**(np.arange(0,5))
-    bins = np.arange(1, 10, 5)
-    bins = np.concatenate([bins * s for s in scales])
-    max_area = areas[0]
-    ratio = 0.01
-    retained = areas >= max_area * ratio
-    dif_img = cv2.drawContours(np.zeros_like(dif_img), contours[retained], -1, 255, -1)
-    
     ## 用最小外接矩阵框出差异的地方
-    ymin = max(0, min(np.where(dif_img == 255)[0])-3)
-    xmin = max(0, min(np.where(dif_img == 255)[1])-3)
-    ymax = min(dif_img.shape[0], max(np.where(dif_img == 255)[0])+3)
-    xmax = min(dif_img.shape[1], max(np.where(dif_img == 255)[1])+3)
-    rec_dif = [xmin, ymin, xmax, ymax]
-
-    ## 若最终框面积不在0.1 - 0.7 之间，返回空。
+    index_255 = np.where(dif_img == 255)
+    if len(index_255) > 0:
+        ymin = max(0, min(index_255[0])-3)
+        xmin = max(0, min(index_255[1])-3)
+        ymax = min(dif_img.shape[0], max(index_255[0])+3)
+        xmax = min(dif_img.shape[1], max(index_255[1])+3)
+        rec_dif = [xmin, ymin, xmax, ymax]
+    else:
+        rec_dif = []
+    ## 若最终框面积不在0.1 - 0.5 之间，返回空。
     H, W = dif_img.shape
-    dif_area = (rec_dif[2] - rec_dif[0]) * (rec_dif[3] - rec_dif[1])
-    if dif_area / (H * W) > 0.5:
-        return []
+    if len(rec_dif) > 1:
+        dif_area = (rec_dif[2] - rec_dif[0]) * (rec_dif[3] - rec_dif[1])
+        if dif_area / (H * W) > 0.5:
+            rec_dif = []
 
     ## 将矩形框还原回原始大小
-    r = img_tag_.shape[0] / dif_img.shape[0]
-    rec_dif = [int(r*rec_dif[0]), int(r*rec_dif[1]), int(r*rec_dif[2]), int(r*rec_dif[3])]
+    if len(rec_dif) > 1:
+        r = img_tag_.shape[0] / dif_img.shape[0]
+        rec_dif = [int(r*rec_dif[0]), int(r*rec_dif[1]), int(r*rec_dif[2]), int(r*rec_dif[3])]
     # cv2.rectangle(img_tag_, (rec_dif[0], rec_dif[1]), (rec_dif[2], rec_dif[3]), (0,0,255), 2)
     # cv2.imwrite("test1/tag_diff_rec.jpg",img_tag_)
 
@@ -594,3 +620,5 @@ if __name__ == '__main__':
     diff_area = detect_diff(img_ref, img_tag)
 
     # rec_real = [rec_dif[0] + c[0], rec_dif[1] + c[1],rec_dif[2] + c[0],rec_dif[3] + c[1]]
+
+    
