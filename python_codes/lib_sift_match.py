@@ -16,6 +16,7 @@ from scipy.ndimage import uniform_filter, gaussian_filter
 from collections import Counter
 from skimage import exposure
 import cupy as cp ## pip install cupy-cuda114
+import math
 
 try:
     ## https://rapids.ai/start.html#get-rapids
@@ -498,25 +499,26 @@ def process_binary_img(dif_img):
 
     ## 去除轮廓面积小的点
     contours, hierarchy = cv2.findContours(dif_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # if len(contours) > 1:
-    #     contours = np.array(contours, dtype=object)
-    # else:
     contours = np.array(contours)
-    areas = np.array([cv2.contourArea(c) for c in contours])
-    inds = np.argsort(-areas)
-    inds_size = areas[inds] > 1
-    inds = inds[inds_size]
-    contours = contours[inds]
-    areas = areas[inds]
+    areas = [cv2.contourArea(c) for c in contours]
     if len(areas) < 1:
         return dif_img
-    scales = 10**(np.arange(0,5))
-    bins = np.arange(1, 10, 5)
-    bins = np.concatenate([bins * s for s in scales])
-    max_area = areas[0]
-    ratio = 0.01
-    retained = areas >= max_area * ratio
-    dif_img = cv2.drawContours(np.zeros_like(dif_img), contours[retained], -1, 255, -1)
+    pts = [cv2.boundingRect(c)[:2] for c in contours]
+    ind_max_area = areas.index(max(areas))
+    max_area = areas[ind_max_area]
+    if max_area < 2:
+        return dif_img
+    max_pt = pts[ind_max_area]
+
+    d_max = math.sqrt(dif_img.shape[0] ** 2 + dif_img.shape[1] ** 2)
+    at = [0, 0.2] ## 面积范围
+    t_inds = [] ## 最终符合面积要求的contour的index
+    for i in range(len(areas)):
+        d = math.sqrt((max_pt[0]-pts[i][0]) ** 2 + (max_pt[1]-pts[i][1]) ** 2)
+        if areas[i] / max_area > at[0] + (at[1] - at[0]) * ((d / d_max) ** 2):
+            t_inds.append(i)
+
+    dif_img = cv2.drawContours(np.zeros_like(dif_img), contours[t_inds], -1, 255, -1)
     return dif_img
     
 
