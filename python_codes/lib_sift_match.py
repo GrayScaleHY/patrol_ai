@@ -289,10 +289,18 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     
     ## flann 快速最近邻搜索算法，计算两张特征的正确匹配点。
     ## https://www.cnblogs.com/shuimuqingyang/p/14789534.html
-    if len(feat1) < 10000 and len(feat2) < 10000:
-        bf = cv2.BFMatcher()
-        matches = bf.knnMatch(feat1, feat2, k=2)
-    else:
+    try:
+        ## 使用gpu计算sift matches
+        feat1_gpu = cv2.cuda_GpuMat()
+        feat1_gpu.upload(feat1) # 将数据转为cuda形式
+        feat2_gpu = cv2.cuda_GpuMat()
+        feat2_gpu.upload(feat2)
+        matcherGPU = cv2.cuda.DescriptorMatcher_createBFMatcher(cv2.NORM_L2)
+        matches = matcherGPU.knnMatch(feat1_gpu, feat2_gpu, k=2)
+    except:
+        # bf = cv2.BFMatcher()
+        # matches = bf.knnMatch(feat1, feat2, k=2)
+        print("Warning: sift match with cpu !!")
         flann_index_katree = 1
         index_params = dict(algorithm=flann_index_katree, trees=5) # trees:指定待处理核密度树的数量
         search_params = dict(checks=50) # checks: 指定递归遍历迭代的次数
