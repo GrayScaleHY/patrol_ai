@@ -164,8 +164,31 @@ def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.5):
     maskrcnn_weights = DefaultPredictor(cfg)
     return maskrcnn_weights
 
+def sel_boxes(boxes, include=0.9):
+    if len(boxes) < 1:
+        return []
+    rm_index = []
+    for i in range(len(boxes)):
+        b1 = boxes[i]
+        b1_square = abs(b1[2] - b1[0]) * abs(b1[3] - b1[1])
+        for b2 in boxes:
+            if (b1[2] - b1[0]) * (b1[3] - b1[1]) >= (b2[2] - b2[0]) * (b2[3] - b2[1]):
+                continue
 
-def inference_maskrcnn(maskrcnn_weights, img):
+            # 计算区域交集的面积
+            lu = np.maximum(b1[0:2], b2[0:2]) # 计算区域交集的左上与右下坐标
+            rd = np.minimum(b1[2:], b2[2:])
+            intersection = np.maximum(0.0, rd - lu)
+            inter_square = intersection[0] * intersection[1]
+
+            include_score = inter_square / b1_square
+            if include_score > include:
+                rm_index.append(i)
+                continue
+    return rm_index
+
+
+def inference_maskrcnn(maskrcnn_weights, img, include=0.8):
     """
     mask-rcnn的inference代码，返回轮廓坐标
     args:
@@ -183,6 +206,13 @@ def inference_maskrcnn(maskrcnn_weights, img):
     boxes = instances.pred_boxes.tensor.to('cpu').numpy() #提取boxes
     classes = instances.pred_classes.to('cpu').numpy()
     scores = instances.scores.to('cpu').numpy()
+
+    if include is not None:
+        rm_index = sel_boxes(boxes, include)
+        masks = np.array([masks[i] for i in range(len(boxes)) if i not in rm_index], dtype=bool)
+        boxes = np.array([boxes[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.float32)
+        classes = np.array([classes[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.int64)
+        scores = np.array([scores[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.float32)
 
     # 将masks转成轮廓contours。
     contours = []
