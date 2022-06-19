@@ -583,8 +583,10 @@ def detect_diff(img_ref, img_tag):
     # cv2.imwrite("test1/tag_diff_thre.jpg",dif_img)
 
     ## 用最小外接矩阵框出差异的地方
+    
     index_255 = np.where(dif_img == 255)
-    if len(index_255) > 0:
+    index_255 = [a for a in index_255 if len(a) > 1]
+    if len(index_255) > 1:
         ymin = max(0, min(index_255[0])-3)
         xmin = max(0, min(index_255[1])-3)
         ymax = min(dif_img.shape[0], max(index_255[0])+3)
