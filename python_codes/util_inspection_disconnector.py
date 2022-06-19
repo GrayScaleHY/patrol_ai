@@ -6,7 +6,6 @@ import os
 import glob
 import time
 
-
 def json2bboxes(json_file, img_open):
     """
     将json_file里的框子信息提取出来。
@@ -28,101 +27,108 @@ def json2bboxes(json_file, img_open):
     return bboxes
 
 
-def disconnector_state(img_open, img_close, img_tag, bboxes, feat_open=[], feat_tag=[]):
+def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], img_yichangs=[]):
     """
-    刀闸分合判别
+    刀闸分合判别， 可支持多模板以及异常图片模板。
     args:
-        img_open: 分闸模板图
-        img_close: 合闸模板图
         img_tag: 待分析图
-        bboxes: 框子信息,通常，前两个bbox表示ssim对比区域，后几个bbox表示OSD区域，
-                格式为[[xmin, ymin, xmax, ymax], ..]
+        img_opens: 分闸模板图, list
+        img_closes: 合闸模板图, list
+        box_state: 用于对比ssim的框子坐标，格式为[[xmin, ymin, xmax, ymax], ..]
+        box_osd: sift匹配时需要扣掉的区域，格式为[[xmin, ymin, xmax, ymax], ..]
+        img_yichangs: 异常模板图, list
     return: 
         state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
+        scores: 每个box里面的得分,[[score_close, score_open, score_yc], ..]
         bboxes_tag: 模板图上的两个框框映射到待分析图上的大概位置，[[xmin, ymin, xmax, ymax], ..]
     """
-    if len(feat_open) == 0:
-        feat_open = sift_create(img_open) # 提取参考图sift特征
-    if len(feat_tag) == 0:
-        feat_tag = sift_create(img_tag) # 提取待分析图sift特征
+    assert isinstance(img_opens, list) and len(img_opens) > 0, "img_opens is not requested !"
+    assert isinstance(img_closes, list) and len(img_closes) > 0, "img_closes is not requested !"
+    assert isinstance(box_state, list) and len(box_state) > 0, "box_state is not requested !"
 
-    M = sift_match(feat_open, feat_tag, rm_regs=bboxes[2:], ratio=0.5, ops="Affine") # 求偏移矩阵
+    feat_open = sift_create(img_opens[0]) # 提取参考图sift特征
+    feat_tag = sift_create(img_tag) # 提取待分析图sift特征
+
+    img_tag_ = img_tag.copy() 
+
+    M = sift_match(feat_open, feat_tag, rm_regs=box_osd[2:], ratio=0.5, ops="Affine") # 求偏移矩阵
     img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
 
+    
     ## 将框子区域在open和close和tag文件中画出来，以方便查看矫正偏移对不对
     # open_ = img_open.copy()
     # close_ = img_close.copy()
     # tag_ = img_tag_warped.copy()
+    img_open= img_opens[0]
 
     ## 将模板图上的bbox映射到待分析图上，求bboxes_tag
     bboxes_tag = []
-    for b in bboxes[:2]:
+    for b in box_state:
+        
         bbox = list(convert_coor((b[0], b[1]), M)) + list(convert_coor((b[2], b[3]), M))
         bboxes_tag.append(bbox)
-    
-    if M is None:
-        return "无法判别状态", bboxes_tag
 
-    ## 分析两个bbox里面的刀闸状态
+    ## 分析box_state里面的刀闸状态
     states = []
     s = ""
-    for bbox in bboxes[:2]:
+    scores = []
+    for bbox in box_state:
         ## 判断bbox是否符合要求
         H, W = img_tag.shape[:2]
         if 0 < bbox[0] < bbox[2] < W and 0 < bbox[1] < bbox[3] < H:
             pass
         else:
-            return "无法判别状态", bboxes_tag
+            return "无法判别状态", scores, bboxes_tag
 
         ## 截取图片区域，并且用ssim算法比较相似性
-        img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-        img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-        img_tag_warp = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-        # score_open = my_ssim(img_tag_warp, img_op) #计算ssim结构相似性
-        # score_close = my_ssim(img_tag_warp, img_cl)
-        score_open = cw_ssim_index(img_tag_warp, img_op) #计算ssim结构相似性
-        score_close = cw_ssim_index(img_tag_warp, img_cl)
-        # print(score_open, ":", score_close)
+        img_ta = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+
+        ## 求score open
+        score_open = 0
+        for img_open in img_opens:
+            img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+            score = cw_ssim_index(img_ta, img_op)
+            if score > score_open:
+                score_open = score
+
+        ## 求score close
+        score_close = 0
+        for img_close in img_closes:
+            img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+            score = cw_ssim_index(img_ta, img_cl)
+            if score > score_close:
+                score_close = score
+
+        ## 求score yichang
+        score_yc = 0
+        for img_yichang in img_yichangs:
+            img_yc = img_yichang[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+            score = cw_ssim_index(img_ta, img_yc)
+            if score > score_yc:
+                score_yc = score
 
         ## 根据score_open和score_close对比，判断该框框的状态。
-        if score_close > score_open:
+        if score_yc > score_open and score_yc > score_close:
+            state_ = "yichang"
+        elif score_close > score_open:
             state_ = "close"
         else:
             state_ = "open"
         states.append(state_)
-        
-        s = s + " [ " + str(round(score_close, 3)) + ", " + str(round(score_open,3)) + " ] "
-        
-        ## 将结果显示在图上，方便后面debug
-    #     b = bbox
-    #     s_= state_ + " [ " + str(round(score_close, 3)) + ", " + str(round(score_open,3)) + " ] "
-    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_op_"+str(round(score_open,3)) + ".jpg", img_op)
-    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_cl_"+str(round(score_close,3)) + ".jpg", img_cl)
-    #     cv2.imwrite("test/cfg1/" + str(b) + "_img_tag_warp.jpg", img_tag_warp)
-    #     cv2.rectangle(open_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-    #     cv2.rectangle(close_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-    #     cv2.rectangle(tag_, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-    #     cv2.putText(tag_, s_, (b[0], b[1]-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), thickness=2)
-    # cv2.imwrite("test/cfg1/img_open_.jpg", open_)
-    # cv2.imwrite("test/cfg1/img_close_.jpg", close_)
-    # cv2.imwrite("test/cfg1/img_tag_.jpg", tag_)
+        scores.append([round(score_close, 3), round(score_open, 3), round(score_yc, 3)])
     
     ## 判断当前刀闸状态
-    if states[0] != states[1]:
-        state = "异常"
-    
-    if states[0] == "open" and states[1] == "open":
+    if all(state_ == "open" for state_ in states):
         state = "分"
-
-    if states[0] == "close" and states[1] == "close":
+    elif all(state_ == "close" for state_ in states):
         state = "合"
+    else:
+        state = "异常"
 
-    print(state + s)
-
-    return state, bboxes_tag
+    return state, scores, bboxes_tag
 
 
-def video_states(tag_video, img_open, img_close, bboxes):
+def video_states(tag_video, cfg_dir):
     """
     获取tag_video的状态列表。
     args:
@@ -133,9 +139,21 @@ def video_states(tag_video, img_open, img_close, bboxes):
     return:
         states: 视频状态列表，例如：[分, 异常, 合]
     """
-    step = 2 # 多少帧抽一帧
+    video_name = os.path.basename(tag_video)
+    v_id = video_name.split("_")[0]
 
-    feat_open = sift_create(img_open)
+    json_file = os.path.join(cfg_dir, v_id + "_normal.json")
+    open_files = [os.path.join(cfg_dir, v_id + "_normal_off.png")]
+    close_files = [os.path.join(cfg_dir, v_id + "_normal_on.png")]
+    yc_files = glob.glob(os.path.join(cfg_dir, v_id + "_normal_0*.png"))
+    img_opens = [cv2.imread(f_) for f_ in open_files]
+    img_closes = [cv2.imread(f_) for f_ in close_files]
+    img_yichangs = [cv2.imread(f_) for f_ in yc_files]
+    bboxes = json2bboxes(json_file, img_opens[0])
+    box_state = bboxes[:2]
+    box_osd = bboxes[2:]
+
+    step = 2 # 多少帧抽一帧
 
     cap = cv2.VideoCapture(tag_video) ## 建立视频对象
     frame_number = cap.get(7)  # 视频文件的帧数
@@ -149,11 +167,9 @@ def video_states(tag_video, img_open, img_close, bboxes):
         if ret==True:
             if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
 
-                state, _ = disconnector_state(img_open, img_close, img_tag, bboxes, feat_open)
+                state, _, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=box_osd, img_yichangs=img_yichangs)
                 states.append(state)
                 counts.append(count)
-
-                # cv2.imwrite("test/out_file/" + str(count) + ".png", img_tag, [cv2.IMWRITE_PNG_COMPRESSION, 0])
 
             count += 1
         else:
@@ -209,35 +225,24 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     count = 0
     start = time.time()
-    for ref_video in glob.glob(os.path.join(video_dir, "*_normal.mp4")):
 
-        file_id = os.path.basename(ref_video).split("_")[0]
+    video_list = glob.glob(os.path.join(video_dir, "*.mp4"))
+    video_list.sort()
+    for tag_video in video_list:
+        if tag_video.endswith("normal.mp4"):
+            continue
 
-        open_file = os.path.join(cfg_dir, file_id + "_normal_off.png")
-        close_file = os.path.join(cfg_dir, file_id + "_normal_on.png")
-        json_file = os.path.join(cfg_dir, file_id + "_normal.json")
+        states = video_states(tag_video, cfg_dir) # 求tag_video的状态列表
+        f_state = final_state(states, len_window=5) # 求最终状态
+        print(f_state)
 
-        img_open = cv2.imread(open_file)
-        img_close = cv2.imread(close_file)
-        bboxes = json2bboxes(json_file, img_open) # 获取json文件中的bboxes信息
-        
-        for tag_video in glob.glob(os.path.join(video_dir, file_id + "_*.mp4")):
-            
-            if tag_video.endswith("normal.mp4"):
-                continue
-            print("process video:", tag_video)
-
-            states = video_states(tag_video, img_open, img_close, bboxes) # 求tag_video的状态列表
-            f_state = final_state(states, len_window=5) # 求最终状态
-            print(f_state)
-
-            ## 保存比赛的格式
-            tag_name = os.path.basename(tag_video)
-            id_ = count
-            s = "ID,Name,Type\n"
-            s = s + str(id_) + "," + tag_name + "," + str(f_state)
-            f = open(os.path.join(out_dir, tag_name[:-4] + ".txt"), "w", encoding='utf-8')
-            f.write(s)
-            f.close()
-            count += 1
+        ## 保存比赛的格式
+        tag_name = os.path.basename(tag_video)
+        id_ = count
+        s = "ID,Name,Type\n"
+        s = s + str(id_) + "," + tag_name + "," + str(f_state)
+        f = open(os.path.join(out_dir, tag_name[:-4] + ".txt"), "w", encoding='utf-8')
+        f.write(s)
+        f.close()
+        count += 1
     print("spend time total:", time.time() - start)

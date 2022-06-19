@@ -79,8 +79,10 @@ def inspection_disconnector(input_data):
     cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
 
     ## 求刀闸状态
+    img_opens = [img_open]
+    img_closes = [img_close]
     bboxes = [roi1, roi2]
-    state, bboxes_tag = disconnector_state(img_open, img_close, img_tag, bboxes)
+    state, _, bboxes_tag = disconnector_state(img_tag, img_opens, img_closes, bboxes, box_osd=[], img_yichangs=[])
 
     out_data["data"] = {"result": state_map[state]["name"]}
 

@@ -48,8 +48,10 @@ def inspection_disconnector_video(input_data):
     assert os.path.exists(json_file) and os.path.exists(open_file) and os.path.exists(close_file), "模板文件不全"
     img_open = cv2.imread(open_file)
     img_close = cv2.imread(close_file)
+    img_opens = [img_open]
+    img_closes = [img_close]
     bboxes = json2bboxes(json_file, img_open)
-    state, bboxes_tag = disconnector_state(img_open, img_close, img_tag, bboxes)
+    state, _, bboxes_tag = disconnector_state(img_tag, img_opens, img_closes, box_state=bboxes, box_osd=[], img_yichangs=[])
 
     out_data["data"] = {"result": state_map[state]["name"]}
 
