@@ -1,21 +1,29 @@
 # 巡检算法服务
 该项目存放巡检图像算法所需的代码
 
-### 巡检算法服务的部署
-服务区需要装备英伟达显卡，且系统为ubuntu，部署流程如下：
-##### 1. 安装显卡驱动
-若服务器连接外网，终端输入以下命令。
+### 巡检算法服务的部署（ubuntu 18.04）
+该部署教程以ubuntu 18.04以上版本为例，凝思系统请参考教程。注意，部署服务器必须配备英伟达显卡。
+##### 1. 准备部署文件
+(1). 下载两个部署压缩包inspection.zip和ut-inspection.tar.gz。内网下载链接为[http://192.168.69.36/d/8a11744a1ef544a39b0a/](http://192.168.69.36/d/8a11744a1ef544a39b0a/)，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。
+(2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip inspection.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
 ```
-sudo apt-get update
-sudo apt-get install nvidia-driver-510
+  /data/
+    inspection/
+    inspection.zip
+    ut-inspection.tar.gz
 ```
-若没链接外网，则需要离线安装。注意需要按ctrl+alt+f3进入命令行模式安装。
+##### 2. 安装显卡驱动 (若已安装，跳过)
+快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
 ```
-sudo service lightdm stop
-sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
+## 关闭lightdm
+sudo service lightdm stop  
 
+## 安装显卡驱动
+cd /data/inspection/install
+sudo chmod 777 NVIDIA-Linux-x86_64-510.60.02.run
+sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 ```
-重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下形式的打印时表示显卡驱动安装完成。
+安装完成后，重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下打印时表示显卡驱动安装完成。
 ```
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 470.103.01   Driver Version: 470.103.01   CUDA Version: 11.4     |
@@ -29,74 +37,48 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 ```
-##### 2. 安装docker 和 nvidia-docker
-若服务器连接外网，且docker版本高于19，终端输入以下命令安装即可。若docker版本低于19，则需要离线安装docker和nvidia-docker,首先下载下载[安装包](http://192.168.69.36/d/a76899fa3851456587bd/)，解压后运行```sudo ./run.sh```，然后等待安装完成。注意，安装完之后要重启服务器nvidia-docker才能生效。
+##### 3. 安装docker (若已安装，跳过)
+输入以下命令安装docker
 ```
-## 安装docker
-curl -sSL https://get.daocloud.io/docker | sh
-## 安装nvidia-container-toolkit
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
+cd /data/inspection/install/ubuntu18.04
+sudo chmod 777 install_docker.sh
+sudo ./install_docker.sh
 ```
-终端输入```sudo docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
+安装完成后，终端输入```sudo docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
-注意，可以输入以下命令，使得将用户加入docker管理员组，以便后续使用docker命令不需要用sudo
+##### 4. 安装nvidia-docker
+输入以下命令安装nvidia-docker
 ```
-sudo groupadd docker
-sudo gpasswd -a ${USER} docker
-sudo service docker restart
+cd /data/inspection/install/ubuntu18.04
+sudo chmod 777 install_nvidia_docker.sh
+sudo ./install_nvidia_docker.sh
 ```
-##### 3. 将算法服务需要的代码和模型放入服务器
-在根目录下新建/data文件夹，链接了公司内网的情况下，下载[inspection](http://192.168.69.36/d/dcbe421c6c744b899db6/)文件夹，将inspection文件夹放入/data目录下。
-##### 4. 拉取并启动巡检docker
-如果没有docker镜像，在链接了公司内网的情况下，输入以下命令拉取巡检docker镜像。（镜像较大，请耐心等待拉去完成）
+安装完成后，重启服务器，终端输入```sudo nvidia-docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
 ```
-sudo docker pull docker.utpf.cn:445/yh/dnn@sha256:404c56595695897f1ebdc7a68df98b2c175fb2cab1ab3f0cd115c9bd404fef71
+REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
-如果已经有docker镜像ut-inspection.tar, 可以输入以下命令导入镜像
+##### 5. 加载巡检算法docker镜像
+输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
-sudo docker load --input ut-inspection.tar
+cd /data
+sudo docker load --input ut-inspection.tar.gz
 ```
-输入```sudo docker images```, 屏幕出现以下形式的打印时表示docker拉取成功。
+加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
 ```
-REPOSITORY         TAG                                    IMAGE ID       CREATED       SIZE
-utdnn/inspection   yolov5-detectron2-paddle-trail-04-18   de9fc58182f4   2 weeks ago   45.2GB
+REPOSITORY           TAG                                 IMAGE ID       CREATED        SIZE
+utdnn/inspection     cuda11.4-conda-cuml-opencv          8f55edcf6b6b   4 days ago     36.3GB
 ```
-##### 5. 启动docker，并设置开机自启动算法服务
-输入以下命令启动docker， 注意，--cpus的数量设置为服务器cpu核数的一半。
+##### 6.启动巡检算法服务
+输入以下命令启动巡检算法服务。
 ```
-## docker低于19版本，则运行以下命令
-sudo nvidia-docker run -it --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:cuda11.4-conda-cuml /bin/bash
-## docker高于19版本，则运行以下命令
-sudo docker run -it --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 9g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection utdnn/inspection:cuda11.4-conda-cuml /bin/bash
+cd /data/inspection
+sudo chmod 777 run_inspection.sh
+sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection --entrypoint "/data/inspection/run_inspection.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv
 ```
-进入docker后，编辑~/.bashrc文件，使得启动docker时会自动开启服务。
+等待2分钟左右，输入```sudo docker logs ut-inspection --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
-vim ~/.bashrc 
-## 将以下两行拷贝到.bashrc文件的末尾，并保存
-cd /data/inspection/image/python_codes
-/root/miniconda3/envs/rapids-22.04/bin/python util_inspection_server.py
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.17.0.2:5000 (Press CTRL+C to quit)
 ```
-同时按Ctrl+P+Q退出docker，输入以下命令，使得巡检docker会随开机自启动
-```
-sudo docker update --restart=always ut-inspection
-```
-##### 6. 验证是否部署成功
-输入以下 
-```
-sudo docker stop ut-inspection
-sudo docker start ut-inspection
-## 过3分钟后输入以下命令
-sudo docker logs ut-inspection --tail 100
-```
-若末尾出现下面打印，则表示部署成功
-```
-* Debugger is active!
-* Debugger PIN: 250-735-988
-```
-##### 至此，巡检算法服务部署完必
