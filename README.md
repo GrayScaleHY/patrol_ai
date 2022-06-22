@@ -16,7 +16,7 @@
 快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
 ```
 ## 关闭lightdm
-sudo service lightdm stop  
+sudo service gdm stop  
 
 ## 安装显卡驱动
 cd /data/inspection/install
