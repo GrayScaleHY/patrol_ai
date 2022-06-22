@@ -1,8 +1,8 @@
 # 巡检算法服务
 该项目存放巡检图像算法所需的代码
 
-### 巡检算法服务的部署（ubuntu 18.04）
-该部署教程以ubuntu 18.04以上版本为例，凝思系统请参考教程。注意，部署服务器必须配备英伟达显卡。
+### 巡检算法服务的部署（凝思系统）
+该部署教程以凝思系统为例，注意，部署服务器必须配备英伟达显卡。ubuntu系统上部署请参考教程[README.md](https://git.utapp.cn/yuanhui/image/-/blob/main/README.md)。
 ##### 1. 准备部署文件
 (1). 下载两个部署压缩包inspection.zip和ut-inspection.tar.gz。内网下载链接为[http://192.168.69.36/d/8a11744a1ef544a39b0a/](http://192.168.69.36/d/8a11744a1ef544a39b0a/)，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。
 (2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip inspection.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
@@ -40,7 +40,7 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 ##### 3. 安装docker (若已安装，跳过)
 输入以下命令安装docker
 ```
-cd /data/inspection/install/ubuntu18.04
+cd /data/inspection/install/linx
 sudo chmod 777 install_docker.sh
 sudo ./install_docker.sh
 ```
@@ -51,7 +51,7 @@ REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ##### 4. 安装nvidia-docker
 输入以下命令安装nvidia-docker
 ```
-cd /data/inspection/install/ubuntu18.04
+cd /data/inspection/install/linx
 sudo chmod 777 install_nvidia_docker.sh
 sudo ./install_nvidia_docker.sh
 ```
@@ -75,7 +75,7 @@ utdnn/inspection     cuda11.4-conda-cuml-opencv          8f55edcf6b6b   4 days a
 ```
 cd /data/inspection
 sudo chmod 777 run_inspection.sh
-sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection --entrypoint "/data/inspection/run_inspection.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv
+sudo nvidia-docker run -d --runtime nvidia --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection --entrypoint "/data/inspection/run_inspection.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv
 ```
 等待2分钟左右，输入```sudo docker logs ut-inspection --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
