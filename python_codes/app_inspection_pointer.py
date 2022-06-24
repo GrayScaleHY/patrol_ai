@@ -353,8 +353,8 @@ def inspection_pointer(input_data):
     ## 将不在感兴趣区域的指针筛选出去
     _seg_cfgs = []
     for cfg in seg_cfgs:
-        seg = cfg["seg"]
-        if is_include(seg, roi_tag, srate=0.8):
+        box_ = cfg["box"]
+        if is_include(box_, roi_tag, srate=0.8):
             _seg_cfgs.append(cfg)
     seg_cfgs = _seg_cfgs
     
