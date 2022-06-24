@@ -13,6 +13,8 @@ import cv2
 import time
 import shutil
 import numpy as np
+import hashlib
+import json
 
 ## 二次设备， coco， 17类缺陷， 表计， 指针
 from config_load_models_var import yolov5_ErCiSheBei, yolov5_coco, yolov5_rec_defect, yolov5_meter, maskrcnn_pointer
@@ -138,6 +140,32 @@ def labels_diff_area(cfgs_ref, cfgs_tag):
     diff_area = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
     return diff_area
 
+def check_md5(img_ref, img_tag, md5_dict={}):
+    """
+    对比img_ref和img_tag的md5是否在md5_dict中。
+    """
+    cv2.imwrite("ref_.jpg", img_ref)
+    cv2.imwrite("tag_.jpg", img_tag)
+    f = open("ref_.jpg", "rb")
+    lines = f.read()
+    f.close()
+    md5_ref = hashlib.md5(lines).hexdigest()
+    f = open("tag_.jpg", "rb")
+    lines = f.read()
+    f.close()
+    md5_tag = hashlib.md5(lines).hexdigest()
+
+    md5_match1 = md5_tag + " : " + md5_ref
+    md5_match2 = md5_ref + " : " + md5_tag
+    if md5_tag == md5_ref:
+        return []
+    if md5_match1 in md5_dict:
+        return md5_dict[md5_match1]["box"]
+    elif md5_match2 in md5_dict:
+        return md5_dict[md5_match2]["box"]
+    else:
+        return None
+
 def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     """
     判别算法
@@ -189,7 +217,6 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     if len(diff_area) != 0:
         return diff_area
 
-    
     ## 计算指针是否读数变化幅度过大
     diff_area = indentify_pointer(img_ref, img_tag)
     if len(diff_area) != 0:  
@@ -206,25 +233,33 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     return tag_diff
 
 if __name__ == '__main__':
-    # from lib_sift_match import init_data
-    # init_data()
 
     in_dir = "test/panbie"  # 判别测试图片存放目录
     out_dir = "test/panbie_result" # 判别算法输出目录
-    resize_max = 1280   ## 图像最长边缩放到多少
+    md5_dict = "md5_dict.json"
+
+    md5_count = 0
+
+    ## 加载md5_dict
+    if os.path.exists(md5_dict):
+        f = open(md5_dict, "r", encoding='utf-8')
+        md5_dict = json.load(f)
+        f.close()
+    else:
+        md5_dict = {}
 
     start_all = time.time()
-
     os.makedirs(out_dir, exist_ok=True)
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
 
         file_id = os.path.basename(ref_file).split("_")[0]
         img_ref = cv2.imread(ref_file) 
-
+        
         # resize, 降低分别率，加快特征提取的速度。
-        H, W = img_ref.shape[:2]
-        resize_rate = max(H, W) / resize_max  ## 缩放倍数
-        img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+        H, W = img_ref.shape[:2]  ## resize
+        resize_rate = 2 if max(H, W) > 1400 else 1
+        if resize_rate == 2:
+            img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
@@ -240,12 +275,22 @@ if __name__ == '__main__':
             img_tag = cv2.imread(tag_file)
 
             H, W = img_tag.shape[:2]  ## resize
-            img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
-            feat_tag = sift_create(img_tag) # 提取sift特征
-            tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
+            resize_rate = 2 if max(H, W) > 1400 else 1
+            if resize_rate == 2:
+                img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
 
-            ## 将tag_diff还原回原始大小
-            tag_diff = [int(d * resize_rate) for d in tag_diff]
+            feat_tag = sift_create(img_tag) # 提取sift特征
+            
+            ## 查看img_ref和img_tag是否在md5_dict中
+            tag_diff = check_md5(img_ref, img_tag, md5_dict=md5_dict) 
+
+            if tag_diff is None:
+                tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
+                tag_diff = [int(d * resize_rate) for d in tag_diff] ## 将tag_diff还原回原始大小
+            else:
+                md5_count += 1
+                print("md5 is match ")
+
             print(tag_diff)
 
             ## 将结果写成txt
@@ -263,4 +308,5 @@ if __name__ == '__main__':
             print("loop time:", time.time() - loop_start)
             print("--------------------------")
 
+    print("Num of md5 matched is:", md5_count)
     print("Total spend times:", time.time() - start_all)
