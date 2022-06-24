@@ -1,7 +1,8 @@
 """
 用于判别算法的测试。
 """
-
+import time
+start_pre = time.time()
 from lib_inference_yolov5 import inference_yolov5
 from lib_sift_match import detect_diff, sift_match, correct_offset, sift_create
 from lib_inference_mrcnn import inference_maskrcnn, contour2segment
@@ -10,7 +11,7 @@ from lib_image_ops import img_chinese
 import glob
 import os
 import cv2
-import time
+
 import shutil
 import numpy as np
 import hashlib
@@ -18,6 +19,7 @@ import json
 
 ## 二次设备， coco， 17类缺陷， 表计， 指针
 from config_load_models_var import yolov5_ErCiSheBei, yolov5_coco, yolov5_rec_defect, yolov5_meter, maskrcnn_pointer
+pre_end = time.time()
 
 def indentify_pointer(img_ref, img_tag):
     """
@@ -240,6 +242,8 @@ if __name__ == '__main__':
 
     md5_count = 0
 
+    start_all = time.time()
+
     ## 加载md5_dict
     if os.path.exists(md5_dict):
         f = open(md5_dict, "r", encoding='utf-8')
@@ -248,7 +252,6 @@ if __name__ == '__main__':
     else:
         md5_dict = {}
 
-    start_all = time.time()
     os.makedirs(out_dir, exist_ok=True)
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
 
@@ -309,4 +312,5 @@ if __name__ == '__main__':
             print("--------------------------")
 
     print("Num of md5 matched is:", md5_count)
+    print("Pre spend time:", pre_end - start_pre)
     print("Total spend times:", time.time() - start_all)
