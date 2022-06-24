@@ -148,7 +148,7 @@ def intersection_segment(line, segment):
     return int(x), int(y)
 
 
-def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.5):
+def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.3):
     """
     加载maskrcnn模型。
     """
@@ -188,7 +188,7 @@ def sel_boxes(boxes, include=0.9):
     return rm_index
 
 
-def inference_maskrcnn(maskrcnn_weights, img, include=0.8):
+def inference_maskrcnn(maskrcnn_weights, img, include=0.9):
     """
     mask-rcnn的inference代码，返回轮廓坐标
     args:
@@ -209,10 +209,10 @@ def inference_maskrcnn(maskrcnn_weights, img, include=0.8):
 
     if include is not None:
         rm_index = sel_boxes(boxes, include)
-        masks = np.array([masks[i] for i in range(len(boxes)) if i not in rm_index], dtype=bool)
+        masks = np.array([masks[i] for i in range(len(masks)) if i not in rm_index], dtype=bool)
         boxes = np.array([boxes[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.float32)
-        classes = np.array([classes[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.int64)
-        scores = np.array([scores[i] for i in range(len(boxes)) if i not in rm_index], dtype=np.float32)
+        classes = np.array([classes[i] for i in range(len(classes)) if i not in rm_index], dtype=np.int64)
+        scores = np.array([scores[i] for i in range(len(scores)) if i not in rm_index], dtype=np.float32)
 
     # 将masks转成轮廓contours。
     contours = []
