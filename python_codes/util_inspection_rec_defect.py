@@ -1,59 +1,83 @@
-import requests
-import json
+"""
+巡检算法平台测试，缺陷识别测试代码。
+python util_inspection_rec_defect.py --source <images dir> --out <result path>
+"""
+
 import os
 import cv2
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
+import argparse
 
-yolov5_red_defect= load_yolov5_model("/data/inspection/yolov5/rec_defect.pt") # 送检的17类缺陷
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--source',
+    type=str,
+    default='./qxsb',
+    help='source dir.')
+parser.add_argument(
+    '--out',
+    type=str,
+    default='./40zhytdlkjgfyxgs.txt',
+    help='out file of saved result.')
+parser.add_argument(
+    '--conf',
+    type=float,
+    default=0.25,
+    help='threshold of confidence.')
+parser.add_argument(
+    '--iou',
+    type=float,
+    default=0.2,
+    help='threshold of iou.')
+parser.add_argument(
+    '--model_dir',
+    type=str,
+    default='/data/inspection/yolov5',
+    help='model path.')
+args, unparsed = parser.parse_known_args()
 
-def get_contest_info():
-    url = "http://10.85.XXX.XXX:XXX/contest/get_contest_info"
-    contest_info = requests.get(url=url).json()
-    print(contest_info)
+in_dir = args.source # 待测试文件目录
+out_file = args.out # 输出结果文件
+conf_thr = args.conf # confidence 阈值
+iou_thr = args.iou # iou 阈值
+model_dir = args.model_dir ## 模型存放的目录
 
+## 加载模型
+weights = os.path.join(model_dir, "rec_defect_x6.pt")
+yolov5_weights = load_yolov5_model(weights)
 
-def post_submit_result(result_data):
-    url = "http://10.85.XXX.XXX:XXX/contest/submit_result"
-    result_text = json.dumps(result_data)
-    res = requests.post(url=url, data=result_text).json()
-    print(res)
+## 创建文件夹
+os.makedirs(os.path.dirname(out_file), exist_ok=True)
 
-if __name__ == '__main__':
-    img_dir = "test/tuilishuju"
-    list_file = os.path.join(img_dir, "train_list.txt")
-    contestantId = "49e6264e517d428796b532796b74a364"
+## 批处理
+count = 1
+f = open(out_file, "w", encoding='utf-8')
+f.write("ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n")
+for img_name in os.listdir(in_dir):
 
-    count = 1
-    result = []
-    for line in open(list_file, "r", encoding='utf-8'):
-        img_file = line.strip()
-        if not os.path.exists(img_file):
-            print("Warning:",img_file,"not exist !")
-            continue
+    img_file = os.path.join(in_dir, img_name) # 读取图片
+    img = cv2.imread(img_file)
 
-        img = cv2.imread(img_file)
-        if img is None:
-            print("Warning:", img_file, "name is not rule !")
-        bbox_cfg = inference_yolov5(yolov5_red_defect, img, resize=640, conf_thres=0.3, iou_thres=0.4)
+    ## 模型推理
+    bbox_cfg = inference_yolov5(yolov5_weights, img, resize=1280, conf_thres=conf_thr, iou_thres=iou_thr) #推理
+    print(img_file)
+    print(bbox_cfg)
 
-        for cfg in bbox_cfg:
-            id_ = str(count)
-            path = img_file
-            type_ = cfg["label"]
-            score = str(cfg["score"])
-            xmin = str(cfg["coor"][0])
-            ymin = str(cfg["coor"][1])
-            xmax = str(cfg["coor"][2])
-            ymax = str(cfg["coor"][3])
+    ## 保存推理结果
+    for bbox in bbox_cfg:
+        label = bbox["label"]
+        c = bbox["coor"]
 
-            result.append({"id": id_, "path": path, "type": type_, "score": score, "xmin":xmin, "ymin": ymin, "xmax":xmax, "ymax":ymax})
-            count += 1
-    
-    result_data = {"contestantId":contestantId,"isEnd":1,"results":result}
-    post_submit_result(result_data)
+        ID = str(count)
+        PATH = img_name
+        TYPE = bbox["label"]
+        SCORE = "1.0"
+        XMIN = str(c[0]); YMIN = str(c[1]); XMAX = str(c[2]); YMAX = str(c[3])
 
-    # f = open("result.json", "w" ,encoding='utf-8')
-    # json.dump(result_data, f)
-    # f.close()
-    # print(len(result_data["results"]))
+        ## 输出结果
+        result = [ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX]
+        f.write(",".join(result) + "\n")
+        count += 1
+
+f.close()
 
