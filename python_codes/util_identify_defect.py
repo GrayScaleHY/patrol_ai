@@ -7,12 +7,10 @@ from lib_inference_yolov5 import inference_yolov5
 from lib_sift_match import detect_diff, sift_match, correct_offset, sift_create
 from lib_inference_mrcnn import inference_maskrcnn, contour2segment
 from lib_analysis_meter import segment2angle
-from lib_image_ops import img_chinese
 import glob
 import os
 import cv2
-
-import shutil
+import argparse
 import numpy as np
 import hashlib
 import json
@@ -234,16 +232,13 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     
     return tag_diff
 
-if __name__ == '__main__':
+def main(in_dir, out_dir, md5_dict):
 
-    in_dir = "test/panbie"  # 判别测试图片存放目录
-    out_dir = "test/panbie_result" # 判别算法输出目录
-    md5_dict = "md5_dict.json"
-
-    md5_count = 0
+    # in_dir = "test/panbie"  # 判别测试图片存放目录
+    # out_dir = "test/panbie_result" # 判别算法输出目录
+    # md5_dict = "md5_dict.json"
 
     start_all = time.time()
-
     ## 加载md5_dict
     if os.path.exists(md5_dict):
         f = open(md5_dict, "r", encoding='utf-8')
@@ -253,6 +248,7 @@ if __name__ == '__main__':
         md5_dict = {}
 
     os.makedirs(out_dir, exist_ok=True)
+    md5_count = 0
     for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
 
         file_id = os.path.basename(ref_file).split("_")[0]
@@ -314,3 +310,31 @@ if __name__ == '__main__':
     print("Num of md5 matched is:", md5_count)
     print("Pre spend time:", pre_end - start_pre)
     print("Total spend times:", time.time() - start_all)
+
+if __name__ == '__main__':
+    # in_dir = "test/panbie"  # 判别测试图片存放目录
+    # out_dir = "test/panbie_result" # 判别算法输出目录
+    # md5_dict = "md5_dict.json"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--source',
+        type=str,
+        default='./test/panbie',
+        help='source dir.')
+    parser.add_argument(
+        '--out_dir',
+        type=str,
+        default='./result/pb40zhytdlkjgfyxgs',
+        help='out dir of saved result.')
+    parser.add_argument(
+        '--md5_dict',
+        type=str,
+        default='./md5_dict.json',
+        help='out file of saved result.')
+    args, unparsed = parser.parse_known_args()
+
+    in_dir = args.source # 待测试文件目录
+    out_dir = args.out_dir # 结果保存目录
+    md5_dict = args.md5_dict # md5列表目录
+    main(in_dir, out_dir, md5_dict)
