@@ -5,6 +5,7 @@ import numpy as np
 import os
 import glob
 import time
+import argparse
 
 def json2bboxes(json_file, img_open):
     """
@@ -36,7 +37,7 @@ def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], im
         img_closes: 合闸模板图, list
         box_state: 用于对比ssim的框子坐标，格式为[[xmin, ymin, xmax, ymax], ..]
         box_osd: sift匹配时需要扣掉的区域，格式为[[xmin, ymin, xmax, ymax], ..]
-        img_yichangs: 异常模板图, list
+        img_yichangs: 异常模板图,剪切过后的, list
     return: 
         state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
         scores: 每个box里面的得分,[[score_close, score_open, score_yc], ..]
@@ -101,8 +102,9 @@ def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], im
 
         ## 求score yichang
         score_yc = 0
-        for img_yichang in img_yichangs:
-            img_yc = img_yichang[bbox[1]: bbox[3], bbox[0]: bbox[2]]
+        for img_yc in img_yichangs:
+            if img_yc.shape != img_ta.shape:
+                continue
             score = cw_ssim_index(img_ta, img_yc)
             if score > score_yc:
                 score_yc = score
@@ -127,7 +129,6 @@ def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], im
 
     return state, scores, bboxes_tag
 
-
 def video_states(tag_video, cfg_dir):
     """
     获取tag_video的状态列表。
@@ -145,7 +146,7 @@ def video_states(tag_video, cfg_dir):
     json_file = os.path.join(cfg_dir, v_id + "_normal.json")
     open_files = [os.path.join(cfg_dir, v_id + "_normal_off.png")]
     close_files = [os.path.join(cfg_dir, v_id + "_normal_on.png")]
-    yc_files = glob.glob(os.path.join(cfg_dir, v_id + "_normal_0*.png"))
+    yc_files = glob.glob(os.path.join(cfg_dir, v_id + "_normal_*yc.png"))
     img_opens = [cv2.imread(f_) for f_ in open_files]
     img_closes = [cv2.imread(f_) for f_ in close_files]
     img_yichangs = [cv2.imread(f_) for f_ in yc_files]
@@ -167,7 +168,7 @@ def video_states(tag_video, cfg_dir):
         if ret==True:
             if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
 
-                state, _, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=box_osd, img_yichangs=img_yichangs)
+                state, _, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
                 states.append(state)
                 counts.append(count)
 
@@ -204,33 +205,65 @@ def final_state(states, len_window=5):
                 state_start = list(s_types)[0]
 
     ## 根据state_start合state_end的组合判断该states的最终状态
+    ## 其中 0 代表无法判别状态，1 代表合闸正常， 2 代表合闸异常，3 代表分闸正常，4 代表分闸异常
     if state_end == "合":
+        print("1, 合闸正常")
         return 1 # 合闸正常
     elif state_end == "分":
+        print("3, 分闸正常")
         return 3 # 分闸正常
     else: 
         if state_start == "分":
+            print("2, 合闸异常")
             return 2 # 合闸异常
         elif state_start == "合":
+            print("4, 分闸异常")
             return 4 # 分闸异常
         else:
+            print("4, 分闸异常")
             return 4 # 无法判别状态
     
 
 if __name__ == "__main__":
 
-    video_dir = "test/yjsk"
-    cfg_dir = "test/cfg"
-    out_dir = "test/tuilishuju_output"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--source',
+        type=str,
+        default='./test/yjsk',
+        help='source dir.')
+    parser.add_argument(
+        '--out_dir',
+        type=str,
+        default='./result/yjsk40zhytdlkjgfyxgs',
+        help='out dir of saved result.')
+    parser.add_argument(
+        '--cfgs',
+        type=str,
+        default='./test/cfg',
+        help='cfg dir')
+    args, unparsed = parser.parse_known_args()
+
+    # video_dir = "test/yjsk"
+    # cfg_dir = "test/cfg"
+    # out_dir = "test/tuilishuju_output"
+    video_dir = args.source # 待测试文件目录
+    out_dir = args.out_dir # 结果保存目录
+    cfg_dir = args.cfgs # md5列表目录
+
     os.makedirs(out_dir, exist_ok=True)
-    count = 0
-    start = time.time()
+    start_all = time.time()
 
     video_list = glob.glob(os.path.join(video_dir, "*.mp4"))
     video_list.sort()
     for tag_video in video_list:
+        
         if tag_video.endswith("normal.mp4"):
             continue
+        
+        print("----------------------------------------")
+        print(tag_video)
+        start_loop = time.time()
 
         states = video_states(tag_video, cfg_dir) # 求tag_video的状态列表
         f_state = final_state(states, len_window=5) # 求最终状态
@@ -238,11 +271,12 @@ if __name__ == "__main__":
 
         ## 保存比赛的格式
         tag_name = os.path.basename(tag_video)
-        id_ = count
+        id_ = 1
         s = "ID,Name,Type\n"
-        s = s + str(id_) + "," + tag_name + "," + str(f_state)
+        s = s + str(id_) + "," + tag_name + "," + str(f_state) + "\n"
         f = open(os.path.join(out_dir, tag_name[:-4] + ".txt"), "w", encoding='utf-8')
         f.write(s)
         f.close()
-        count += 1
-    print("spend time total:", time.time() - start)
+
+        print("spend loop time:", time.time() - start_loop)
+    print("spend time total:", time.time() - start_all)
