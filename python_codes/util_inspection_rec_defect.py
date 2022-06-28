@@ -17,7 +17,7 @@ parser.add_argument(
 parser.add_argument(
     '--out',
     type=str,
-    default='./40zhytdlkjgfyxgs.txt',
+    default='./result/40zhytdlkjgfyxgs.txt',
     help='out file of saved result.')
 parser.add_argument(
     '--conf',
