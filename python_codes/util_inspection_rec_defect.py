@@ -7,6 +7,7 @@ import os
 import cv2
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 import argparse
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -54,6 +55,7 @@ count = 1
 f = open(out_file, "w", encoding='utf-8')
 f.write("ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n")
 for img_name in os.listdir(in_dir):
+    loop_start = time.time()
 
     img_file = os.path.join(in_dir, img_name) # 读取图片
     img = cv2.imread(img_file)
@@ -78,6 +80,8 @@ for img_name in os.listdir(in_dir):
         result = [ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX]
         f.write(",".join(result) + "\n")
         count += 1
+    
+    print(f"loop time = {time.time() - loop_start}")
 
 f.close()
 
