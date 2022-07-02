@@ -243,7 +243,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--cfgs',
         type=str,
-        default='./test/cfg',
+        default='./cfgs',
         help='cfg dir')
     args, unparsed = parser.parse_known_args()
 
