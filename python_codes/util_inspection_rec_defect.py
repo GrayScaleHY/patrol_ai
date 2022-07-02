@@ -28,7 +28,7 @@ parser.add_argument(
 parser.add_argument(
     '--iou',
     type=float,
-    default=0.2,
+    default=0.55,
     help='threshold of iou.')
 parser.add_argument(
     '--model_dir',
