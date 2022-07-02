@@ -162,15 +162,17 @@ def video_states(tag_video, cfg_dir):
     states = []
     count = 0
     counts = []
+    scores = []
     while(cap.isOpened()):
         ret, img_tag = cap.read() # 逐帧读取
 
         if ret==True:
             if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
 
-                state, _, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
+                state, score, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
                 states.append(state)
                 counts.append(count)
+                scores.append(scores)
 
             count += 1
         else:
@@ -178,6 +180,7 @@ def video_states(tag_video, cfg_dir):
 
     print("frame indexs:", counts)
     print("states list:", states)
+    print("scores list:", scores)
 
     cap.release() # 释放内存
 
