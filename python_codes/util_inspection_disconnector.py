@@ -172,8 +172,10 @@ def video_states(tag_video, cfg_dir):
                 state, score, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
                 states.append(state)
                 counts.append(count)
-                score = [round(sc_,2) for sc_ in score]
-                scores.append(scores)
+                sc_ = []
+                for scs in score:
+                    sc_ = sc_ + [round(sc,2) for sc in scs]
+                scores.append(sc_)
 
             count += 1
         else:
