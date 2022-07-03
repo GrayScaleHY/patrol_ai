@@ -205,7 +205,7 @@ def final_state(states, len_window=5):
     state_end = ""
     for i in range(len(states) - (len_window - 1)):
         s_types = set(states[i:i+len_window]) # 取len_window长度的元素，并去除不同元素
-        if s_types == {"分"} or s_types == {"合"}:
+        if s_types == {"分"} or s_types == {"合"} or s_types == {"异常"}:
             state_end = list(s_types)[0]
             if state_start == "":
                 state_start = list(s_types)[0]
