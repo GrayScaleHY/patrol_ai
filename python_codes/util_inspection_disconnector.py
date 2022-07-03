@@ -167,7 +167,7 @@ def video_states(tag_video, cfg_dir):
         ret, img_tag = cap.read() # 逐帧读取
 
         if ret==True:
-            if count % step == 0 and (count < 10 * step or count >= frame_number - 10 * step): # 抽前10帧和后10帧
+            if count % step == 0 and (count < 8 * step or count >= frame_number - 8 * step): # 抽前10帧和后10帧
 
                 state, score, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
                 states.append(state)
