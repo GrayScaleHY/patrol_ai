@@ -18,6 +18,7 @@ import json
 ## 二次设备， coco， 17类缺陷， 表计， 指针
 from config_load_models_var import yolov5_ErCiSheBei, yolov5_coco, yolov5_rec_defect, yolov5_meter, maskrcnn_pointer
 pre_end = time.time()
+print(f"load model time = {pre_end - start_pre}")
 
 def indentify_pointer(img_ref, img_tag):
     """
