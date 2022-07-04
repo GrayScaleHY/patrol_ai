@@ -272,7 +272,7 @@ if __name__ == "__main__":
         start_loop = time.time()
 
         states = video_states(tag_video, cfg_dir) # 求tag_video的状态列表
-        f_state = final_state(states, len_window=5) # 求最终状态
+        f_state = final_state(states, len_window=4) # 求最终状态
         print(f_state)
 
         ## 保存比赛的格式
