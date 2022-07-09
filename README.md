@@ -67,15 +67,15 @@ sudo docker load --input ut-inspection.tar.gz
 ```
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
 ```
-REPOSITORY           TAG                                 IMAGE ID       CREATED        SIZE
-utdnn/inspection     cuda11.4-conda-cuml-opencv          8f55edcf6b6b   4 days ago     36.3GB
+REPOSITORY           TAG                                   IMAGE ID       CREATED        SIZE
+utdnn/inspectio      cuda11.4-conda-cuml-opencv-gtk        86c8a25fae43   11 days ago     37.1GB
 ```
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
 cd /data/inspection
 sudo chmod 777 run_inspection.sh
-sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection --entrypoint "/data/inspection/run_inspection.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv
+sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-inspection --restart=always -p 5000:5000 --ipc=host -v /data/inspection:/data/inspection --entrypoint "/data/inspection/run_inspection.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk
 ```
 等待2分钟左右，输入```sudo docker logs ut-inspection --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
