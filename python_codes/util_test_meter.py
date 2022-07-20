@@ -6,8 +6,8 @@ import glob
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
-yolo_model = load_yolov5_model("/data/inspection/yolov5/meter.pt")
-msrcnn_model = load_maskrcnn_model("/data/inspection/maskrcnn/pointer.pth")
+yolo_model = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt")
+msrcnn_model = load_maskrcnn_model("/data/PatrolAi/maskrcnn/pointer.pth")
 img_file = "test/test.jpg"
 
 dir_names = ['11-19-10-39-05', '11-19-10-39-07', '11-19-10-39-09', '11-19-10-39-12', '11-19-10-39-14', '11-19-10-39-17', '11-19-10-39-19', '11-19-10-39-22', '11-19-10-39-24', '11-19-10-39-27', '11-19-10-39-29', '11-19-10-39-32', '11-19-10-39-34', '11-19-10-39-37', '11-19-10-39-39', '11-19-10-39-41', '11-19-10-39-44', '11-19-10-39-47', '11-19-10-39-49', '11-19-10-39-52']

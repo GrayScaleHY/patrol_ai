@@ -48,10 +48,10 @@ def decoder_wechat(img):
         info: 格式为: [{'bbox': [xmin,ymin,xmax,ymax], 'content':content}, ..]
     """
     ## 二维码识别模型存放路线
-    de_txt = '/data/inspection/opencv_3rdparty/detect.prototxt'
-    de_model = '/data/inspection/opencv_3rdparty/detect.caffemodel'
-    sr_txt = '/data/inspection/opencv_3rdparty/sr.prototxt'
-    sr_model = '/data/inspection/opencv_3rdparty/sr.caffemodel'
+    de_txt = '/data/PatrolAi/opencv_3rdparty/detect.prototxt'
+    de_model = '/data/PatrolAi/opencv_3rdparty/detect.caffemodel'
+    sr_txt = '/data/PatrolAi/opencv_3rdparty/sr.prototxt'
+    sr_model = '/data/PatrolAi/opencv_3rdparty/sr.caffemodel'
 
     ## 识别二维码类容
     if os.path.exists(de_txt) and os.path.exists(de_model) and os.path.exists(sr_txt) and os.path.exists(sr_model):

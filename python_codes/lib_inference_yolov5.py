@@ -72,7 +72,7 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
 if __name__ == '__main__':
     import shutil
     img_file = "/home/yh/image/python_codes/test/source_0.bmp"
-    weight = "/data/inspection/yolov5/rec_defect_x6.pt"
+    weight = "/data/PatrolAi/yolov5/rec_defect_x6.pt"
     img = cv2.imread(img_file)
     model_yolov5 = load_yolov5_model(weight)
     cfgs = inference_yolov5(model_yolov5, img, resize=1280, conf_thres=0.1, iou_thres=0.2)

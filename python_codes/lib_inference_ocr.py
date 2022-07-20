@@ -52,9 +52,9 @@ if __name__ == "__main__":
     import glob
     from lib_image_ops import img_chinese
 
-    det_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_det_infer/"
-    cls_model_dir = "/data/inspection/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
-    rec_model_dir = "/data/inspection/ppocr/ch_PP-OCRv2_rec_infer/"
+    det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
+    cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+    rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
     text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
     image_file = "test/img_tag.jpg"

@@ -60,7 +60,7 @@ if __name__ == '__main__':
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     img_file = "/home/yh/PSD/images/test1.jpg"
     out_file = "test_res.jpg"
-    mdl_file = '/data/inspection/dehaze_psd/PSB-MSBDN'
+    mdl_file = '/data/PatrolAi/dehaze_psd/PSB-MSBDN'
     img = cv2.imread(img_file)
     net = load_psd_model(mdl_file)
     start = time.time()

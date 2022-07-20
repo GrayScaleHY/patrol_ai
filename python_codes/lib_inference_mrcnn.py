@@ -294,7 +294,7 @@ if __name__ == '__main__':
     import glob
     import os
 
-    mask_rcnn_weight = '/data/inspection/maskrcnn/pointer.pth'
+    mask_rcnn_weight = '/data/PatrolAi/maskrcnn/pointer.pth'
     img_file = "/home/yh/image/python_codes/inspection_result/#0014_org_0_meter.jpg"
 
     maskrcnn_weights = load_maskrcnn_model(mask_rcnn_weight)

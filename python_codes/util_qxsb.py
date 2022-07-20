@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     '--model_dir',
     type=str,
-    default='/data/inspection/yolov5',
+    default='/data/PatrolAi/yolov5',
     help='model path.')
 args, unparsed = parser.parse_known_args()
 

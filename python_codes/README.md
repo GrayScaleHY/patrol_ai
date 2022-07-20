@@ -45,7 +45,7 @@ conda activate tf24
 python util_inspection_server.py 
 
 ## 设置进入docker自启动服务，将以下两条命令加入到~/.bashrc
-cd /data/inspection/image/python_codes
+cd /data/PatrolAi/image/python_codes
 /root/miniconda3/envs/tf24/bin/python util_inspection_server.py
 docker update --restart=always yh_inspection # docker设置开机自启动
 ```

@@ -81,7 +81,7 @@ def inspection_disconnector_video(input_data):
 
 if __name__ == '__main__':
     input_data = {
-        "video_path": "/data/inspection/disconnector_video/192.168.1.64-8000-37-1652944807847.mp4",
+        "video_path": "/data/PatrolAi/disconnector_video/192.168.1.64-8000-37-1652944807847.mp4",
         "type": "disconnector_video"
     }
     start = time.time()
