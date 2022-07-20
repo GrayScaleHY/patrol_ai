@@ -1,6 +1,6 @@
 """
 巡检算法平台测试，缺陷识别测试代码。
-python util_inspection_rec_defect.py --source <images dir> --out <result path>
+python util_qxsb.py --source <images dir> --out <result path>
 """
 
 import os

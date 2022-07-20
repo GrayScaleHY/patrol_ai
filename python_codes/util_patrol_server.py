@@ -1,19 +1,18 @@
 from flask import Flask, request, jsonify
 import json
 import os
-from app_inspection_pointer import inspection_pointer
-# from app_inspection_meter import inspection_meter
-from app_inspection_disconnector import inspection_disconnector
-from app_inspection_counter import inspection_counter
-from app_inspection_object_detection import inspection_object_detection
-from app_inspection_qrcode import inspection_qrcode
-# from app_inspection_level_gauge import inspection_level_gauge
-# from app_inspection_xishiqi import inspection_xishiqi
-from app_inspection_identify_defect import inspection_identify_defect
+from app_pointer import inspection_pointer
+from app_disconnector import inspection_disconnector
+from app_counter import inspection_counter
+from app_object_detection import inspection_object_detection
+from app_qrcode_ocr import inspection_qrcode
+# from app_yeweiji import inspection_level_gauge
+# from app_guijiaobianse import inspection_xishiqi
+from app_panbie import inspection_identify_defect
 from config_version import code_version
-from app_inspection_disconnector_video import inspection_disconnector_video
+from app_disconnector_video import inspection_disconnector_video
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文

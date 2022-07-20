@@ -1,6 +1,6 @@
 
 from lib_image_ops import base642img, img2base64, img_chinese
-from util_inspection_disconnector import disconnector_state, json2bboxes
+from app_disconnector import disconnector_state, json2bboxes
 import glob
 import time
 import json

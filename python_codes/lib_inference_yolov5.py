@@ -68,66 +68,6 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
 
     return bbox_cfg
 
-def inference_batch(weights, source, save_dir, conf_thres=0.4, iou_thres=0.2):
-    """
-    使用yolov5模型推理图片，并保存成特殊格式。
-    args:
-        weights: yolov5模型文件，.pt结尾。
-        soutce: 图片路径或者含有图片的文件夹。
-        save_dir: 保存结果的文件夹。
-    """
-    ## 判断source是文件还是文件夹
-    if os.path.isfile(source):
-        img_list = [source]
-    elif os.path.isdir(source):
-        # img_list = glob.glob(os.path.join(source,"*.jpg"))
-        img_list = os.listdir(source)
-    else:
-        print(source, "not exists!")
-        return 0
-    ## 加载模型
-    yolov5_weights = load_yolov5_model(weights)
-
-    ## 创建文件夹
-    os.makedirs(save_dir, exist_ok=True)
-    label_dir = os.path.join(save_dir, "label")
-    result_dir = os.path.join(save_dir, "result")
-    os.makedirs(label_dir, exist_ok=True)
-    os.makedirs(result_dir, exist_ok=True)
-
-    ## 批处理
-    for img_name in img_list:
-        img_file = os.path.join(source, img_name)
-        print("--------------------------------")
-        print(img_file)
-        img = cv2.imread(img_file)
-        bbox_cfg = inference_yolov5(yolov5_weights, img, resize=1280, conf_thres=conf_thres, iou_thres=iou_thres) #推理
-        print(bbox_cfg)
-
-        ## 保存推理结果
-        res_file = os.path.join(result_dir, os.path.basename(img_file)) 
-        label_file = os.path.join(label_dir, os.path.basename(img_file)[:-4]+".txt")
-        s = "ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n"  
-        count = 0
-        for bbox in bbox_cfg:
-            count += 1
-            label = bbox["label"]
-            score = bbox["score"]
-            c = bbox["coor"]
-
-            ## 将结果画在图上
-            cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-            cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-
-            ## 输出结果
-            result = [str(count),os.path.basename(img_file),label,str(score),str(c[0]),str(c[1]),str(c[2]),str(c[3])]
-            s = s + ",".join(result) + "\n"
-        
-        f = open(label_file, "w", encoding='utf-8')
-        f.write(s)
-        f.close()
-        cv2.imwrite(res_file[:-4] + ".jpg", img)
-
 
 if __name__ == '__main__':
     import shutil
