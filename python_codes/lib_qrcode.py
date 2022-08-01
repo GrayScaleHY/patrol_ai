@@ -57,6 +57,7 @@ def decoder_wechat(img):
     if os.path.exists(de_txt) and os.path.exists(de_model) and os.path.exists(sr_txt) and os.path.exists(sr_model):
         detect_obj = cv2.wechat_qrcode_WeChatQRCode(de_txt, de_model, sr_txt, sr_model) 
     else:
+        print("warning: qrcode models is not exist !!")
         detect_obj = cv2.wechat_qrcode_WeChatQRCode()
     res, points = detect_obj.detectAndDecode(img) 
 
