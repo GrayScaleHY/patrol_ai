@@ -155,7 +155,7 @@ def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.3):
     # Load mask-rcnn
     cfg = get_cfg()
     cfg.merge_from_file(
-        "detectron2/configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml")
+        "/data/PatrolAi/maskrcnn/mask_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.WEIGHTS = mask_rcnn_weight
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_thresh
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
