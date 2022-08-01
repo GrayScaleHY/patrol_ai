@@ -20,7 +20,7 @@ sudo service gdm stop
 
 ## 安装显卡驱动
 cd /data/PatrolAi/install
-sudo chmod 777 NVIDIA-Linux-x86_64-510.60.02.run
+sudo chmod +x NVIDIA-Linux-x86_64-510.60.02.run
 sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 ```
 安装完成后，重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下打印时表示显卡驱动安装完成。
@@ -74,7 +74,7 @@ utdnn/inspectio      cuda11.4-conda-cuml-opencv-gtk        86c8a25fae43   11 day
 输入以下命令启动巡检算法服务。
 ```
 cd /data/PatrolAi
-sudo chmod 777 run_PatrolAi.sh
+sudo chmod +x run_PatrolAi.sh
 sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
