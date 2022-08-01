@@ -8,8 +8,8 @@ from lib_help_base import color_list
 from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 import numpy as np
-## 表计， 二次设备，17类缺陷
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect
+## 表计， 二次设备，17类缺陷, 安全帽， 烟火
+from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect, yolov5_helmet, yolov5_fire_smoke
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -101,8 +101,20 @@ def inspection_object_detection(input_data):
     ## 选择模型
     if input_data["type"] == "meter":
         yolov5_model = yolov5_meter
-        labels = ["meter"]
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         model_type = "meter"
+    elif input_data["type"] == "fire_smoke":
+        yolov5_model = yolov5_fire_smoke
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        model_type = "fire_smoke"
+    elif input_data["type"] == "helmet":
+        yolov5_model = yolov5_helmet
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        model_type = "helmet"
+    elif input_data["type"] == "rec_defect":
+        yolov5_model = yolov5_rec_defect
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        model_type = "rec_defect"
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
@@ -111,14 +123,10 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kqkg_hz", "kqkg_fz"]
         model_type = "ErCiSheBei"
-    # elif input_data["type"] == "fire_smoke":
-    #     yolov5_model = yolov5_fire_smoke
     elif input_data["type"] == "led":
         yolov5_model = yolov5_ErCiSheBei
-        labels = ["zsd_lvdl", "zsd_lvdm", "zsd_hongdl", "zsd_hongdm", "zsd_baidl", "zsd_baidm", "zsd_huangdl", "zsd_huangdm", "zsd_heidm"]
+        labels = ["zsd_l", "zsd_m"]
         model_type = "ErCiSheBei"
-    # elif input_data["type"] == "helmet":
-    #     yolov5_model = yolov5_helmet
     elif input_data["type"] == "fanpaiqi":
         yolov5_model = yolov5_ErCiSheBei
         model_type = "ErCiSheBei"
@@ -127,22 +135,14 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_ErCiSheBei
         labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z"]
         model_type = "ErCiSheBei"
-    # elif input_data["type"] == "arrow":
-    #     yolov5_model = yolov5_rotary_switch
     elif input_data["type"] == "door":
         yolov5_model = yolov5_ErCiSheBei
         labels = ["xmbhyc", "xmbhzc"]
         model_type = "ErCiSheBei"
     elif input_data["type"] == "key":
         yolov5_model = yolov5_ErCiSheBei
-        labels = ["xmbhyc", "xmbhzc"]
+        labels = ["ys"]
         model_type = "ErCiSheBei"
-    # elif input_data["type"] == "robot":
-    #     yolov5_model = yolov5_robot
-    elif input_data["type"] == "rec_defect":
-        yolov5_model = yolov5_rec_defect
-        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        model_type = "rec_defect"
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data

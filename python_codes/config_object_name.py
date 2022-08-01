@@ -6,16 +6,6 @@ OBJECT_MAP = {
         "meter": "表记",
         "pointer": "指针"
     },
-    "air_switch": {
-        "name": "空气开关",
-        "air_switch_on": "合闸",
-        "air_switch_off": "分闸"
-        },
-    "pressplate":{
-        "name": "压板",
-        "kgg_ybf": "退出",
-        "kgg_ybh": "投入"
-    },
     "led": {
         "name": "LED灯",
         "green_on": "绿灯亮",
@@ -27,12 +17,6 @@ OBJECT_MAP = {
         "yellow_on": "黄灯亮",
         "yellow_off": "黄灯灭",
         "black_off": "黑灯灭",
-    },
-    "fanpaiqi": {
-        "name": "翻拍器",
-        "fanpaiqi_red": "翻牌器合",
-        "fanpaiqi_green": "翻牌器分",
-        "fanpaiqi_jiedi": "翻牌器接地"
     },
     "action_recognition":{
         "name": "行为识别",
@@ -105,24 +89,6 @@ OBJECT_MAP = {
         'no_yingguangfu': '未穿工作服',
         'gongzuofu': '工作服'
     },
-    "rotary_switch":{
-        'name': '旋钮开关',
-        'up': '上',
-        'leftup': '左上',
-        'rightup': '右上',
-        'left': '左'
-    },
-    "arrow": {
-        'name': '箭头仪表',
-        'up': '上',
-        'down': '下',
-        'leftup': '左上',
-        'leftdown': '左下',
-        'right': '右',
-        'left': '左',
-        'rightup': '右上',
-        'rightdown': '右下'
-    },
     "tools":{
         'name': '工具',
         'Ground wire': '接地线',
@@ -159,16 +125,9 @@ OBJECT_MAP = {
         'xnkg_zs': '左上',
         'xnkg_ys': '右上',
         'xnkg_z': '左',
-        'zsd_lvdl': '绿灯亮',
-        'zsd_lvdm': '绿灯灭',
-        'zsd_hongdl': '红灯亮',
-        'zsd_hongdm': '红灯灭',
-        'zsd_baidl': '白灯亮',
-        'zsd_baidm': '白灯灭',
-        'zsd_huangdl': '黄灯亮',
-        'zsd_huangdm': '黄灯灭',
-        'zsd_heidm': '黑灯灭',
-        'ys': '钥匙'
+        'ys': '钥匙',
+        'zsd_l': "指示灯亮",
+        'zsd_m': '指示灯灭'
     },
     "equipment_defects": {
         "name": "设备部件与缺陷",
@@ -199,25 +158,6 @@ OBJECT_MAP = {
         '异物': '异物',
         '缺陷不知道': '缺陷不知道',
         '设备不知道_操作机构箱': '设备不知道_操作机构箱'
-    },
-    "door":{
-        "name": "箱门",
-        "xmbhyc": "开",
-        "xmbhzc": "闭"
-    },
-    "key":{
-        "name": "钥匙",
-        "key": "钥匙"
-    },
-    "robot":{
-        'door_abnormal':"箱门异常",
-        'door_normal':"箱门闭合",
-        'suspension':"挂空悬浮物",
-        'nest':"鸟巢",
-        'no_helmet':"未带安全帽",
-        'helmet':"安全帽",
-        'smoking':"吸烟"
-
     },
     "rec_defect": {
         "name": "巡检17类缺陷",

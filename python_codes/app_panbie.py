@@ -6,7 +6,6 @@ from lib_inference_yolov5 import inference_yolov5
 from lib_sift_match import detect_diff, sift_match, correct_offset, sift_create
 from lib_inference_mrcnn import inference_maskrcnn, contour2segment
 from lib_analysis_meter import segment2angle
-# from util_identify_defect import identify_defect
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_sift_match import sift_create
 import numpy as np

@@ -6,8 +6,6 @@ from app_disconnector import inspection_disconnector
 from app_counter import inspection_counter
 from app_object_detection import inspection_object_detection
 from app_qrcode_ocr import inspection_qrcode
-# from app_yeweiji import inspection_level_gauge
-# from app_guijiaobianse import inspection_xishiqi
 from app_panbie import inspection_identify_defect
 from config_version import code_version
 from app_disconnector_video import inspection_disconnector_video
@@ -116,26 +114,9 @@ def inspection_counter_server():
     print("----------------------------------------------")
     return jsonify(res)
 
-## 仪表定位
-# @app.route('/inspection_meter/', methods=['POST'])
-# def inspection_meter_server():
-#     if request.method != 'POST':
-#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-#         return jsonify(res)
-#     data = json.loads(request.get_data(as_text=True))
-#     res = inspection_meter(data)
-#     print("meter_location result:")
-#     print("-----------------------------------------------")
-#     for s in res:
-#         if s != "img_result":
-#             print(s,":",res[s])
-#     print("----------------------------------------------")
-#     return jsonify(res)
-
 ## 二维码识别，文本标识牌识别
 @app.route('/inspection_qrcode/', methods=['POST'])
 @app.route('/inspection_ocr/', methods=['POST'])
-@app.route('/inspection_screen_ocr/', methods=['POST'])
 def inspection_qrcode_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
@@ -150,50 +131,18 @@ def inspection_qrcode_server():
     print("----------------------------------------------")
     return jsonify(res)
 
-# @app.route('/inspection_level_gauge/', methods=['POST'])
-# def inspection_level_gauge_server():
-#     if request.method != 'POST':
-#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-#         return jsonify(res)
-#     data = json.loads(request.get_data(as_text=True))
-#     res = inspection_level_gauge(data)
-#     print("meter_location result:")
-#     print("-----------------------------------------------")
-#     for s in res:
-#         if s != "img_result":
-#             print(s,":",res[s])
-#     print("----------------------------------------------")
-#     return jsonify(res)
-
-# @app.route('/inspection_xishiqi_color/', methods=['POST'])
-# def inspection_xishiqi_color_server():
-#     if request.method != 'POST':
-#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-#         return jsonify(res)
-#     data = json.loads(request.get_data(as_text=True))
-#     res = inspection_xishiqi(data)
-#     print("meter_location result:")
-#     print("-----------------------------------------------")
-#     for s in res:
-#         if s != "img_result":
-#             print(s,":",res[s])
-#     print("----------------------------------------------")
-#     return jsonify(res)
-
 ## 目标检测
-@app.route('/inspection_pressplate/', methods=['POST'])
-@app.route('/inspection_led/', methods=['POST'])
-# @app.route('/inspection_fire_smoke/', methods=['POST'])
-@app.route('/inspection_air_switch/', methods=['POST'])
-@app.route('/inspection_fangpaiqi/', methods=['POST'])
-# @app.route('/inspection_helmet/', methods=['POST'])
-@app.route('/inspection_meter/', methods=['POST'])
-# @app.route('/inspection_arrow/', methods=['POST'])
-@app.route('/inspection_rotary_switch/', methods=['POST'])
-@app.route('/inspection_door/', methods=['POST'])
-@app.route('/inspection_key/', methods=['POST'])
-# @app.route('/inspection_robot/', methods=['POST'])
-@app.route('/inspection_rec_defect/', methods=['POST'])
+@app.route('/inspection_pressplate/', methods=['POST']) # 压板
+@app.route('/inspection_led/', methods=['POST']) # led灯
+@app.route('/inspection_fire_smoke/', methods=['POST']) # 烟火
+@app.route('/inspection_air_switch/', methods=['POST']) # 空气开关
+@app.route('/inspection_fangpaiqi/', methods=['POST']) # 翻牌器
+@app.route('/inspection_helmet/', methods=['POST']) # 安全帽
+@app.route('/inspection_meter/', methods=['POST']) # 表盘
+@app.route('/inspection_rotary_switch/', methods=['POST']) # 旋钮开关
+@app.route('/inspection_door/', methods=['POST']) # 箱门
+@app.route('/inspection_key/', methods=['POST']) # 钥匙
+@app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
