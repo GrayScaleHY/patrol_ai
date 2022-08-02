@@ -6,7 +6,10 @@ import os
 import glob
 
 sys.path.append('../yolov5') ## ultralytics/yolov5 存放的路径
-from utils.datasets import letterbox
+try:
+    from utils.dataloaders import letterbox ## v7.0
+except:
+    from utils.datasets import letterbox ## v6.0
 from utils.general import non_max_suppression, scale_coords
 from models.common import DetectMultiBackend
 import numpy as np
@@ -20,7 +23,7 @@ def load_yolov5_model(model_file):
     # load yolov5 FP32 model
     """
     # yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
-    yolov5_weights = attempt_load(model_file , map_location=device) # 加载模型
+    yolov5_weights = attempt_load(model_file, device) # 加载模型
     return yolov5_weights
 
 def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.2, pre_labels=None):
@@ -71,7 +74,7 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
 
 if __name__ == '__main__':
     import shutil
-    img_file = "/home/yh/image/python_codes/test/source_0.bmp"
+    img_file = "/home/yh/image/python_codes/inspection_result/sy_10000007.jpg"
     weight = "/data/PatrolAi/yolov5/rec_defect_x6.pt"
     img = cv2.imread(img_file)
     model_yolov5 = load_yolov5_model(weight)
