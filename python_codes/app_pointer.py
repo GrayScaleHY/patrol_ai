@@ -216,7 +216,7 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
         segs.append(seg)
 
     if length is not None:
-        lengths = [(a[2]-a[1])**2 + (a[3]-a[0])**2 for a in segs]
+        lengths = [(a[2]-a[0])**2 + (a[3]-a[1])**2 for a in segs]
         if length == 0:
             return lengths.index(min(lengths))
         elif length == 2:
@@ -226,7 +226,7 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
             return lengths.index(min(lengths))
 
     elif width is not None:
-        widths = [min(a[2]-a[1], a[3]-a[0]) for a in segs]
+        widths = [min(a[2]-a[0], a[3]-a[1]) for a in segs]
         if length == 0:
             return widths.index(min(widths))
         elif length == 2:
@@ -447,7 +447,7 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("inspection_result/pointer/06-10-09-03-30/input_data.json","r", encoding='utf-8')
+    f = open("/home/yh/image/python_codes/inspection_result/08-02-13-46-10/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
