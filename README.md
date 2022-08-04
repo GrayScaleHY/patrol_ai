@@ -4,13 +4,13 @@
 ### 巡检算法服务的部署（ubuntu 18.04）
 该部署教程以ubuntu 18.04以上版本为例，注意，部署服务器必须配备英伟达显卡。凝思系统上部署请参考教程[凝思操作系统部署巡检算法服务](https://git.utapp.cn/aiteam/patrol_ai/-/wikis/巡视算法部署文档-凝思)。
 ##### 1. 准备部署文件
-(1). 下载两个部署压缩包PatrolAi.zip和ut-inspection.tar.gz。内网下载链接为[ \\\192.168.105.36\Outgoing\巡检算法部署 ]，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。
+(1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。内网下载链接为[ \\\192.168.105.36\Outgoing\巡检算法部署 ]，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。
 (2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
 ```
   /data/
     PatrolAi/
     PatrolAi.zip
-    ut-inspection.tar.gz
+    ut_patrol_ai.tar.gz
 ```
 ##### 2. 安装显卡驱动 (若已安装，跳过)
 快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
@@ -63,19 +63,19 @@ REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
 cd /data
-sudo docker load --input ut-inspection.tar.gz
+sudo docker load --input ut_patrol_ai.tar.gz
 ```
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
 ```
 REPOSITORY           TAG                                   IMAGE ID       CREATED        SIZE
-utdnn/inspectio      cuda11.4-conda-cuml-opencv-gtk        86c8a25fae43   11 days ago     37.1GB
+ utdnn/patrol_ai     cuda11.4-conda-cuml                   86c8a25fae43   11 days ago     37.1GB
 ```
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
 cd /data/PatrolAi
 sudo chmod +x run_PatrolAi.sh
-sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk
+sudo docker run -d --gpus '"device=0"' --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.4-conda-cuml
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
