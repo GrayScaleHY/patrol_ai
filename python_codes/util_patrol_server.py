@@ -134,6 +134,7 @@ def inspection_qrcode_server():
 ## 目标检测
 @app.route('/inspection_pressplate/', methods=['POST']) # 压板
 @app.route('/inspection_led/', methods=['POST']) # led灯
+@app.route('/inspection_led_color/', methods=['POST']) # led灯
 @app.route('/inspection_fire_smoke/', methods=['POST']) # 烟火
 @app.route('/inspection_air_switch/', methods=['POST']) # 空气开关
 @app.route('/inspection_fangpaiqi/', methods=['POST']) # 翻牌器

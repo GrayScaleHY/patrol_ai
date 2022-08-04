@@ -9,7 +9,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect, yolov5_helmet, yolov5_fire_smoke
+from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -111,6 +111,10 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_helmet
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         model_type = "helmet"
+    elif input_data["type"] == "led_color":
+        yolov5_model = yolov5_led_color
+        labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        model_type = "led"
     elif input_data["type"] == "rec_defect":
         yolov5_model = yolov5_rec_defect
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names

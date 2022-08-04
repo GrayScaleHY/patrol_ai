@@ -16,6 +16,7 @@ yolov5_digital= load_yolov5_model("/data/PatrolAi/yolov5/digital.pt") # led数�
 yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
 yolov5_fire_smoke = load_yolov5_model("/data/PatrolAi/yolov5/fire_smoke.pt") # 烟火模型
 yolov5_helmet = load_yolov5_model("/data/PatrolAi/yolov5/helmet.pt") # 安全帽模型
+yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
 
 ## 加载ppocr模型
 from lib_inference_ocr import load_ppocr
