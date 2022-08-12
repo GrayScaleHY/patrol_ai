@@ -34,18 +34,16 @@ def img_rotate_batch(dir):
     """
     将文件夹中带旋转信息的图片进行旋转。防止标注错误。
     """
+    count_all = 0
+    count_rotate = 0
     for root, dirs, files in os.walk(dir):
         
         for file_name in files:
             if not file_name.endswith((".jpg",".JPG",".png",".PNG",".bmp")):
                 continue
-            img_file = os.path.join(root, file_name)
+            count_all += 1
 
-            ## 删除无法用cv2.imread()读取的图片。
-            data = cv2.imread(img_file)
-            if data is None:
-                os.remove(img_file)
-                print(img_file, "remove already !")
+            img_file = os.path.join(root, file_name)
 
             img = Image.open(img_file)
             try:
@@ -67,8 +65,11 @@ def img_rotate_batch(dir):
             if angle != 0:
                 img=img.rotate(angle, expand=True)
                 print(img_file,"rotated", angle, "already!")
+                count_rotate += 1
                 img.save(img_file)
             img.close()
+    print("num of all img:", count_all)
+    print("num of rotate img:", count_rotate)
 
 def bmp2jpg(bmp_file, jpg_file):
     """
@@ -285,8 +286,4 @@ if __name__ == '__main__':
     # draw_bboxs(img_file, bbox_cfg, is_write=True, is_show=False)
     # os.path.exists
 
-    img_file = "C:/Users/yuanhui/Desktop/hear/test/test/close_1011194217_gray3d.jpg"
-    img = cv2.imread(img_file, 0)
-    # img = img_equalize(img)
-    # img = img_clahe(img)
-    cv2.imwrite(img_file[:-4] + "_gray2d.jpg", img)
+    img_rotate_batch("/data/PatrolAiImg2022/bjbmyw")
