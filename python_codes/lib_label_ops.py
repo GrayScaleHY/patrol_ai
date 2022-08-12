@@ -9,6 +9,7 @@ from lib_image_ops import img2base64
 import json
 # import xmltodict
 # from xml import etree
+import xml.etree.ElementTree as ET
 
 def convert_rec(img, box):
     """
@@ -37,6 +38,38 @@ def convert_rec(img, box):
         w = abs(box[2] - box[0]) / W
         h = abs(box[3] - box[1]) / H
         return [ox, oy, w, h]
+
+def get_xml_cfgs(xml_file):
+    """
+    获取voc格式xml文件中的标签信息
+    args:
+        xml_file: xml 文件
+    return:
+        cfgs: 标签信息，格式为 格式为[{"label": "", "coor": [xmin, ymin, xmax, ymax]}, ..)
+    """
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    size = root.find('size') # 图片大小
+    w = int(size.find('width').text)
+    h = int(size.find('height').text)
+
+    cfgs = []
+    for obj in root.iter('object'):
+        difficult = obj.find('difficult').text
+        if int(difficult) == 1:
+            continue
+
+        label = obj.find('name').text # label名字
+
+        xmlbox = obj.find('bndbox') # 框子坐标
+        b = [float(xmlbox.find('xmin').text), float(xmlbox.find('ymin').text), 
+            float(xmlbox.find('xmax').text), float(xmlbox.find('ymax').text)]
+
+        if 0 <= b[0] <= b[2] <= w and 0 <= b[1] <= b[3] <= h: # 判断框子是否超出边界
+            cfgs.append({"label": label, "coor": b})
+            
+    return cfgs
 
 def convert_points(points, bbox):
     """
