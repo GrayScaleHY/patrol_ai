@@ -266,7 +266,7 @@ def inspection_pointer(input_data):
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
-    out_data = {"code":0, "data":[], "img_result": input_data["image"], "msg": "Request success; "} #初始化输出信息
+    out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request success; "} #初始化输出信息
 
     if input_data["type"] != "pointer":
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
