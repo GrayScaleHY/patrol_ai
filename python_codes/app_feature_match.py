@@ -1,3 +1,7 @@
+"""
+使用 utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk 镜像运行
+"""
+
 import numpy as np
 import cv2
 from lib_sift_match import sift_create
