@@ -55,7 +55,7 @@ cd /data/PatrolAi/install/ubuntu18.04
 sudo chmod +x install_nvidia_docker.sh
 sudo ./install_nvidia_docker.sh
 ```
-安装完成后，重启服务器，终端输入```sudo nvidia-docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
+安装完成后，终端输入```sudo nvidia-docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
