@@ -52,8 +52,10 @@ except:
 try:
     from pack_vector_set import pack_vector_set
     vector_lib = "cython"
+    print("Notice: vector_set use cython !!!")
 except:
     vector_lib = "python"
+    print("Notice: vector_set use python !!!")
 
 if sift_lib == "cudasift":
     sift_data = cudasift.PySiftData(25000)
@@ -235,6 +237,7 @@ def sift_create(img):
 
     ## 使用opencv提取sift特征
     else:
+        print("Notice: sift create use cv2 !!!")
         sift = cv2.SIFT_create() # 创建sift对象
         # sift = cv2.xfeatures2d.SIFT_create()
         # kps: 关键点，包括 angle, class_id, octave, pt, response, size
@@ -447,6 +450,7 @@ def find_FVS(EVS, pca, diff_image, mean_vec, new):
 
     ## FVS的完整计算过程
     else:
+        print("Notice: vector_set use python !!!")
         i = 2 
         feature_vector_set = []
         
@@ -462,6 +466,8 @@ def find_FVS(EVS, pca, diff_image, mean_vec, new):
     return FVS
 
 def clustering(FVS, new):
+    if kmeans_lib == "sklearn":
+        print("Notice: PCA and KMeans use sklearn !!!")
     if kmeans_lib == "cuml":
         FVS = FVS.astype(np.float32)
         FVS = cudf.DataFrame(FVS)
