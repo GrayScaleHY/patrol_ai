@@ -167,7 +167,7 @@ def video_states(tag_video, cfg_dir):
         ret, img_tag = cap.read() # 逐帧读取
 
         if ret==True:
-            if count % step == 0 and (count < 8 * step or count >= frame_number - 8 * step): # 抽前10帧和后10帧
+            if count % step == 0 and (count < 6 * step or count >= frame_number - 6 * step): # 抽前10帧和后10帧
 
                 state, score, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
                 states.append(state)
@@ -189,7 +189,7 @@ def video_states(tag_video, cfg_dir):
 
     return states
 
-def final_state(states, len_window=5):
+def final_state(states, len_window=4):
     """
     判断states列表的动状态。
     用固定大小的滑窗在states上滑动，当滑窗内的元素都相同，则表示为该时刻的状态，通过对比起始状态和结尾状态判断states的动状态。
@@ -226,8 +226,8 @@ def final_state(states, len_window=5):
             print("4, 分闸异常")
             return 4 # 分闸异常
         else:
-            print("4, 分闸异常")
-            return 4 # 无法判别状态
+            print("2, 合闸异常")
+            return 2 # 无法判别状态
     
 
 if __name__ == "__main__":
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         start_loop = time.time()
 
         states = video_states(tag_video, cfg_dir) # 求tag_video的状态列表
-        f_state = final_state(states, len_window=4) # 求最终状态
+        f_state = final_state(states, len_window=3) # 求最终状态
         print(f_state)
 
         ## 保存比赛的格式

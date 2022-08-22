@@ -16,9 +16,9 @@ parser.add_argument(
     default='./qxsb',
     help='source dir.')
 parser.add_argument(
-    '--out',
+    '--out_dir',
     type=str,
-    default='./result/40zhytdlkjgfyxgs.txt',
+    default='./result/40zhytdlkjgfyxgs',
     help='out file of saved result.')
 parser.add_argument(
     '--conf',
@@ -38,7 +38,7 @@ parser.add_argument(
 args, unparsed = parser.parse_known_args()
 
 in_dir = args.source # 待测试文件目录
-out_file = args.out # 输出结果文件
+out_dir = args.out_dir # 输出结果文件
 conf_thr = args.conf # confidence 阈值
 iou_thr = args.iou # iou 阈值
 model_dir = args.model_dir ## 模型存放的目录
@@ -48,13 +48,11 @@ weights = os.path.join(model_dir, "rec_defect_x6.pt")
 yolov5_weights = load_yolov5_model(weights)
 
 ## 创建文件夹
-os.makedirs(os.path.dirname(out_file), exist_ok=True)
+os.makedirs(out_dir, exist_ok=True)
 
 ## 批处理
-count = 1
-f = open(out_file, "w", encoding='utf-8')
-f.write("ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n")
 for img_name in os.listdir(in_dir):
+    out_file = os.path.join(out_dir, img_name[:-4] + ".txt")
     loop_start = time.time()
 
     img_file = os.path.join(in_dir, img_name) # 读取图片
@@ -65,6 +63,9 @@ for img_name in os.listdir(in_dir):
     print(img_file)
     print(bbox_cfg)
 
+    count = 1
+    f = open(out_file, "w", encoding='utf-8')
+    f.write("ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX\n")
     ## 保存推理结果
     for bbox in bbox_cfg:
         label = bbox["label"]
@@ -73,15 +74,15 @@ for img_name in os.listdir(in_dir):
         ID = str(count)
         PATH = img_name
         TYPE = bbox["label"]
-        SCORE = "1.0"
+        SCORE = "1.0000"
         XMIN = str(c[0]); YMIN = str(c[1]); XMAX = str(c[2]); YMAX = str(c[3])
 
         ## 输出结果
         result = [ID,PATH,TYPE,SCORE,XMIN,YMIN,XMAX,YMAX]
         f.write(",".join(result) + "\n")
         count += 1
-    
+    f.close()
     print(f"loop time = {time.time() - loop_start}")
 
-f.close()
+
 
