@@ -25,15 +25,23 @@ try:
     from cuml import PCA
     from cuml.cluster import KMeans
     kmeans_lib = "cuml"
-    print("Notice: PCA an KMeans use cuml !!!")
+    print("Notice: PCA and KMeans use cuml !!!")
 except:
-    from sklearn.decomposition import PCA
-    from sklearn.cluster import KMeans
-    kmeans_lib = "sklearn"
-    print("Notice: PCA an KMeans use sklearn !!!")
+    try:
+        ## https://github.com/h2oai/h2o4gpu
+        from h2o4gpu.solvers.pca import PCAH2O as PCA
+        from h2o4gpu import KMeans
+        kmeans_lib = "h2o4gpu"
+        print("Notice: PCA and KMeans use h2o4gpu !!!")
+    except:
+        from sklearn.decomposition import PCA
+        from sklearn.cluster import KMeans
+        kmeans_lib = "sklearn"
+        print("Notice: PCA and KMeans use sklearn !!!")
 
 try:
     ## https://github.com/zldrobit/pycudasift/tree/Maxwell-fix
+    ## https://github.com/zldrobit/pycudasift/issues/1
     import cudasift
     sift_lib = "cudasift"
     print("Notice: sift create use cudasift !!!")
