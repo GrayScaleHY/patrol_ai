@@ -248,6 +248,11 @@ if __name__ == "__main__":
         type=str,
         default='./cfgs',
         help='cfg dir')
+    parser.add_argument(
+        '--data_part',
+        type=str,
+        default='1/1',
+        help='part of data split.')
     args, unparsed = parser.parse_known_args()
 
     # video_dir = "test/yjsk"
@@ -256,15 +261,25 @@ if __name__ == "__main__":
     video_dir = args.source # 待测试文件目录
     out_dir = args.out_dir # 结果保存目录
     cfg_dir = args.cfgs # md5列表目录
+    data_part = args.data_part # 分隔数据部分
 
     os.makedirs(out_dir, exist_ok=True)
     start_all = time.time()
 
-    video_list = glob.glob(os.path.join(video_dir, "*.mp4"))
+    ## 分割数据
+    video_list = glob.glob(os.path.join(video_dir, "*"))
     video_list.sort()
+    _s = int(data_part.split("/")[1])
+    _p = int(data_part.split("/")[0])
+    _l = len(video_list)
+    if _s != _p:
+        video_list = video_list[int(_l*(_p-1)/_s):int(_l*_p/_s)]
+    else:
+        video_list = video_list[int(_l*(_p-1)/_s):]
+
     for tag_video in video_list:
         
-        if tag_video.endswith("normal.mp4"):
+        if "_normal." in tag_video:
             continue
         
         print("----------------------------------------")

@@ -141,17 +141,19 @@ def labels_diff_area(cfgs_ref, cfgs_tag):
     diff_area = [np.min(d[:,0]), np.min(d[:,1]), np.max(d[:,2]), np.max(d[:,3])]
     return diff_area
 
-def check_md5(img_ref, img_tag, md5_dict={}):
+def check_md5(img_ref, img_tag, md5_dict={}, data_part="1/1"):
     """
     对比img_ref和img_tag的md5是否在md5_dict中。
     """
-    cv2.imwrite("ref_.jpg", img_ref)
-    cv2.imwrite("tag_.jpg", img_tag)
-    f = open("ref_.jpg", "rb")
+    _ref = "ref_" + data_part.replace("/", "_") + ".jpg"
+    _tag = "tag_" + data_part.replace("/", "_") + ".jpg"
+    cv2.imwrite(_ref, img_ref)
+    cv2.imwrite(_tag, img_tag)
+    f = open(_ref, "rb")
     lines = f.read()
     f.close()
     md5_ref = hashlib.md5(lines).hexdigest()
-    f = open("tag_.jpg", "rb")
+    f = open(_tag, "rb")
     lines = f.read()
     f.close()
     md5_tag = hashlib.md5(lines).hexdigest()
@@ -233,7 +235,7 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     
     return tag_diff
 
-def main(in_dir, out_dir, md5_dict):
+def main(in_dir, out_dir, md5_dict, data_part):
 
     # in_dir = "test/panbie"  # 判别测试图片存放目录
     # out_dir = "test/panbie_result" # 判别算法输出目录
@@ -249,8 +251,20 @@ def main(in_dir, out_dir, md5_dict):
         md5_dict = {}
 
     os.makedirs(out_dir, exist_ok=True)
+    
+    ## 分割数据
+    normal_list = glob.glob(os.path.join(in_dir, "*_normal*"))
+    normal_list.sort()
+    _s = int(data_part.split("/")[1])
+    _p = int(data_part.split("/")[0])
+    _l = len(normal_list)
+    if _s != _p:
+        normal_list = normal_list[int(_l*(_p-1)/_s):int(_l*_p/_s)]
+    else:
+        normal_list = normal_list[int(_l*(_p-1)/_s):]
+
     md5_count = 0
-    for ref_file in glob.glob(os.path.join(in_dir, "*_normal.jpg")):
+    for ref_file in normal_list:
 
         file_id = os.path.basename(ref_file).split("_")[0]
         img_ref = cv2.imread(ref_file) 
@@ -263,13 +277,13 @@ def main(in_dir, out_dir, md5_dict):
 
         feat_ref = sift_create(img_ref) # 提取sift特征
 
-        for tag_file in glob.glob(os.path.join(in_dir, file_id + "_*.jpg")):
+        for tag_file in glob.glob(os.path.join(in_dir, file_id + "_*")):
             loop_start = time.time()
             print("-------------------------------")
             
             tag_name = os.path.basename(tag_file)
 
-            if tag_file.endswith("normal.jpg"):
+            if "_normal." in tag_file:
                 continue
             print(tag_file)
             img_tag = cv2.imread(tag_file)
@@ -282,7 +296,7 @@ def main(in_dir, out_dir, md5_dict):
             feat_tag = sift_create(img_tag) # 提取sift特征
             
             ## 查看img_ref和img_tag是否在md5_dict中
-            tag_diff = check_md5(img_ref, img_tag, md5_dict=md5_dict) 
+            tag_diff = check_md5(img_ref, img_tag, md5_dict, data_part) 
 
             if tag_diff is None:
                 tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
@@ -333,9 +347,15 @@ if __name__ == '__main__':
         type=str,
         default='./md5_dict.json',
         help='out file of saved result.')
+    parser.add_argument(
+        '--data_part',
+        type=str,
+        default='1/1',
+        help='part of data split.')
     args, unparsed = parser.parse_known_args()
 
     in_dir = args.source # 待测试文件目录
     out_dir = args.out_dir # 结果保存目录
     md5_dict = args.md5_dict # md5列表目录
-    main(in_dir, out_dir, md5_dict)
+    data_part = args.data_part # 分隔数据部分
+    main(in_dir, out_dir, md5_dict, data_part)

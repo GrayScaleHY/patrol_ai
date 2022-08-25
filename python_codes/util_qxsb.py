@@ -35,6 +35,11 @@ parser.add_argument(
     type=str,
     default='/data/PatrolAi/yolov5',
     help='model path.')
+parser.add_argument(
+    '--data_part',
+    type=str,
+    default='1/1',
+    help='part of data split.')
 args, unparsed = parser.parse_known_args()
 
 in_dir = args.source # 待测试文件目录
@@ -42,6 +47,7 @@ out_dir = args.out_dir # 输出结果文件
 conf_thr = args.conf # confidence 阈值
 iou_thr = args.iou # iou 阈值
 model_dir = args.model_dir ## 模型存放的目录
+data_part = args.data_part # 分隔数据部分
 
 ## 加载模型
 weights = os.path.join(model_dir, "rec_defect_x6.pt")
@@ -50,8 +56,19 @@ yolov5_weights = load_yolov5_model(weights)
 ## 创建文件夹
 os.makedirs(out_dir, exist_ok=True)
 
+## 分割数据
+img_list = os.listdir(in_dir)
+img_list.sort()
+_s = int(data_part.split("/")[1])
+_p = int(data_part.split("/")[0])
+_l = len(img_list)
+if _s != _p:
+    img_list = img_list[int(_l*(_p-1)/_s):int(_l*_p/_s)]
+else:
+    img_list = img_list[int(_l*(_p-1)/_s):]
+
 ## 批处理
-for img_name in os.listdir(in_dir):
+for img_name in img_list:
     out_file = os.path.join(out_dir, img_name[:-4] + ".txt")
     loop_start = time.time()
 
