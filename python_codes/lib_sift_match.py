@@ -229,11 +229,21 @@ def sift_create(img):
         thresh = 2;    # 3.5 /* Threshold on difference of Gaussians for feature pruning */
         minScale = 0.0;  # /* Minimum acceptable scale to remove fine-scale features */
         upScale = True;  # /* Whether to upscale image before extraction */
+        lmt = 43560000
+        rate = 1
+        if img.size > lmt: ## 若图片分辨率过大会报错，因此需要resize
+            H, W = img.shape[:2]
+            rate = math.ceil(img.size / lmt)
+            img = cv2.resize(img, (int(W / rate), int(H / rate)))
+
         cudasift.ExtractKeypoints(img, sift_data, numOctaves, initBlur, thresh, minScale, upScale)
         df, feat = sift_data.to_data_frame()
         feat = np.ascontiguousarray(feat)
         points = zip(df['xpos'], df['ypos'])
-        kps = [cv2.KeyPoint(p[0], p[1], size=1) for p in points] ## 注意，改代码需要cv2的4.5.5版本以上
+        if rate > 1:
+            kps = [cv2.KeyPoint(p[0]*rate, p[1]*rate, size=1) for p in points] ## pt还原
+        else:
+            kps = [cv2.KeyPoint(p[0], p[1], size=1) for p in points] ## 注意，改代码需要cv2的4.5.5版本以上
 
     ## 使用opencv提取sift特征
     else:
