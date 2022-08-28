@@ -34,6 +34,7 @@ elif [ $v_cuda == 'cuda10.1' ]; then
     python_path=/usr/bin/python3
 else
     echo "Erro: cuda version is wrong !"
+    exit 1
 fi
 
 # 运行python脚本
@@ -47,4 +48,5 @@ elif [ $opt_type == 'yjsk' ]; then
     $python_path util_yjsk.py --source $in_dir --out_dir $out_dir --data_part $data_part
 else
     echo "Erro: opt type is wrong !"
-if
+    exit 1
+fi
