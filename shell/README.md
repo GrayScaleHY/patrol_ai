@@ -48,7 +48,7 @@ REPOSITORY        TAG                                   IMAGE ID       CREATED  
 utdnn/inspection  cuda10.1-patrolai-opencv-cuda         86c8a25fae43   4 days ago     37.1GB
 ```
 ##### 3. 运行测试脚本
-运行以下脚本完成性能测试。其中，测试类别为 "pb\qxsb\yjsk" 之一，cuda版本为 "cuda10.1\cuda11.4"之一。
+运行以下脚本完成性能测试。其中，测试类别为 "pb\qxsb\yjsk" 之一，cuda版本为 "cuda10.1\cuda11.4"之一，文件夹路径都需要填写绝对路径。
 ```
 cd data/PatrolAi/patrol_ai/shell
 chmod +x *patrol_performance.sh
