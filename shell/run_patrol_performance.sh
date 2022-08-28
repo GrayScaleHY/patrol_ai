@@ -25,6 +25,8 @@ echo "cuda version=$v_cuda"
 
 startTime_s=`date +%s`
 
+project_dir=$(dirname $(dirname $(cd `dirname $0`; pwd)))
+
 # 指定docker镜像
 if [ $v_cuda == 'cuda11.4' ]; then
     docker_iso="utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk"
@@ -38,22 +40,22 @@ fi
 # 运行性能测试docker镜像
 echo "run $opt_type !"
 nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --cpus 2 --name ${opt_type}1 \
-    -v /data/PatrolAi:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
+    -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "1/4"
 
 nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --cpus 2 --name ${opt_type}2 \
-    -v /data/PatrolAi:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
+    -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "2/4"
 
 nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --cpus 2 --name ${opt_type}3 \
-    -v /data/PatrolAi:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
+    -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "3/4"
 
 nvidia-docker run -it --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --cpus 2 --name ${opt_type}4 \
-    -v /data/PatrolAi:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
+    -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "4/4"
 
