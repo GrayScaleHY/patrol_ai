@@ -31,7 +31,7 @@ project_dir=$(dirname $(dirname $(cd `dirname $0`; pwd)))
 if [ $v_cuda == 'cuda11.4' ]; then
     docker_iso="utdnn/inspection:cuda11.4-conda-cuml-opencv-gtk"
 elif [ $v_cuda == 'cuda10.1' ]; then
-    docker_iso="utdnn/inspection:cuda10.1-patrolai-opencv-cuda "
+    docker_iso="utdnn/inspection:cuda10.1-patrolai-opencv-cuda"
 else
     echo "Erro: cuda version is wrong !"
     exit 1
@@ -39,22 +39,22 @@ fi
 
 # 运行性能测试docker镜像
 echo "run $opt_type !"
-nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --cpus 2 --name ${opt_type}1 \
+nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --name ${opt_type}1 \
     -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "1/4"
 
-nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --cpus 2 --name ${opt_type}2 \
+nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=0 --name ${opt_type}2 \
     -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "2/4"
 
-nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --cpus 2 --name ${opt_type}3 \
+nvidia-docker run -d --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --name ${opt_type}3 \
     -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "3/4"
 
-nvidia-docker run -it --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --cpus 2 --name ${opt_type}4 \
+nvidia-docker run -it --runtime nvidia -e NVIDIA_VISIBLE_DEVICES=1 --name ${opt_type}4 \
     -v ${project_dir}:/data/PatrolAi -v $in_dir:$in_dir -v $out_dir:$out_dir \
     --entrypoint "/data/PatrolAi/patrol_ai/shell/lib_patrol_performance.sh" \
     $docker_iso $opt_type $in_dir $out_dir $v_cuda "4/4"
