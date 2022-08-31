@@ -10,7 +10,8 @@ maskrcnn_pointer = load_maskrcnn_model("/data/PatrolAi/maskrcnn/pointer.pth", nu
 from lib_inference_yolov5 import load_yolov5_model
 yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘
 yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
-yolov5_rec_defect = load_yolov5_model("/data/PatrolAi/yolov5/rec_defect_x6.pt") # 北京送检17类缺陷
+yolov5_rec_defect_x6 = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect_x6.pt") # 送检18类缺陷,x6模型
+yolov5_rec_defect = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect.pt") # 送检18类缺陷
 yolov5_counter= load_yolov5_model("/data/PatrolAi/yolov5/counter.pt") # 动作次数
 yolov5_digital= load_yolov5_model("/data/PatrolAi/yolov5/digital.pt") # led数字
 yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型

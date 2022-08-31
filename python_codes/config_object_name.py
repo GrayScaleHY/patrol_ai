@@ -177,7 +177,8 @@ OBJECT_MAP = {
         'xy': '吸烟',
         'ywzt_yfyc': '呼吸器油封油位异常',
         'bj_wkps': '外壳破损',
-        'hxq_gjtps': '硅胶筒破损'
+        'hxq_gjtps': '硅胶筒破损',
+        "sly_bjbmyw": '部件表面油污'
     }
 
 }
@@ -197,3 +198,9 @@ COLOR_HSV_MAP = {
     "blue": [[100, 43, 46], [124, 255, 255]],
     "purple": [[125, 43, 46], [155, 255, 255]] # 紫色
 }
+
+def convert_label(label, type_):
+    for l in OBJECT_MAP[type_]:
+        if label == OBJECT_MAP[type_][l]:
+            return l
+    return label

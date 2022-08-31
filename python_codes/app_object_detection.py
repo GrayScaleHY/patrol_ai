@@ -9,7 +9,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color
+from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -69,8 +69,14 @@ def get_input_data(input_data):
     if "status_map" in input_data["config"]:
         if isinstance(input_data["config"]["status_map"], dict):
             status_map = input_data["config"]["status_map"]
+
+    ## 指定label_list。
+    label_list = None
+    if "label_list" in input_data["config"]:
+        if isinstance(input_data["config"]["label_list"], list):
+            label_list = input_data["config"]["label_list"]
     
-    return img_tag, img_ref, roi, status_map
+    return img_tag, img_ref, roi, status_map, label_list
 
 def inspection_object_detection(input_data):
     """
@@ -85,7 +91,7 @@ def inspection_object_detection(input_data):
     f.close()
 
     ## 初始化输入输出信息。
-    img_tag, img_ref, roi, status_map = get_input_data(input_data)
+    img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
@@ -116,8 +122,10 @@ def inspection_object_detection(input_data):
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         model_type = "led"
     elif input_data["type"] == "rec_defect":
-        yolov5_model = yolov5_rec_defect
+        yolov5_model = yolov5_rec_defect_x6
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        if label_list is not None:
+            labels = [config_object_name.convert_label(l) for l in label_list]
         model_type = "rec_defect"
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei

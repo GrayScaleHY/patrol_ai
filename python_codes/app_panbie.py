@@ -165,8 +165,8 @@ def identify_defect(img_ref, feat_ref, img_tag, feat_tag):
     # ## 用yolov5检测待测图和基准图的目标物和状态
     # 缺陷
     pre_labels = ["yw_gkxfw", "yw_nc", "bj_bpps", "jyz_pl", "hxq_gjtps"]
-    cfgs_tag = inference_yolov5(yolov5_rec_defect, img_tag, resize=1280, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
-    cfgs_ref = inference_yolov5(yolov5_rec_defect, img_ref, resize=1280, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_tag = inference_yolov5(yolov5_rec_defect, img_tag, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
+    cfgs_ref = inference_yolov5(yolov5_rec_defect, img_ref, resize=640, conf_thres=0.7, iou_thres=0.2, pre_labels=pre_labels)
     diff_area = labels_diff_area(cfgs_ref, cfgs_tag)
     if len(diff_area) != 0:
         return diff_area
