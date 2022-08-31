@@ -7,6 +7,7 @@ from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
 from lib_help_base import color_list
 from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
+from config_object_name import convert_label
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color
@@ -125,7 +126,7 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_rec_defect_x6
         labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         if label_list is not None:
-            labels = [config_object_name.convert_label(l) for l in label_list]
+            labels = [convert_label(l, "rec_defect") for l in label_list]
         model_type = "rec_defect"
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
@@ -176,8 +177,10 @@ def inspection_object_detection(input_data):
         color_dict[label] = colors[i]
         if status_map is not None and label in status_map:
             name_dict[label] = status_map[label]
-        else:
+        elif label in config_object_name.OBJECT_MAP[model_type]:
             name_dict[label] = config_object_name.OBJECT_MAP[model_type][label]
+        else:
+            name_dict[label] = label
 
         ## 如果有"real_val"，则输出real_val的值
         if "real_val" in input_data["config"] and isinstance(input_data["config"]["real_val"], str):
@@ -248,7 +251,7 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/home/yh/image/python_codes/test/disconnetor_test/pressplate/05-18-15-55-40/input_data.json", "r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/08-31-22-03-50/input_data.json", "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_object_detection(input_data)
