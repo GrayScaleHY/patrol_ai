@@ -11,32 +11,7 @@
     ut-inspection-cuda10.1.tar.gz
 ```
 ##### 2. 安装运行环境
-(1). 安装显卡驱动(若已安装,跳过)。快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
-```
-sudo service gdm stop  
-cd data/PatrolAi/install
-sudo chmod 777 NVIDIA-Linux-x86_64-510.60.02.run
-sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
-```
-(2). 安装docker (若已安装，跳过)
-输入以下命令安装docker。
-```
-# 若已连接外网，建议输入下面命令在线安装
-curl -sSL https://get.daocloud.io/docker | sh
-
-# 若没有外网，输入下面命令离线安装
-cd data/PatrolAi/install/ubuntu18.04
-sudo chmod +x install_docker.sh
-sudo ./install_docker.sh
-```
-(3). 安装nvidia-docker(若已安装，跳过)
-输入以下命令安装nvidia-docker。
-```
-cd data/PatrolAi/install/ubuntu18.04
-sudo chmod +x install_nvidia_docker.sh
-sudo ./install_nvidia_docker.sh
-```
-(4). 加载巡检算法docker镜像
+加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
 cd data
