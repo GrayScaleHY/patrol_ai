@@ -9,8 +9,9 @@
 cd /home/ubuntu/data
 mount -t cifs //10.144.239.59/share/shanghai/ PICRESULT/shanghai -o 'username=share,password=Abc123!@#',uid=1000,gid=1000,iocharset=utf8,rw,dir_mode=0777,file_mode=0777
 ```
+(3). 将事先准备两个部署压缩包PatrolAi.zip和ut-inspection-cuda10.1.tar.gz (若cuda版本为11.4，使用ut-inspection-cuda11.4.tar.gz)上传到/home/ubuntu/data目录下，压缩包[下载链接](http://192.168.69.36/d/b688a5bd4f5e4772a9bd/)。终端输入```/home/ubuntu/data && unzip PatrolAi.zip```进行解压缩包。
 ##### 3. 配置 powersky
-(1). 通过执行powersky来调用识别以及判别的算法程序。首先找出powersky所在的文件夹，打开config.ini，配置文件中只需修改调用识别以及判别程序的脚本的路径，其他不做更改，内容如下。
+(1). 通过执行powersky来调用识别以及判别的算法程序。首先找出powersky所在的文件夹，打开config.ini，配置文件中只需修改调用识别以及判别程序的脚本的路径，其他不做更改，内容如下。注，我们的脚本路径应该是filepath_01=/mnt/data/PatrolAi/patrol_ai/shell/algo_perf/{sb.sh, pb.sh, yjsk.sh}
 ```
 [TcpServer]
 Ip=10.144.239.59
@@ -30,21 +31,8 @@ filepath_02=/mnt/data/XXX/pb.sh
 python /mnt/data/XXX/sb.py
 ```
 (3). 进行 /mnt/data/XXX/sb.py，打开sb.py，找到output路径如output_folder='mnt/data/PICRESULT/shanghai/'。上述路径都为docker映射路径：如本地路径为/home/ubuntu/data，docker映射路径为/mnt/data。
-##### 4. 运行powersky
-(1). 挂载完成后在 docker 环境下用命令行在挂载的输出文件夹中创建一个文件，看在10.144.239.59 的share/shanghai中有无刚创建的文件。
-(2). 在docker环境下进入powersky所在的目录运行./powersky，如权限不够用sudo ./powersky
-##### 1. 准备部署文件
-(1). 事先准备两个部署压缩包PatrolAi.zip和ut-inspection-cuda10.1.tar.gz (若cuda版本为11.4，使用ut-inspection-cuda11.4.tar.gz)。  
-(2). 服务器上新建文件夹data, 将两个压缩包上传到data目录下，终端输入```cd data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
-```
-  data/
-    PatrolAi/
-    PatrolAi.zip
-    ut-inspection-cuda10.1.tar.gz
-```
-##### 2. 安装运行环境
-加载巡检算法docker镜像
-输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
+##### 4. 进入docker环境
+(1). 加载巡检算法docker镜像，输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
 cd data
 sudo docker load --input ut-inspection-cuda10.1.tar.gz
@@ -54,10 +42,11 @@ sudo docker load --input ut-inspection-cuda10.1.tar.gz
 REPOSITORY        TAG                                   IMAGE ID       CREATED        SIZE
 utdnn/inspection  cuda10.1-patrolai-opencv-cuda         86c8a25fae43   4 days ago     37.1GB
 ```
-##### 3. 运行测试脚本
-运行以下脚本完成性能测试。其中，测试类别为 "pb\qxsb\yjsk" 之一，cuda版本为 "cuda10.1\cuda11.4"之一，文件夹路径都需要填写绝对路径。
+(2). 执行以下命令进入docker环境
 ```
-cd data/PatrolAi/patrol_ai/shell
-chmod +x *patrol_performance.sh
-./run_patrol_performance.sh <测试类别> <待测图片文件夹路径> <结果保存文件夹路径> <cuda版本>
+nvidia-docker run -it --runtime nvidia --name ut-PatrolAi -v /home/ubuntu/data:/mnt/data utdnn/inspection:cuda10.1-patrolai-opencv-cuda /bin/bash
 ```
+##### 5. 运行powersky
+(1). 在docker环境下用命令行在挂载的输出文件夹中创建一个文件，看在10.144.239.59的share/shanghai中有无刚创建的文件。
+(2). 在docker环境下进入powersky所在的目录运行./powersky，如权限不够用sudo ./powersky
+
