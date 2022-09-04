@@ -50,7 +50,7 @@ model_dir = args.model_dir ## 模型存放的目录
 data_part = args.data_part # 分隔数据部分
 
 ## 加载模型
-weights = os.path.join(model_dir, "rec_defect_x6.pt")
+weights = os.path.join(model_dir, "18cls_rec_defect_x6.pt")
 yolov5_weights = load_yolov5_model(weights)
 
 ## 创建文件夹
