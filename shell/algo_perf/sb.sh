@@ -1,10 +1,10 @@
-in_dir=/data/pref_test/qxsb
-out_dir=/data/pref_test/qxsb_result
+in_dir=/mnt/data/220_input/qxsb
+out_dir=/mnt/data/PICRESULT/shanghai/qxsb_result
 
 startTime_s=`date +%s`
 
-cd /data/PatrolAi/patrol_ai/python_codes
-CUDA_VISIBLE_DEVICES=0 python3 util_qxsb.py --source $in_dir --out_dir $out_dir --data_part 1/4 &
+cd /mnt/data/PatrolAi/patrol_ai/python_codes
+CUDA_VISIBLE_DEVICES=0 python3 util_qxsb.py --source $in_dir --out_dir $out_dir --data_part 1/6 &
 CUDA_VISIBLE_DEVICES=0 python3 util_qxsb.py --source $in_dir --out_dir $out_dir --data_part 2/6 &
 CUDA_VISIBLE_DEVICES=0 python3 util_qxsb.py --source $in_dir --out_dir $out_dir --data_part 3/6 &
 CUDA_VISIBLE_DEVICES=1 python3 util_qxsb2.py --source $in_dir --out_dir $out_dir --data_part 4/6 &

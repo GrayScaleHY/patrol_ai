@@ -16,11 +16,11 @@ import hashlib
 import json
 
 ## 二次设备， coco， 17类缺陷， 表计， 指针
-maskrcnn_pointer = load_maskrcnn_model("/data/PatrolAi/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 指针的maskrcnn模型
-yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘
-yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
-yolov5_rec_defect = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect.pt") # 送检18类缺陷
-yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
+maskrcnn_pointer = load_maskrcnn_model("/mnt/data/PatrolAi/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 指针的maskrcnn模型
+yolov5_meter = load_yolov5_model("/mnt/data/PatrolAi/yolov5/meter.pt") # 表盘
+yolov5_ErCiSheBei = load_yolov5_model("/mnt/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
+yolov5_rec_defect = load_yolov5_model("/mnt/data/PatrolAi/yolov5/18cls_rec_defect.pt") # 送检18类缺陷
+yolov5_coco = load_yolov5_model("/mnt/data/PatrolAi/yolov5/coco.pt") # coco模型
 
 pre_end = time.time()
 print(f"load model time = {pre_end - start_pre}")
