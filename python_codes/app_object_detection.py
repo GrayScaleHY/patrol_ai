@@ -140,7 +140,7 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_ErCiSheBei
         labels = ["zsd_l", "zsd_m"]
         model_type = "ErCiSheBei"
-    elif input_data["type"] == "fangpaiqi":
+    elif input_data["type"] == "fanpaiqi":
         yolov5_model = yolov5_ErCiSheBei
         model_type = "ErCiSheBei"
         labels = ["fpq_h", "fpq_f", "fpq_jd"]
