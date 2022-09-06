@@ -9,7 +9,7 @@
 cd /home/ubuntu/data
 mount -t cifs //10.144.239.59/share/shanghai/ PICRESULT/shanghai -o 'username=share,password=Abc123!@#',uid=1000,gid=1000,iocharset=utf8,rw,dir_mode=0777,file_mode=0777
 ```
-(3). 将事先准备两个部署压缩包PatrolAi.zip和ut-inspection-cuda10.1.tar.gz (若cuda版本为11.4，使用ut-inspection-cuda11.4.tar.gz)上传到/home/ubuntu/data目录下，压缩包[下载链接](http://192.168.69.36/d/b688a5bd4f5e4772a9bd/)。终端输入```/home/ubuntu/data && unzip PatrolAi.zip```进行解压缩包。
+(3). 将事先准备两个部署压缩包PatrolAi.zip和ut-inspection-cuda10.1.tar.gz (若cuda版本为11.4，使用ut-inspection-cuda11.4.tar.gz)上传到/home/ubuntu/data目录下，压缩包[下载链接](http://192.168.69.36/d/b688a5bd4f5e4772a9bd/)。终端输入```cd /home/ubuntu/data && unzip PatrolAi.zip```进行解压缩包。终端输入```chmod +x PatrolAi/patrol_ai/shell/algo_perf/*```添加执行权限。
 ##### 3. 配置 powersky
 (1). 通过执行powersky来调用识别以及判别的算法程序。首先找出powersky所在的文件夹，打开config.ini，配置文件中只需修改调用识别以及判别程序的脚本的路径，其他不做更改，内容如下。注，我们的脚本路径应该是filepath_01=/mnt/data/PatrolAi/patrol_ai/shell/algo_perf/{sb.sh, pb.sh, yjsk.sh}
 ```
@@ -31,6 +31,13 @@ filepath_02=/mnt/data/XXX/pb.sh
 python /mnt/data/XXX/sb.py
 ```
 (3). 进行 /mnt/data/XXX/sb.py，打开sb.py，找到output路径如output_folder='mnt/data/PICRESULT/shanghai/'。上述路径都为docker映射路径：如本地路径为/home/ubuntu/data，docker映射路径为/mnt/data。
+注：执行脚本结尾要加发送结束报文的代码。代码如下
+```
+## shell
+echo -en '\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00' | netcat -u 127.0.0.1 11111
+## python
+
+```
 ##### 4. 进入docker环境
 (1). 加载巡检算法docker镜像，输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
