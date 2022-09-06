@@ -18,5 +18,5 @@ sumTime=$[ $endTime_s - $startTime_s ]
 echo "Spend Total:$sumTime seconds"
 
 ## 发udp结束报文
-# echo -en '\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00' | netcat -u localhost 1024
-echo -en '\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00' | netcat -u 127.0.0.1 11111
+# echo -en '\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00' | netcat -u 127.0.0.1 11111
+python3 end_post.py

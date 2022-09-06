@@ -72,6 +72,11 @@ for img_name in img_list:
     out_file = os.path.join(out_dir, img_name[:-4] + ".txt")
     loop_start = time.time()
 
+    try:
+        img_name.encode()
+    except:
+        continue
+
     img_file = os.path.join(in_dir, img_name) # 读取图片
     img = cv2.imread(img_file)
     if img is None:
