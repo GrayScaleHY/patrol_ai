@@ -36,7 +36,12 @@ python /mnt/data/XXX/sb.py
 ## shell
 echo -en '\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00' | netcat -u 127.0.0.1 11111
 ## python
-
+import socket
+message = b"\xcd\x32\xcd\x32\xcd\x32\x02\x00\x00\x00"
+addr = ('172.0.0.1', 11111)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+print(s.sendto(message, addr))
+s.close()
 ```
 ##### 4. 进入docker环境
 (1). 加载巡检算法docker镜像，输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
