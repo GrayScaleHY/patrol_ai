@@ -23,12 +23,12 @@ parser.add_argument(
 parser.add_argument(
     '--conf',
     type=float,
-    default=0.25,
+    default=0.265,
     help='threshold of confidence.')
 parser.add_argument(
     '--iou',
     type=float,
-    default=0.55,
+    default=0.6,
     help='threshold of iou.')
 parser.add_argument(
     '--model_dir',
@@ -74,6 +74,8 @@ for img_name in img_list:
 
     img_file = os.path.join(in_dir, img_name) # 读取图片
     img = cv2.imread(img_file)
+    if img is None:
+        continue
 
     ## 模型推理
     bbox_cfg = inference_yolov5(yolov5_weights, img, resize=1280, conf_thres=conf_thr, iou_thres=iou_thr) #推理

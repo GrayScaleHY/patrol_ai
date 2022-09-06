@@ -273,6 +273,8 @@ def main(in_dir, out_dir, md5_dict, data_part):
 
         file_id = os.path.basename(ref_file).split("_")[0]
         img_ref = cv2.imread(ref_file) 
+        if img_ref is None:
+            continue
         
         # resize, 降低分别率，加快特征提取的速度。
         H, W = img_ref.shape[:2]  ## resize
@@ -292,6 +294,8 @@ def main(in_dir, out_dir, md5_dict, data_part):
                 continue
             print(tag_file)
             img_tag = cv2.imread(tag_file)
+            if img_tag is None:
+                continue
 
             H, W = img_tag.shape[:2]  ## resize
             resize_rate = 2 if max(H, W) > 1400 else 1

@@ -158,7 +158,11 @@ def video_states(tag_video, cfg_dir):
 
     cap = cv2.VideoCapture(tag_video) ## 建立视频对象
     frame_number = cap.get(7)  # 视频文件的帧数
-
+    if frame_number < 12:
+        cap.release() # 释放内存
+        print("Warning:", tag_video, "is wrong !")
+        return ["异常"] * 12
+        
     states = []
     count = 0
     counts = []
