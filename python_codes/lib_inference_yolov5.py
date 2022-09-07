@@ -40,10 +40,9 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
     img_raw = img.copy()  #由于需要resize，先拷贝一份备用。
 
     ## 将numpy转成yolov5格式input data. 
-    img_resize = letterbox(img, new_shape=resize)[0] # resize图片
-    img_zeros = np.zeros([resize, resize, 3], dtype=np.uint8) 
-    img_zeros[:img_resize.shape[0], :img_resize.shape[1], :img_resize.shape[2]] = img_resize
-    img = img_zeros # 将图片resize成正方形
+    stride = max(int(model_yolov5.stride.max()), 32)
+    img_resize = letterbox(img, new_shape=resize, auto=True, stride=stride)[0] # resize图片
+    img = img_resize
     img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3 x 640 x 640
     img = torch.from_numpy(img.copy()).to(device) # numpy转tenso
     img = img.float()
