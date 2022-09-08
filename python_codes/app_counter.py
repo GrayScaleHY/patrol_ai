@@ -133,7 +133,8 @@ def inspection_counter(input_data):
     labels = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
     colors = color_list(len(labels))
     color_dict = {}
-    for i, label in enumerate(labels):
+    for i in labels:
+        label = labels[i]
         color_dict[label] = colors[i]
 
     ## 可视化计算结果
@@ -163,16 +164,19 @@ def inspection_counter(input_data):
 
 if __name__ == '__main__':
     
-    tag_file = "test/2021_4_11_meter_pachong_1689_0_meter.jpg"
-    ref_file = "test/#0182_org.jpg"
-    img_tag = img2base64(cv2.imread(tag_file))
-    img_ = cv2.imread(ref_file)
-    img_ref = img2base64(img_)
-    ROI = [908, 409, 1103, 484]
-    W = img_.shape[1]; H = img_.shape[0]
-    roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
+    # tag_file = "test/2021_4_11_meter_pachong_1689_0_meter.jpg"
+    # ref_file = "test/#0182_org.jpg"
+    # img_tag = img2base64(cv2.imread(tag_file))
+    # img_ = cv2.imread(ref_file)
+    # img_ref = img2base64(img_)
+    # ROI = [908, 409, 1103, 484]
+    # W = img_.shape[1]; H = img_.shape[0]
+    # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
-    input_data = {"image": img_tag, "config":{}, "type": "counter"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    # input_data = {"image": img_tag, "config":{}, "type": "counter"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/digital/09-07-11-01-37/input_data.json","r", encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_counter(input_data)
     print("inspection_counter result:")
     print("-----------------------------------------------")
