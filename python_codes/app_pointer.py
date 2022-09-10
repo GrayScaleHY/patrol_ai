@@ -381,16 +381,19 @@ def inspection_pointer(input_data):
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
         cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    ## 根据与表盘中心的距离更正seg的头尾
-    b = bboxes[0]["coor"]
-    xo = (b[2]-b[0]) / 2; yo = (b[3]-b[1]) / 2
-    if (seg[0]-xo)**2+(seg[1]-yo)**2 < (seg[2]-xo)**2+(seg[3]-yo)**2:
-        seg = [seg[2], seg[3], seg[0], seg[1]]
-
+    ## 根据线段末端与指针绕点的距离更正seg的头尾
+    if "center" not in pointers_tag:
+        out_data["msg"] = out_data["msg"] + "Can not find conter in pointers_tag; "
+        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        return out_data
+        
     ## 求指针读数
     if M is not None:
         val = cal_base_scale(pointers_tag, seg)
     else:
+        xo = pointers_tag["center"][0]; yo = pointers_tag["center"][1]
+        if (seg[0]-xo)**2+(seg[1]-yo)**2 > (seg[2]-xo)**2+(seg[3]-yo)**2:
+            seg = [seg[2], seg[3], seg[0], seg[1]]
         val = cal_base_angle(pointers_tag, seg)
 
     if val == None:
@@ -447,7 +450,7 @@ def main():
     #     # "bboxes": bboxes
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/home/yh/image/python_codes/inspection_result/08-02-13-46-10/input_data.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-07-14-48-15/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
