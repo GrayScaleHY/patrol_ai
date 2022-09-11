@@ -78,10 +78,10 @@ def inspection_disconnector_video(input_data):
         b1 = bboxes[0]; b2 = bboxes[1]
         bt1 = bboxes_tag_start[0]; bt2 = bboxes_tag_start[1]
         bt3 = bboxes_tag_end[0]; bt4 = bboxes_tag_end[1]
-        cv2.rectangle(img_open, (b1[0], b1[1]), (b1[2], b1[3]), state_map["分"]["color"][0], thickness=2)
-        cv2.rectangle(img_open, (b2[0], b2[1]), (b2[2], b2[3]), state_map["分"]["color"][0], thickness=2)
-        cv2.rectangle(img_close, (b1[0], b1[1]), (b1[2], b1[3]), state_map["合"]["color"][0], thickness=2)
-        cv2.rectangle(img_close, (b2[0], b2[1]), (b2[2], b2[3]), state_map["合"]["color"][0], thickness=2)
+        cv2.rectangle(img_open, (b1[0], b1[1]), (b1[2], b1[3]), state_map["分-分"]["color"][0], thickness=2)
+        cv2.rectangle(img_open, (b2[0], b2[1]), (b2[2], b2[3]), state_map["分-分"]["color"][0], thickness=2)
+        cv2.rectangle(img_close, (b1[0], b1[1]), (b1[2], b1[3]), state_map["合-合"]["color"][0], thickness=2)
+        cv2.rectangle(img_close, (b2[0], b2[1]), (b2[2], b2[3]), state_map["合-合"]["color"][0], thickness=2)
         cv2.rectangle(img_tag_start, (bt1[0], bt1[1]), (bt1[2], bt1[3]), state_map[state]["color"][0], thickness=2)
         cv2.rectangle(img_tag_start, (bt2[0], bt2[1]), (bt2[2], bt2[3]), state_map[state]["color"][1], thickness=2)
         cv2.rectangle(img_tag_end, (bt3[0], bt3[1]), (bt4[2], bt4[3]), state_map[state]["color"][0], thickness=2)
