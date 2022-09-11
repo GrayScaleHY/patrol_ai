@@ -84,8 +84,8 @@ def inspection_disconnector_video(input_data):
         cv2.rectangle(img_close, (b2[0], b2[1]), (b2[2], b2[3]), state_map["合-合"]["color"][0], thickness=2)
         cv2.rectangle(img_tag_start, (bt1[0], bt1[1]), (bt1[2], bt1[3]), state_map[state]["color"][0], thickness=2)
         cv2.rectangle(img_tag_start, (bt2[0], bt2[1]), (bt2[2], bt2[3]), state_map[state]["color"][1], thickness=2)
-        cv2.rectangle(img_tag_end, (bt3[0], bt3[1]), (bt4[2], bt4[3]), state_map[state]["color"][0], thickness=2)
-        cv2.rectangle(img_tag_end, (bt3[0], bt3[1]), (bt4[2], bt4[3]), state_map[state]["color"][1], thickness=2)
+        cv2.rectangle(img_tag_end, (bt3[0], bt3[1]), (bt3[2], bt3[3]), state_map[state]["color"][0], thickness=2)
+        cv2.rectangle(img_tag_end, (bt4[0], bt4[1]), (bt4[2], bt4[3]), state_map[state]["color"][1], thickness=2)
     img_tag_start = img_chinese(img_tag_start, state_map[state]["name"], (10, 50), color=state_map[state]["color"][0], size=40)
     img_tag_end = img_chinese(img_tag_end, state_map[state]["name"], (10, 50), color=state_map[state]["color"][0], size=40)
 
