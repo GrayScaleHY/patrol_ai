@@ -108,23 +108,28 @@ def inspection_object_detection(input_data):
     ## 选择模型
     if input_data["type"] == "meter":
         yolov5_model = yolov5_meter
-        labels = None
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
         model_type = "meter"
     elif input_data["type"] == "fire_smoke":
         yolov5_model = yolov5_fire_smoke
-        labels = None
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
         model_type = "fire_smoke"
     elif input_data["type"] == "helmet":
         yolov5_model = yolov5_helmet
-        labels = None
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
         model_type = "helmet"
     elif input_data["type"] == "led_color":
         yolov5_model = yolov5_led_color
-        labels = None
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
         model_type = "led"
     elif input_data["type"] == "rec_defect":
         yolov5_model = yolov5_rec_defect_x6
-        labels = None
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
         if label_list is not None:
             labels = [convert_label(l, "rec_defect") for l in label_list]
         model_type = "rec_defect"
@@ -251,7 +256,7 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/08-31-22-03-50/input_data.json", "r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-11-15-35-28/input_data.json", "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_object_detection(input_data)
