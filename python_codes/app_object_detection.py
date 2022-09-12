@@ -165,6 +165,13 @@ def inspection_object_detection(input_data):
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         return out_data
 
+    if "augm" in input_data["config"]:
+        if isinstance(input_data["config"]["augm"], list):
+            if len(input_data["config"]["augm"]) == 2:
+                augm = input_data["config"]["augm"]
+                augm = [float(augm[0]), float(augm[1])]
+                img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
+
     ## 生成目标检测信息
     if input_data["type"] == "rec_defect":
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
