@@ -59,7 +59,6 @@ def inspection_counter(input_data):
         return out_data  
 
     ## 将输入请求信息可视化
-    img_tag_ = img_tag.copy()
     TIME_START = time.strftime("%m-%d-%H-%M-%S") 
     save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
     os.makedirs(save_path, exist_ok=True)
@@ -85,6 +84,7 @@ def inspection_counter(input_data):
                 augm = [float(augm[0]), float(augm[1])]
                 img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
 
+    img_tag_ = img_tag.copy()
     ## 求出目标图像的感兴趣区域
     if roi is None:
         M = None
