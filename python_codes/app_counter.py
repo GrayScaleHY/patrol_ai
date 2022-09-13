@@ -77,6 +77,14 @@ def inspection_counter(input_data):
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
         cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
 
+    ## 调整亮度与对比度
+    if "augm" in input_data["config"]:
+        if isinstance(input_data["config"]["augm"], list):
+            if len(input_data["config"]["augm"]) == 2:
+                augm = input_data["config"]["augm"]
+                augm = [float(augm[0]), float(augm[1])]
+                img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
+
     ## 求出目标图像的感兴趣区域
     if roi is None:
         M = None
