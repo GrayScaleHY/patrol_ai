@@ -114,10 +114,18 @@ def inspection_counter(input_data):
         roi_tag = [xmin, ymin, xmax, ymax]
     img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
 
+    s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
+    if roi is not None:
+        cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
+                        (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
+        cv2.putText(img_tag_, "meter", (int(roi_tag[0]), int(roi_tag[1]-s)),
+                        cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
+
     ## 生成目标检测信息
     boxes = inference_yolov5(yolov5_model, img_roi, resize=640) # inference
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find counter"
+        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
         return out_data
     
     ## 将bboxes映射到原图坐标
@@ -149,12 +157,6 @@ def inspection_counter(input_data):
     f = open(os.path.join(save_path, "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
-    if roi is not None:
-        cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                        (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-        cv2.putText(img_tag_, "meter", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                        cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
     map_o = config_object_name.OBJECT_MAP
     for bbox in bboxes:
         coor = bbox["coor"]; label = bbox["label"]
