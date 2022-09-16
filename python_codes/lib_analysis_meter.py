@@ -97,56 +97,227 @@ def angle2sclae(cfg, ang):
         scale = cfg[1] + (cfg[0] + 360 - ang) * cfg[2]
     return scale
 
-
-def draw_result(input_data, out_data, save_img):
+def point_distance_line(point, segment):
     """
-    根据out_data画图。
+    点到直线的距离, 设直线函数为 Ax + By + C = 0 , 使用距离公式:
+    A = y2 - y1
+    B = x1 - x2
+    C = x1 * (y1 - y2) + y1 * (x2 - x1)
+    dis = abs(A * x0 + B * y0 + C) / sqrt(A**2 + B**2)
+    args:
+        point: 点，格式[x0, y0]
+        sigment: 直线上的线段[x1, y1, x2, y2]
+    return:
+        distance: 点到直线的距离
     """
-    save_path = os.path.dirname(save_img)
-    os.makedirs(save_path, exist_ok=True)
+    segment = np.array(segment, dtype=float)
+    p0 = np.array(point, dtype=float)
 
-    f = open(os.path.join(save_path, "input_data.json"), "w", encoding='utf-8')
-    json.dump(input_data, f, ensure_ascii=False, indent=2, sort_keys=True)
-    f.close()
+    p1 = segment[:2] ## 线段的第一个点
+    p2 = segment[-2:] ## 线段的第二个点
 
-    f = open(os.path.join(save_path, "out_data.json"), "w", encoding='utf-8')
-    json.dump(out_data, f, ensure_ascii=False, indent=2, sort_keys=True)
-    f.close()
+    #对于两点坐标为同一点时,返回点与点的距离
+    if (p1 == p2).all():
+        return np.linalg.norm(p0 -p1)
 
-    raw_img = os.path.join(save_path, "raw_img.jpg")
-    img = base642img(input_data["image"])
-    cv2.imwrite(raw_img, img)
+    #计算直线的三个参数
+    A = p2[1] - p1[1]
+    B = p1[0] - p2[0]
+    C = p1[0] * (p1[1] - p2[1]) + p1[1] * (p2[0] - p1[0])
 
-    for cfg in out_data["data"]:
+    #根据点到直线的距离公式计算距离
+    distance = np.abs(A * p0[0] + B * p0[1] + C) / (np.sqrt(A**2 + B**2))
+
+    return distance
+
+def intersection_arc(line, arc):
+    """
+    计算射线line与圆弧arc的交点坐标，最多返回一个坐标值。
+    args:
+        line: [x1, y1, x2, y2]
+        arc: [xc, yc, x1, y1, x2, y2], 注意:半径r取(x1,y1)到圆心的距离。
+    return:
+        (x1, y1): 交点坐标。也可能是None，表示直线与弧线无交点。
+    # """
+    # line = [801, 302, 1352, 643] # [x1, y1, x2, y2]
+    # arc = [1058, 462, 1327, 375, 1250, 732]# [xc, yc, x1, y1, x2, y2]
+    
+    line = np.array(line, dtype=float) ## int转float
+    arc = np.array(arc, dtype=float)
+    # 根据线段到圆心的远近，确定坐标的先后
+    if ((line[0]-arc[0])**2 + (line[1]-arc[1])**2) > ((line[2]-arc[0])**2 + (line[3]-arc[1])**2):
+        line = [line[2], line[3], line[0], line[1]]
+
+    ## 定义直线和圆形方程式
+    lx1 = line[0]; ly1 = line[1]; lx2 = line[2]; ly2 = line[3]
+    xc = arc[0]; yc = arc[1]
+    ax1 = arc[2]; ay1 = arc[3]; ax2 = arc[4]; ay2 = arc[5]
+    # 直线: y = a * x + b
+    if lx1 == lx2:
+        a = None
+    else:
+        a = (ly1 - ly2) / (lx1 - lx2)
+        b = (ly1 - a * lx1)
+    # 圆形: (x - xc)^2 + (y - yc)^2 = r2
+    r2 = (yc - ay1) ** 2 + (xc - ax1) ** 2
+
+    ## 判断直线与圆是否相交。
+    dis = point_distance_line((xc, yc), line)
+    if dis ** 2 > r2:
+        return None
+
+    ## 计算直线与圆弧的交点坐标
+    if a is None:
+        ## 直线斜率不存在，线段垂直与x轴
+        x1 = lx1
+        x2 = lx1
+        y1 = math.sqrt(r2 - (x1 - xc) ** 2) - yc
+        y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
+    else:
+        ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
+        A = 1 + a ** 2
+        B = 2 * a * (b - yc) - 2 * xc
+        C = xc ** 2 + (b - yc) ** 2 - r2
+        detl = B ** 2 - 4 * A * C
+        if detl <= 0: # 相切或不相交
+            return None
+        else:
+            ## 二元一次方程组求解公式
+            x1 = (-B - math.sqrt(detl)) / (2 * A)
+            x2 = (-B + math.sqrt(detl)) / (2 * A)
+            y1 = a * x1 + b
+            y2 = a * x2 + b
+    
+    ## 取离线段末端最近的交点坐标作为唯一的交点坐标。
+    if ((lx2-x1)**2+(ly2-y1)**2) <= ((lx2-x2)**2+(ly2-y2)**2):
+        x = x1; y = y1
+    else:
+        x = x2; y = y2
+
+    ## 判断交点坐标是否在圆弧内
+    ang1 = segment2angle((xc, yc), (ax1, ay1))
+    ang2 = segment2angle((xc, yc), (x, y))
+    ang3 = segment2angle((xc, yc), (ax2, ay2))
+    if ang2 <= ang1:
+        ang2_ = ang1 - ang2
+    else:
+        ang2_ = ang1 + (360 - ang2) # 计算圆弧arc的夹角度数
+    if ang3 <= ang1:
+        ang3_ = ang1 - ang3
+    else:
+        ang3_ = ang1 + (360 - ang3) # 计算圆弧arc的夹角度数
+    if ang2_ > ang3_:
+        return None
+    
+    return int(x), int(y)
+
+
+def intersection_segment(line, segment):
+    """
+    求直线穿过线段的交点坐标。
+    agrs:
+        line: 在直线上的两点坐标[x0, y0, x1, y1]
+        segment: 线段两端点的坐标[x0, y0, x1, y1]
+    return:
+        (x, y): 交点坐标（如果没交点，返回None）
+    """
+    ## 如果线段或直线只包含一个坐标点，则报错
+    assert (line[0], line[1]) != (line[2], line[3]
+                                  ), "line needs at least two different points"
+    assert (segment[0], segment[1]) != (segment[2], segment[3]
+                                        ), "segment needs at least two different points"
+
+    ## 将坐标值转为浮点型，方便计算
+    line = np.array(line, dtype=float)
+    segment = np.array(segment, dtype=float)
+    
+    ## 计算直线的斜率k_l和偏执值b_l
+    if line[2] !=  line[0]:
+        k_l = (line[3] - line[1]) / (line[2] - line[0]) # k = (y2 - y1) / (x2 - x1)
+        b_l = line[1] - line[0] * k_l  # b = y1 - x1 * k
+    else:
+        k_l = None
+    ## 计算线段的斜率k_s和偏执值b_s
+    if segment[2] !=  segment[0]: # 判断直线是否有斜率
+        k_s = (segment[3] - segment[1]) / (segment[2] - segment[0]) # k = (y2 - y1) / (x2 - x1)
+        b_s = segment[1] - segment[0] * k_s  # b = y1 - x1 * k
+    else:
+        k_s = None
+
+    if k_l == k_s: ## 如果直线和线段的斜率相同，则返回None
+        return None
+
+    if k_l is not None:
+        ## 根据线段两端点是否在直线两边，判断直线与线段是否有交点。
+        ds_y1 = segment[1] - (k_l * segment[0] + b_l)
+        ds_y2 = segment[3] - (k_l * segment[2] + b_l)
+        if ds_y1 * ds_y2 > 0:
+            return None
         
-        if cfg["type"] == "counter":
-            for i, bbox_coor in enumerate(cfg["bboxes"]):
-                bbox_coor = [int(c) for c in bbox_coor]
-                cv2.rectangle(img, (int(bbox_coor[0]), int(bbox_coor[1])),
-                      (int(bbox_coor[2]), int(bbox_coor[3])), (0, 0, 255), thickness=2)
-                cv2.putText(img, str(cfg["values"][i]), (int(bbox_coor[0])-5, int(bbox_coor[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
-                    
-        elif cfg["type"] == "pointer":
-            for i, segment in enumerate(cfg['segments']):
-                segment = [int(c) for c in segment]
-                cv2.line(img, (segment[0], segment[1]), (segment[2], segment[3]), (0, 255, 0), 2)
-                cv2.putText(img, "%.3f"%(cfg['values'][i]), (segment[2]-5, segment[3]-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
-
-            meter_coor = [int(c) for c in cfg["bbox"]]
-            cv2.rectangle(img, (meter_coor[0], meter_coor[1]),
-                      (meter_coor[2], meter_coor[3]), (0, 0, 255), thickness=2)
-            cv2.putText(img, 'meter', (meter_coor[0]-5, meter_coor[1]-5),
-                cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+        if k_s is None:
+            x = segment[0]
+        else:
+            x = (b_s - b_l) / (k_l - k_s) #联立方程式计算x
+        y = k_l * x + b_l
+    
+    else:
+        ##根据线段两端点是否再直线两边，判断直线与线段是否有交点。
+        if (segment[0] - line[0]) * (segment[2] - line[0]) > 0:
+            return None
         
-        elif cfg["type"] == "meter":
-            for i, bbox_coor in enumerate(cfg["bboxes"]):
-                bbox_coor = [int(c) for c in bbox_coor]
-                cv2.rectangle(img, (int(bbox_coor[0]), int(bbox_coor[1])),
-                      (int(bbox_coor[2]), int(bbox_coor[3])), (0, 0, 255), thickness=2)
-                cv2.putText(img, "meter", (int(bbox_coor[0])-5, int(bbox_coor[1])-5),
-                    cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255), thickness=2)
+        x = line[0]
+        y = k_s * x + b_s
+    
+    return int(x), int(y)
 
-    cv2.imwrite(save_img, img)
-    return img
+def contour2segment(contours, boxes):
+    """
+    将轮廓拟合成线段。
+    args:
+        contours: 轮廓的坐标集, [array[x, 1, 2], ..]
+        img: image data
+    return:
+        segments: 线段，结构：[[x0, y0, x1, y1], ..]
+    """
+    assert len(contours) == len(boxes), "contours not match boxes!"
+    segments = []
+    for i, contour in enumerate(contours):
+        ## 轮廓拟合成直线，返回[cosΘ, sinΘ, x0, y0]
+        fit_line = cv2.fitLine(contour, cv2.DIST_HUBER, 0, 0.01, 0.01)
+        fit_line = np.squeeze(fit_line)  # 去除冗余的维度
+        cos_l = fit_line[0]
+        sin_l = fit_line[1]
+        x_l = fit_line[2]
+        y_l = fit_line[3]
+
+        ## 求能框住轮廓的最小矩形框的四个顶点坐标。
+        # rect = cv2.minAreaRect(contour)
+        # box = cv2.boxPoints(rect).astype(np.int64)  # 获取矩形四个定点坐标
+
+        ## 将拟合的直线转换成[x1, y1, x2, y2]的形式
+        if cos_l != 0: #是否有斜率
+            tan_l = sin_l / cos_l
+            line = [x_l, y_l, x_l + 1, y_l + tan_l * 1]
+        else:
+            line = [x_l, y_l, x_l, y_l + 1]
+
+        ## 将box写成四条线段的形式
+        box = list(boxes[i])
+        seg_list = [[box[0], box[1], box[2], box[1]],
+                    [box[2], box[1], box[2], box[3]],
+                    [box[2], box[3], box[0], box[3]],
+                    [box[0], box[3],box[0], box[1]]]
+        
+        ## 求直线与矩形框的交点坐标，理论上会有两个交点。
+        coors = []
+        segment = []
+        for seg in seg_list:
+            coor = intersection_segment(line, seg) # 求直线与线段的交点坐标
+            if coor is not None and coor not in coors:
+                coors.append(coor)
+                segment = segment + list(coor)
+        
+        assert len(segment) == 4, str(segment) + " is wrong!"
+        segments.append(segment)
+
+    return segments

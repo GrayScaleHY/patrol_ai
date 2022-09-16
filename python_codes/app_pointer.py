@@ -5,13 +5,12 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
 from lib_inference_yolov5 import inference_yolov5
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae
-from lib_inference_mrcnn import inference_maskrcnn, contour2segment, intersection_arc
+from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, contour2segment
+from lib_inference_mrcnn import inference_maskrcnn
 from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_help_base import color_area
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 ## 指针模型， 表计
 from config_load_models_var import yolov5_meter, maskrcnn_pointer
 
@@ -419,38 +418,7 @@ def inspection_pointer(input_data):
     return out_data
 
 def main():
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    # img_ref_file = "images/img_tag.jpg"
-    # img_tag_file = "images/img_ref.jpg"
-    # pointers ={"center": [969, 551],
-    #       "-0.1": [872, 834],
-    #       "0": [758, 755],
-    #       "0.2": [687, 510],
-    #       "0.4": [846, 310],
-    #       "0.6": [1095, 309],
-    #       "0.8": [1253, 505],
-    #       "0.9": [1248, 642]}
-    # bboxes = {"roi": [805, 256, 1217, 556]}
-    # img_ref = cv2.imread(img_ref_file)
-    # W = img_ref.shape[1]; H = img_ref.shape[0]
-    # for t in pointers:
-    #     pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
-    # for b in bboxes:
-    #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
-    
-    # img_tag = img2base64(cv2.imread(img_tag_file))
-    # img_ref = img2base64(cv2.imread(img_ref_file))
-    # config = {
-    #     "img_ref": img_ref,
-    #     "number": 1, 
-    #     "pointers": pointers
-    #     # "length": 0, 
-    #     # "width": 0, 
-    #     # "color": 0, 
-    #     # "bboxes": bboxes
-    # }
-    # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-07-14-48-15/input_data.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-16-11-48-46/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
@@ -459,7 +427,6 @@ def main():
         if s != "img_result":
             print(s,":",out_data[s])
     print("------------------------------")
-
 
 if __name__ == '__main__':
     main()
