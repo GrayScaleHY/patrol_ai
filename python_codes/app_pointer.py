@@ -9,6 +9,7 @@ from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersec
 from lib_inference_mrcnn import inference_maskrcnn
 from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_help_base import color_area
+import math
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 ## 指针模型， 表计
@@ -130,7 +131,49 @@ def cal_base_scale(coordinates, segment):
     val = angle2sclae(out_cfg, seg_ang)
     return val
 
+def add_head_end_ps(pointers):
+    """
+    在刻度盘首位增加一个更小刻度。
+    """
+    psi_float = [float(i) for i in pointers if i != "center"]
+    psi_str = [i for i in pointers if i != "center"]
+    p_center = pointers["center"]
 
+    ## 增加一个比最小刻度更小一点的刻度
+    s_min = psi_str[psi_float.index(min(psi_float))]
+    p_min = pointers[s_min]
+    s_min = float(s_min)
+    l_min = math.sqrt((p_min[0]-p_center[0])**2 + (p_min[1]-p_center[1])**2)
+    s_min_new = str(s_min - 0.0000001)
+    if p_min[0] < p_center[0]:
+        pointers[s_min_new] = [p_min[0], int(math.ceil(p_min[1] + l_min / 10))]
+    elif p_min[0] > p_center[0]:
+        pointers[s_min_new] = [p_min[0], int(math.ceil(p_min[1] - l_min / 10))]
+    else:
+        if p_min[1] > p_center[1]:
+            pointers[s_min_new] = [int(math.ceil(p_min[0] + l_min / 10)), p_min[1]]
+        else:
+            pointers[s_min_new] = [int(math.ceil(p_min[0] - l_min / 10)), p_min[1]]
+
+    ## 增加一个比最大刻度更大一点的刻度
+    s_max = psi_str[psi_float.index(max(psi_float))]
+    p_max = pointers[s_max]
+    s_max = float(s_max)
+    l_max = math.sqrt((p_max[0]-p_center[0])**2 + (p_max[1]-p_center[1])**2)
+    s_max_new = str(s_max - 0.0000001)
+    if p_max[0] > p_center[0]:
+        pointers[s_max_new] = [p_max[0], int(math.ceil(p_max[1] + l_max / 10))]
+    elif p_max[0] < p_center[0]:
+        pointers[s_max_new] = [p_max[0], int(math.ceil(p_max[1] - l_max / 10))]
+    else:
+        if p_max[1] > p_center[1]:
+            pointers[s_max_new] = [int(math.ceil(p_max[0] - l_max / 10)), p_max[1]]
+        else:
+            pointers[s_max_new] = [int(math.ceil(p_max[0] + l_max / 10)), p_max[1]]
+
+    return pointers
+
+        
 def get_input_data(input_data):
     """
     提取input_data中的信息。
@@ -155,6 +198,9 @@ def get_input_data(input_data):
     pointers_ref = {}
     for coor in pointers:
         pointers_ref[coor] = [int(pointers[coor][0] * W), int(pointers[coor][1] * H)]
+
+    ## pointers_ref头尾增加两个点
+    pointers_ref = add_head_end_ps(pointers_ref)
 
     ## 感兴趣区域
     roi = None # 初始假设
@@ -418,7 +464,7 @@ def inspection_pointer(input_data):
     return out_data
 
 def main():
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-16-11-48-46/input_data.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-14-10-59-46/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
