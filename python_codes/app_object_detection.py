@@ -10,7 +10,7 @@ import config_object_name
 from config_object_name import convert_label
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color
+from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color, yolov5_coco
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -126,13 +126,25 @@ def inspection_object_detection(input_data):
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "led"
+
     elif input_data["type"] == "rec_defect":
-        yolov5_model = yolov5_rec_defect_x6
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        if label_list is not None:
-            labels = [convert_label(l, "rec_defect") for l in label_list]
-        model_type = "rec_defect"
+        if label_list == ["xdwcr"]:
+            yolov5_model = yolov5_coco
+            labels = ["bird", "cat", "dog", "sheep"]
+            model_type = "meter"
+        elif label_list == ["hzyw"]:
+            yolov5_model = yolov5_fire_smoke
+            labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+            labels = [labels_dict[id] for id in labels_dict]
+            model_type = "fire_smoke"
+        else:
+            yolov5_model = yolov5_rec_defect_x6
+            labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+            labels = [labels_dict[id] for id in labels_dict]
+            if label_list is not None:
+                labels = [convert_label(l, "rec_defect") for l in label_list]
+            model_type = "rec_defect"
+
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
@@ -174,7 +186,11 @@ def inspection_object_detection(input_data):
 
     ## 生成目标检测信息
     if input_data["type"] == "rec_defect":
-        cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
+        if label_list == ["hzyw"] or label_list == ["xdwcr"]:
+            cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
+            print(cfgs)
+        else:
+            cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
     else:
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
     if len(cfgs) == 0: #没有检测到目标
@@ -263,9 +279,12 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-11-15-35-28/input_data.json", "r", encoding='utf-8')
-    input_data = json.load(f)
-    f.close()
+    # f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-11-15-35-28/input_data.json", "r", encoding='utf-8')
+    # input_data = json.load(f)
+    # f.close()
+    tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/label/xiaogou.jpg"
+    img_tag = img2base64(cv2.imread(tag_file))
+    input_data = {"image": img_tag, "config":{"label_list": ["xdwcr"]}, "type": "rec_defect"} # "img_ref": img_ref, "bboxes": {"roi": roi}
     out_data = inspection_object_detection(input_data)
     print("inspection_object_detection result:")
     print("-----------------------------------------------")
