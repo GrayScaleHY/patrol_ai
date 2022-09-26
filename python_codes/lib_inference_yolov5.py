@@ -35,28 +35,24 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
     return:
         bbox_cfg: 预测的bbox信息，json文件格式为格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
     """
-    
-    # img = cv2.imread(img_file)
-    img_raw = img.copy()  #由于需要resize，先拷贝一份备用。
+    img_raw_shape = img.shape  # 记录原图大小。
 
     ## 将numpy转成yolov5格式input data. 
     stride = max(int(model_yolov5.stride.max()), 32)
-    img_resize = letterbox(img, new_shape=resize, auto=True, stride=stride)[0] # resize图片
-    img = img_resize
+    img = letterbox(img, new_shape=resize, auto=True, stride=stride)[0] # resize图片
+    img_resize_shape = img.shape # 记录resize后图片大小
     img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3 x 640 x 640
     img = torch.from_numpy(img.copy()).to(device) # numpy转tenso
     img = img.float()
     img /= 255  # 0 - 255 to 0.0 - 1.0
     img = img.unsqueeze(0) # 添加一维
-    # if len(img.shape) == 3:
-    #     img = img[None]  # expand for batch dim
 
     ## 使用yolov5预测
     pred = model_yolov5(img, augment=False, visualize=False)[0] # Inference
 
     ## 使用NMS挑选预测结果
     pred_max = non_max_suppression(pred, conf_thres, iou_thres)[0] # Apply NMS
-    pred_max = scale_coords(img_resize.shape, pred_max, img_raw.shape) #bbox映射为resize之前的大小
+    pred_max = scale_coords(img_resize_shape, pred_max, img_raw_shape) #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
     labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
@@ -66,7 +62,6 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
         bbox = {"label": label, "coor": (res[:4]).astype(int).tolist(), "score": res[4]}
         if pre_labels is None or label in pre_labels:
             bbox_cfg.append(bbox)
-    # lib_image_ops.draw_bboxs(img_file, bbox_cfg, is_write=True)
 
     return bbox_cfg
 

@@ -76,7 +76,7 @@ def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], im
     for bbox in box_state:
         ## 判断bbox是否符合要求
         H, W = img_tag.shape[:2]
-        if 0 < bbox[0] < bbox[2] < W and 0 < bbox[1] < bbox[3] < H:
+        if 0 <= bbox[0] <= bbox[2] <= W and 0 <= bbox[1] <= bbox[3] <= H:
             pass
         else:
             return "无法判别状态", scores, bboxes_tag
