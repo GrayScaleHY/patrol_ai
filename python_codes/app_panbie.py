@@ -89,10 +89,11 @@ def inspection_identify_defect(input_data):
     yolov5的目标检测推理。
     """
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -103,8 +104,8 @@ def inspection_identify_defect(input_data):
         out_data["msg"] = out_data["msg"] + "; img_ref not exist;"
         return out_data
     img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
-    cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
 
     ## 检查图片是否能用md5匹配
     base64_tag = input_data["image"]
@@ -114,7 +115,7 @@ def inspection_identify_defect(input_data):
     if tag_diff is None:  
         tag_diff = panbie_main(img_ref, img_tag) ## 使用算法
     else:
-        f = open(os.path.join(save_path, name), "w")
+        f = open(os.path.join(save_path, TIME_START + name), "w")
         f.close()
 
     out_cfg = []
@@ -130,10 +131,10 @@ def inspection_identify_defect(input_data):
     out_data["data"] = out_cfg
 
     ## 可视化计算结果
-    f = open(os.path.join(save_path, "out_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)

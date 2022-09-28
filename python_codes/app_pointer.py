@@ -304,10 +304,11 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
 def inspection_pointer(input_data):
 
     ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result/pointer", TIME_START)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -323,8 +324,8 @@ def inspection_pointer(input_data):
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_ref_ = img_ref.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag_)
-    cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
     for scale in pointers_ref:  # 将坐标点标注在图片上
         coor = pointers_ref[scale]
         cv2.circle(img_ref_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
@@ -332,7 +333,7 @@ def inspection_pointer(input_data):
     if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     ## 识别图中的表盘
     bboxes = inference_yolov5(yolov5_meter, img_tag, resize=640)
@@ -363,7 +364,7 @@ def inspection_pointer(input_data):
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## 将所有指针画出来
@@ -405,7 +406,7 @@ def inspection_pointer(input_data):
     
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     
@@ -429,7 +430,7 @@ def inspection_pointer(input_data):
     ## 根据线段末端与指针绕点的距离更正seg的头尾
     if "center" not in pointers_tag:
         out_data["msg"] = out_data["msg"] + "Can not find conter in pointers_tag; "
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
         
     ## 求指针读数
@@ -443,7 +444,7 @@ def inspection_pointer(input_data):
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     val = round(val, dp)
@@ -464,7 +465,7 @@ def inspection_pointer(input_data):
     return out_data
 
 def main():
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-14-10-59-46/input_data.json","r", encoding='utf-8')
+    f = open("pointer/09-14-10-59-46/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)

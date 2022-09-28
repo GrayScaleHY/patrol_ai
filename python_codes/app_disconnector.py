@@ -184,10 +184,11 @@ def inspection_disconnector(input_data):
     """
     刀闸识别
     """
-    TIME_START = time.strftime("%m-%d-%H-%M-%S")
-    save_dir = os.path.join(os.path.join("inspection_result/disconnector",TIME_START)) #保存图片的路径
-    os.makedirs(save_dir, exist_ok=True)
-    f = open(os.path.join(save_dir, "input_data.json"), "w")
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, TIME_START + "result_patrol", input_data["type"])
+    os.makedirs(save_path, exist_ok=True)
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
     
@@ -196,9 +197,9 @@ def inspection_disconnector(input_data):
     img_tag, img_open, img_close, roi1, roi2 = get_input_data(input_data)
 
     ## 保存模板图与待分析图
-    cv2.imwrite(os.path.join(save_dir,"img_close.jpg"), img_close)
-    cv2.imwrite(os.path.join(save_dir,"img_tag.jpg"), img_tag)
-    cv2.imwrite(os.path.join(save_dir,"img_open.jpg"), img_open)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_close.jpg"), img_close)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_open.jpg"), img_open)
 
     ## 求刀闸状态
     img_opens = [img_open]
@@ -220,11 +221,11 @@ def inspection_disconnector(input_data):
         cv2.rectangle(img_tag, (bt2[0], bt2[1]), (bt2[2], bt2[3]), state_map[state]["color"][1], thickness=2)
     img_tag = img_chinese(img_tag, state_map[state]["name"], (10, 50), color=state_map[state]["color"][0], size=40)
 
-    cv2.imwrite(os.path.join(save_dir,"img_open_cfg.jpg"), img_open)
-    cv2.imwrite(os.path.join(save_dir,"img_close_cfg.jpg"), img_close)
-    cv2.imwrite(os.path.join(save_dir,"img_tag_cfg.jpg"), img_tag)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_open_cfg.jpg"), img_open)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_close_cfg.jpg"), img_close)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag)
 
-    f = open(os.path.join(save_dir,"output_data.json"),"w",encoding='utf-8')
+    f = open(os.path.join(save_path, TIME_START + "output_data.json"),"w",encoding='utf-8')
     json.dump(out_data, f, indent=2)
     f.close()
 

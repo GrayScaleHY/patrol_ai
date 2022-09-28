@@ -84,10 +84,11 @@ def inspection_object_detection(input_data):
     yolov5的目标检测推理。
     """
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -96,14 +97,14 @@ def inspection_object_detection(input_data):
     out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
     if img_ref is not None:
-        cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
     if roi is not None:   # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-        cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     ## 选择模型
     if input_data["type"] == "meter":
@@ -258,10 +259,10 @@ def inspection_object_detection(input_data):
         out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
     
     ## 可视化计算结果
-    f = open(os.path.join(save_path, "out_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
@@ -269,19 +270,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    # tag_file = "/home/yh/inspection/python_codes/inspection_result/led/09-29-20-01-59/img_ref.jpg"
-    # ref_file = "test/p2.jpg"
-    # img_tag = img2base64(cv2.imread(tag_file))
-    # img_ = cv2.imread(ref_file)
-    # img_ref = img2base64(img_)
-    # ROI = [1249, 1154, 1885, 1400]
-    # W = img_.shape[1]; H = img_.shape[0]
-    # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
-
-    # input_data = {"image": img_tag, "config":{}, "type": "led"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    # f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-11-15-35-28/input_data.json", "r", encoding='utf-8')
-    # input_data = json.load(f)
-    # f.close()
+    
     tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/label/xiaogou.jpg"
     img_tag = img2base64(cv2.imread(tag_file))
     input_data = {"image": img_tag, "config":{"label_list": ["xdwcr"]}, "type": "rec_defect"} # "img_ref": img_ref, "bboxes": {"roi": roi}

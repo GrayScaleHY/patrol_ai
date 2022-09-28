@@ -46,10 +46,11 @@ def get_input_data(input_data):
 def inspection_xishiqi(input_data):
 
     ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result/xishiqi_color", TIME_START)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -64,14 +65,14 @@ def inspection_xishiqi(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
         
     if roi is not None and img_ref is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
-        cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-        cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     ## 如果没有配置roi，则自动识别表盘作为roi
     if roi is None:
@@ -105,7 +106,7 @@ def inspection_xishiqi(input_data):
     contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_xishiqi, img_roi)
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## 非mask的部分变为黑色
@@ -119,7 +120,6 @@ def inspection_xishiqi(input_data):
         mask = (mask - 1) * -1
     mask = np.array([mask.astype(int)]*3).transpose(1,2,0)
     img_color = (img_color * mask).astype(np.uint8)
-    cv2.imwrite("img_color.jpg", img_color)
 
     ## 计算蓝色颗粒的占比
     color_list=["white","red","orange","yellow","green","cyan","blue","purple"]
@@ -145,10 +145,10 @@ def inspection_xishiqi(input_data):
     s = (roi_tag[2] - roi_tag[0]) / 400 # 根据框子大小决定字号和线条粗细。
     cv2.putText(img_tag_, str(value), (0+round(s)*10, 0+round(s)*30), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
     cv2.drawContours(img_tag_,contours,-1,(0,0,255),1)
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
-    f = open(os.path.join(save_path, "output_data.json"), "w", encoding='utf-8')
+    f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
     json.dump(out_data, f, indent=2, ensure_ascii=False)
     f.close()
     out_data["img_result"] = img2base64(img_tag_)

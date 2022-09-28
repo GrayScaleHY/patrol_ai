@@ -59,22 +59,23 @@ def inspection_counter(input_data):
         return out_data  
 
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") 
-    save_path = os.path.join("inspection_result", input_data["type"], TIME_START)
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, "input_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
-    cv2.imwrite(os.path.join(save_path, "img_tag.jpg"), img_tag) # 将输入图片可视化
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
     if img_ref is not None:
-        cv2.imwrite(os.path.join(save_path, "img_ref.jpg"), img_ref) # 将输入图片可视化
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
     if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),
                     (int(roi[2]), int(roi[3])), (0, 0, 255), thickness=2)
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
-        cv2.imwrite(os.path.join(save_path, "img_ref_cfg.jpg"), img_ref_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     ## 调整亮度与对比度
     if "augm" in input_data["config"]:
@@ -125,7 +126,7 @@ def inspection_counter(input_data):
     boxes = inference_yolov5(yolov5_model, img_roi, resize=640) # inference
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find counter"
-        cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
     
     ## 将bboxes映射到原图坐标
@@ -154,7 +155,7 @@ def inspection_counter(input_data):
         color_dict[label] = colors[i]
 
     ## 可视化计算结果
-    f = open(os.path.join(save_path, "out_data.json"), "w")
+    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
     map_o = config_object_name.OBJECT_MAP
@@ -165,7 +166,7 @@ def inspection_counter(input_data):
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
         # cv2.putText(img_tag_, map_o[input_data["type"]][label], (int(coor[0])-5, int(coor[1])-5)),cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
         img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*8), color=color_dict[label], size=s*8)
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
@@ -184,7 +185,7 @@ if __name__ == '__main__':
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
 
     # input_data = {"image": img_tag, "config":{}, "type": "counter"} # "img_ref": img_ref, "bboxes": {"roi": roi}
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/digital/09-07-11-01-37/input_data.json","r", encoding='utf-8')
+    f = open("digital/09-07-11-01-37/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_counter(input_data)
