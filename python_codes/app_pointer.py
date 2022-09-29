@@ -455,9 +455,9 @@ def inspection_pointer(input_data):
     ## 输出可视化结果的图片。
     s = (roi_tag[2] - roi_tag[0]) / 400
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(seg[3])-5),cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
-    cv2.imwrite(os.path.join(save_path, "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
-    f = open(os.path.join(save_path, "output_data.json"), "w", encoding='utf-8')
+    f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
     json.dump(out_data, f, indent=2, ensure_ascii=False)
     f.close()
     out_data["img_result"] = img2base64(img_tag_)
