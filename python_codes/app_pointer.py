@@ -160,7 +160,7 @@ def add_head_end_ps(pointers):
     p_max = pointers[s_max]
     s_max = float(s_max)
     l_max = math.sqrt((p_max[0]-p_center[0])**2 + (p_max[1]-p_center[1])**2)
-    s_max_new = str(s_max - 0.0000001)
+    s_max_new = str(s_max + 0.0000001)
     if p_max[0] > p_center[0]:
         pointers[s_max_new] = [p_max[0], int(math.ceil(p_max[1] + l_max / 10))]
     elif p_max[0] < p_center[0]:
