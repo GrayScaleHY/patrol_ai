@@ -59,6 +59,17 @@ sudo ./install_nvidia_docker.sh
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
+注意：若有能使用外网，建议使用以下命令安装nvidia-docker
+```
+## 安装docker
+curl -sSL https://get.daocloud.io/docker | sh
+## 安装nvidia-container-toolkit
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
 ##### 5. 加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
