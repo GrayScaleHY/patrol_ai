@@ -13,7 +13,12 @@
     ut_patrol_ai.tar.gz
 ```
 ##### 2. 安装显卡驱动 (若已安装，跳过)
-快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
+若可以使用外网，使用下面命令行进行显卡驱动安装
+```
+sudo apt-get update
+sudo apt-get install nvidia-driver-510
+```
+若无法使用外网，则快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
 ```
 ## 关闭lightdm
 sudo service gdm stop  
@@ -38,7 +43,11 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 +-------------------------------+----------------------+----------------------+
 ```
 ##### 3. 安装docker (若已安装，跳过)
-输入以下命令安装docker
+若可以使用外网，则使用下面命令完成docker安装
+```
+curl -sSL https://get.daocloud.io/docker | sh
+```
+若无法使用外网，则输入以下命令安装docker
 ```
 cd /data/PatrolAi/install/ubuntu18.04
 sudo chmod +x install_docker.sh
@@ -49,7 +58,15 @@ sudo ./install_docker.sh
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
 ##### 4. 安装nvidia-docker
-输入以下命令安装nvidia-docker
+若可以使用外网，则使用下面命令完成nvidia-docker安装
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+若无法使用外网，则输入以下命令安装nvidia-docker
 ```
 cd /data/PatrolAi/install/ubuntu18.04
 sudo chmod +x install_nvidia_docker.sh
@@ -58,17 +75,6 @@ sudo ./install_nvidia_docker.sh
 安装完成后，终端输入```sudo nvidia-docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
-```
-注意：若有能使用外网，建议使用以下命令安装nvidia-docker
-```
-## 安装docker
-curl -sSL https://get.daocloud.io/docker | sh
-## 安装nvidia-container-toolkit
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
 ```
 ##### 5. 加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
