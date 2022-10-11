@@ -98,21 +98,21 @@ def inspection_identify_defect_server():
     return jsonify(res)
 
 ## 仪表计数器读数
-@app.route('/inspection_digital/', methods=['POST'])
-@app.route('/inspection_counter/', methods=['POST'])
-def inspection_counter_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_counter(data)
-    print("inspection_pointer result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# @app.route('/inspection_digital/', methods=['POST'])
+# @app.route('/inspection_counter/', methods=['POST'])
+# def inspection_counter_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_counter(data)
+#     print("inspection_pointer result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
 ## 二维码识别，文本标识牌识别
 @app.route('/inspection_qrcode/', methods=['POST'])
@@ -144,6 +144,8 @@ def inspection_qrcode_server():
 @app.route('/inspection_door/', methods=['POST']) # 箱门
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
+@app.route('/inspection_digital/', methods=['POST'])
+@app.route('/inspection_counter/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}

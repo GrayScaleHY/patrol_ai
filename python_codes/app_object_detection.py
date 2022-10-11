@@ -10,7 +10,7 @@ import config_object_name
 from config_object_name import convert_label
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color, yolov5_coco
+from config_load_models_var import yolov5_digital, yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color, yolov5_coco
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -36,6 +36,26 @@ def is_include(sub_box, par_box, srate=0.8):
         return True
     else:
         return False
+
+def rank_digital(in_data, type_):
+    """
+    将目标检测格式改为数值格式
+    args:
+        in_data: 格式为[{"label": label, "bbox": [xmin, ymin, xmax, ymax], "score": score}, ...]
+        type_: digital 或者 counter
+    return:
+        out_data: 格式为{"type": "digital", "values": ["6", "5"], "bboxes": [[], []]}
+    """
+    ## 根据从左到右的规则对bbox_digitals的存放排序
+    l = [a['bbox'][0] for a in in_data]
+    rank = [index for index,value in sorted(list(enumerate(l)),key=lambda x:x[1])]
+
+    ## 将vals和bboxes添加进out_data
+    vals = [in_data[i]['label'] for i in rank]
+    bboxes_cfg = [in_data[i]['bbox'] for i in rank]
+
+    out_data = {"type": type_, "values": vals, "bboxes": bboxes_cfg}
+    return out_data
     
 def get_input_data(input_data):
     """
@@ -145,7 +165,15 @@ def inspection_object_detection(input_data):
             if label_list is not None:
                 labels = [convert_label(l, "rec_defect") for l in label_list]
             model_type = "rec_defect"
-
+    elif input_data["type"] == "digital":
+        yolov5_model = yolov5_digital
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+        model_type = "digital"
+    elif input_data["type"] == "counter":
+        yolov5_model = yolov5_digital
+        labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        model_type = "counter"
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
@@ -258,6 +286,9 @@ def inspection_object_detection(input_data):
     if input_data["type"] == "key":
         out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
     
+    if input_data["type"] == "digital" or input_data["type"] == "counter":
+        out_data["data"] = rank_digital(out_data["data"], input_data["type"])
+
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
@@ -271,9 +302,13 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     
-    tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/label/xiaogou.jpg"
-    img_tag = img2base64(cv2.imread(tag_file))
-    input_data = {"image": img_tag, "config":{"label_list": ["xdwcr"]}, "type": "rec_defect"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    # tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/label/xiaogou.jpg"
+    # img_tag = img2base64(cv2.imread(tag_file))
+    # input_data = {"image": img_tag, "config":{"label_list": ["xdwcr"]}, "type": "rec_defect"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    json_file = "/data/PatrolAi/result_patrol/counter/1/input_data.json"
+    f = open(json_file,"r",encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_object_detection(input_data)
     print("inspection_object_detection result:")
     print("-----------------------------------------------")
