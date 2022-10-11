@@ -13,7 +13,12 @@
     ut_patrol_ai.tar.gz
 ```
 ##### 2. 安装显卡驱动 (若已安装，跳过)
-快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
+若可以使用外网，使用下面命令行进行显卡驱动安装
+```
+sudo apt-get update
+sudo apt-get install nvidia-driver-510
+```
+若无法使用外网，则快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
 ```
 ## 关闭lightdm
 sudo service gdm stop  
@@ -38,7 +43,11 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 +-------------------------------+----------------------+----------------------+
 ```
 ##### 3. 安装docker (若已安装，跳过)
-输入以下命令安装docker
+若可以使用外网，则使用下面命令完成docker安装
+```
+curl -sSL https://get.daocloud.io/docker | sh
+```
+若无法使用外网，则输入以下命令安装docker
 ```
 cd /data/PatrolAi/install/ubuntu18.04
 sudo chmod +x install_docker.sh
@@ -49,7 +58,15 @@ sudo ./install_docker.sh
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
 ##### 4. 安装nvidia-docker
-输入以下命令安装nvidia-docker
+若可以使用外网，则使用下面命令完成nvidia-docker安装
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+若无法使用外网，则输入以下命令安装nvidia-docker
 ```
 cd /data/PatrolAi/install/ubuntu18.04
 sudo chmod +x install_nvidia_docker.sh
@@ -75,7 +92,7 @@ REPOSITORY           TAG                                   IMAGE ID       CREATE
 ```
 cd /data/PatrolAi
 sudo chmod +x run_PatrolAi.sh
-sudo nvidia-docker run -d --runtime nvidia-smi --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.4-conda-cuml
+sudo docker run --gpus all -d --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.4-conda-cuml
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
