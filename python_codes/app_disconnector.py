@@ -186,7 +186,7 @@ def inspection_disconnector(input_data):
     """
     TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, TIME_START + "result_patrol", input_data["type"])
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
     f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件

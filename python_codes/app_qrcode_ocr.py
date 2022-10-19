@@ -95,7 +95,10 @@ def inspection_qrcode(input_data):
     ## 二维码检测或文本检测
     if input_data["type"] == "qrcode":
         # boxes = decoder(img_roi) # 解二维码
-        boxes = decoder_wechat(img_roi)
+        try:
+            boxes = decoder_wechat(img_roi)
+        except:
+            boxes = decoder(img_roi)
     elif "ocr" in input_data["type"]: # 文本检测
         boxes = inference_ppocr(img_roi, text_sys)
     else:
@@ -146,7 +149,7 @@ if __name__ == '__main__':
     import glob
     import time
     
-    tag_file = "/home/yh/image/python_codes/test/img_tag.jpg"
+    tag_file = "/data/PatrolAi/result_patrol/img_tag.jpg"
     
     img_tag = img2base64(cv2.imread(tag_file))
     # img_ = cv2.imread(ref_file)
@@ -154,8 +157,11 @@ if __name__ == '__main__':
     # ROI = [907, 7, 1583, 685]
     # W = img_.shape[1]; H = img_.shape[0]
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
-
-    input_data = {"image": img_tag, "config":{}, "type": "qrcode"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    json_file = "/data/PatrolAi/result_patrol/10-11-17-03-20_input_data.json"
+    # input_data = {"image": img_tag, "config":{}, "type": "qrcode"} # "img_ref": img_ref, "bboxes": {"roi": roi}
+    f = open(json_file,"r",encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_qrcode(input_data)
     print("inspection_qrcode result:")
     print("-----------------------------------------------")
