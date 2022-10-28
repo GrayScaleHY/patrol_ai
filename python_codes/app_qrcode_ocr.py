@@ -74,8 +74,8 @@ def inspection_qrcode(input_data):
     if roi is None:
         M = None
     else:
-        feat_ref = sift_create(img_ref)
-        feat_tag = sift_create(img_tag)
+        feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+        feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
         M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
     if M is None:

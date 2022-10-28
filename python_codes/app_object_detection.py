@@ -221,12 +221,12 @@ def inspection_object_detection(input_data):
         s = int((c[2] - c[0]) / 4) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]-s), color=color_dict[label], size=s)
+        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
     ## 求出目标图像的感兴趣区域
     if roi is not None:
-        feat_ref = sift_create(img_ref)
-        feat_tag = sift_create(img_tag)
+        feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+        feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
         M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
@@ -270,7 +270,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/result_patrol/10-11-15-35-17_input_data.json"
+    json_file = "/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-22-10-56-35/input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

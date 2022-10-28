@@ -209,10 +209,14 @@ def cw_ssim_index(im1, im2, height='auto', order=4):
     res = np.mean(ssims)
     return res
 
-def sift_create(img):
+def sift_create(img, rm_regs=[]):
     """
     提取sift特征
-    return: (kps, feat)
+    args:
+        img: 图像数据
+        rm_regs: 需要屏蔽的区域， 如[[0,0,1,0.1],[0,0.9,1,1]]或者[[xmin,ymin,xmax,ymax], ..]
+    return: 
+        (kps, feat): (坐标点集， 特征值集)
     """
     
     ## 彩图转灰度图，灰度图是二维的
@@ -221,6 +225,7 @@ def sift_create(img):
 
     ## 直方图均衡化，增加图片的对比度
     # img = cv2.equalizeHist(img)
+    H, W = img.shape[:2]
 
     ## 使用cudasift提取sift特征
     if sift_lib == "cudasift":
@@ -232,7 +237,6 @@ def sift_create(img):
         lmt = 43560000
         rate = 1
         if img.size > lmt: ## 若图片分辨率过大会报错，因此需要resize
-            H, W = img.shape[:2]
             rate = math.ceil(img.size / lmt)
             img = cv2.resize(img, (int(W / rate), int(H / rate)))
 
@@ -253,16 +257,36 @@ def sift_create(img):
         # kps: 关键点，包括 angle, class_id, octave, pt, response, size
         # feat: 特征值，每个特征点的特征值是128维
         kps, feat = sift.detectAndCompute(img, None) #提取sift特征
+
+    ## 移除指定区域的特征点
+    if len(rm_regs) > 0:
+        if max(max(rm_regs)) <= 1:
+            rm_regs = [[int(c[0]*W), int(c[1]*H), int(c[2]*W), int(c[3]*H)] for c in rm_regs]
+        rm_ids = []
+        for reg in rm_regs:
+            for i in range(len(kps)):
+                pt_ = kps[i].pt
+                if reg[0] <= pt_[0] <= reg[2] and reg[1] <= pt_[1] <= reg[3]:
+                    rm_ids.append(i)
+        _kps = []
+        for i in range(len(kps)):
+            if i not in rm_ids:
+                _kps.append(kps[i])
+        kps = _kps
+        feat = np.delete(feat, rm_ids, axis=0)
+    
+    # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
+    # cv2.imwrite("images/test_sift.jpg", hmerge)
+
     return (kps, feat)
 
 
-def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
+def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
     """
     使用sift特征，flann算法计算两张轻微变换的图片的的偏移转换矩阵M。
     args:
         feat_ref: 参考图片的sift特征，格式为：(kps, feat)
         feat_tag: 待分析图片的sift特征，格式为：(kps, feat)
-        rm_regs: 需要去掉sift特征的区域，例如OSD区域。格式为[[xmin, xmax, ymin, ymax], ..]
         ratio: sift点正匹配的阈值
         ops: 变换的方式，可选择"Affine"(仿射), "Perspective"(投影)
     return:
@@ -272,41 +296,9 @@ def sift_match(feat_ref, feat_tag, rm_regs=[], ratio=0.5, ops="Affine"):
     kps1, feat1 = feat_ref
     kps2, feat2 = feat_tag
 
-    ## 将rm_regs区域中的sift特征点去除
-    if len(rm_regs) > 0:
-        rm_ids = []
-        for reg in rm_regs:
-            for i in range(len(kps1)):
-                pt_ = kps1[i].pt
-                if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
-                    rm_ids.append(i)
-        kps = []
-        for i in range(len(kps1)):
-            if i not in rm_ids:
-                kps.append(kps1[i])
-        kps1 = kps
-        feat1 = np.delete(feat1, rm_ids, axis=0)
-        rm_ids = []
-        for reg in rm_regs:
-            for i in range(len(kps2)):
-                pt_ = kps2[i].pt
-                if reg[0] < pt_[0] < reg[2] and reg[1] < pt_[1] < reg[3]:
-                    rm_ids.append(i)
-        kps = []
-        for i in range(len(kps2)):
-            if i not in rm_ids:
-                kps.append(kps2[i])
-        kps2 = kps
-        feat2 = np.delete(feat2, rm_ids, axis=0)
-
     if  feat1 is None or feat2 is None or len(feat1) == 0 or len(feat2) == 0:
         print("warning: img have no sift feat!")
         return None
-    ## 画出siftt特征点
-    # ref_sift = cv2.drawKeypoints(ref_img,kps1,ref_img,color=(255,0,255)) # 画sift点
-    # tar_sift = cv2.drawKeypoints(tag_img,kps2,tag_img,color=(255,0,255))
-    # hmerge = np.hstack((ref_sift, tar_sift)) # 两张图拼接在一起
-    # cv2.imwrite("images/test_sift.jpg", hmerge)
     
     ## flann 快速最近邻搜索算法，计算两张特征的正确匹配点。
     ## https://www.cnblogs.com/shuimuqingyang/p/14789534.html

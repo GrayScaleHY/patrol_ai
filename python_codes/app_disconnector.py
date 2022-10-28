@@ -1,6 +1,6 @@
 
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_sift_match import sift_create, sift_match, correct_offset, convert_coor, cw_ssim_index
+from util_yjsk import json2bboxes, disconnector_state
 import time
 import json
 import cv2
@@ -13,128 +13,6 @@ state_map = {
     "异常": {"name": "分合闸异常", "color": [(0,0,255), (0,0,255)]},
     "无法判别状态": {"name": "分析失败", "color": [(0,0,255), (0,0,255)]},
 }
-
-def json2bboxes(json_file, img_open):
-    """
-    将json_file里的框子信息提取出来。
-    return:
-        bboxes: 格式，[[xmin, ymin, xmax, ymax], ..]
-    """
-    f = open(json_file, "r", encoding='utf-8')
-    cfg = json.load(f)
-    f.close()
-    H, W = img_open.shape[:2]
-    ids = [id_ for id_ in cfg]
-    ids.sort()
-    bboxes = []
-    for id_ in ids:
-        c = np.array([[cfg[id_][0]["x"], cfg[id_][0]["y"]],[cfg[id_][1]["x"], cfg[id_][1]["y"]]])
-        coor = [np.min(c[:,0]), np.min(c[:,1]), np.max(c[:,0]), np.max(c[:,1])]
-        coor = np.array(coor) * np.array([W, H, W, H])
-        bboxes.append(coor.astype(int).tolist())
-    return bboxes
-
-
-def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], img_yichangs=[]):
-    """
-    刀闸分合判别， 可支持多模板以及异常图片模板。
-    args:
-        img_tag: 待分析图
-        img_opens: 分闸模板图, list
-        img_closes: 合闸模板图, list
-        box_state: 用于对比ssim的框子坐标，格式为[[xmin, ymin, xmax, ymax], ..]
-        box_osd: sift匹配时需要扣掉的区域，格式为[[xmin, ymin, xmax, ymax], ..]
-        img_yichangs: 异常模板图,剪切过后的, list
-    return: 
-        state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
-        scores: 每个box里面的得分,[[score_close, score_open, score_yc], ..]
-        bboxes_tag: 模板图上的两个框框映射到待分析图上的大概位置，[[xmin, ymin, xmax, ymax], ..]
-    """
-    assert isinstance(img_opens, list) and len(img_opens) > 0, "img_opens is not requested !"
-    assert isinstance(img_closes, list) and len(img_closes) > 0, "img_closes is not requested !"
-    assert isinstance(box_state, list) and len(box_state) > 0, "box_state is not requested !"
-
-    feat_open = sift_create(img_opens[0]) # 提取参考图sift特征
-    feat_tag = sift_create(img_tag) # 提取待分析图sift特征
-
-    img_tag_ = img_tag.copy() 
-
-    M = sift_match(feat_open, feat_tag, rm_regs=box_osd[2:], ratio=0.5, ops="Affine") # 求偏移矩阵
-    img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
-
-    
-    ## 将框子区域在open和close和tag文件中画出来，以方便查看矫正偏移对不对
-    # open_ = img_open.copy()
-    # close_ = img_close.copy()
-    # tag_ = img_tag_warped.copy()
-    img_open= img_opens[0]
-
-    ## 将模板图上的bbox映射到待分析图上，求bboxes_tag
-    bboxes_tag = []
-    for b in box_state:
-        
-        bbox = list(convert_coor((b[0], b[1]), M)) + list(convert_coor((b[2], b[3]), M))
-        bboxes_tag.append(bbox)
-
-    ## 分析box_state里面的刀闸状态
-    states = []
-    s = ""
-    scores = []
-    for bbox in box_state:
-        ## 判断bbox是否符合要求
-        H, W = img_tag.shape[:2]
-        if 0 < bbox[0] < bbox[2] < W and 0 < bbox[1] < bbox[3] < H:
-            pass
-        else:
-            return "无法判别状态", scores, bboxes_tag
-
-        ## 截取图片区域，并且用ssim算法比较相似性
-        img_ta = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-
-        ## 求score open
-        score_open = 0
-        for img_open in img_opens:
-            img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-            score = cw_ssim_index(img_ta, img_op)
-            if score > score_open:
-                score_open = score
-
-        ## 求score close
-        score_close = 0
-        for img_close in img_closes:
-            img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-            score = cw_ssim_index(img_ta, img_cl)
-            if score > score_close:
-                score_close = score
-
-        ## 求score yichang
-        score_yc = 0
-        for img_yc in img_yichangs:
-            if img_yc.shape != img_ta.shape:
-                continue
-            score = cw_ssim_index(img_ta, img_yc)
-            if score > score_yc:
-                score_yc = score
-
-        ## 根据score_open和score_close对比，判断该框框的状态。
-        if score_yc > score_open and score_yc > score_close:
-            state_ = "yichang"
-        elif score_close > score_open:
-            state_ = "close"
-        else:
-            state_ = "open"
-        states.append(state_)
-        scores.append([round(score_close, 3), round(score_open, 3), round(score_yc, 3)])
-    
-    ## 判断当前刀闸状态
-    if all(state_ == "open" for state_ in states):
-        state = "分"
-    elif all(state_ == "close" for state_ in states):
-        state = "合"
-    else:
-        state = "异常"
-
-    return state, scores, bboxes_tag
 
 def get_input_data(input_data):
     """

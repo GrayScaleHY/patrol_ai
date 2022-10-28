@@ -47,12 +47,12 @@ def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], im
     assert isinstance(img_closes, list) and len(img_closes) > 0, "img_closes is not requested !"
     assert isinstance(box_state, list) and len(box_state) > 0, "box_state is not requested !"
 
-    feat_open = sift_create(img_opens[0]) # 提取参考图sift特征
-    feat_tag = sift_create(img_tag) # 提取待分析图sift特征
+    feat_open = sift_create(img_opens[0], rm_regs=box_osd[2:]) # 提取参考图sift特征
+    feat_tag = sift_create(img_tag, rm_regs=box_osd[2:]) # 提取待分析图sift特征
 
     img_tag_ = img_tag.copy() 
 
-    M = sift_match(feat_open, feat_tag, rm_regs=box_osd[2:], ratio=0.5, ops="Affine") # 求偏移矩阵
+    M = sift_match(feat_open, feat_tag, ratio=0.5, ops="Affine") # 求偏移矩阵
     img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
 
     

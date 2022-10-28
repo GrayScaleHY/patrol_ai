@@ -373,8 +373,8 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 求出目标图像的感兴趣区域
-    feat_ref = sift_create(img_ref)
-    feat_tag = sift_create(img_tag)
+    feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+    feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
     M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
     if roi is not None:
         if M is None:
