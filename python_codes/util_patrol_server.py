@@ -9,11 +9,28 @@ from app_qrcode_ocr import inspection_qrcode
 from app_panbie import inspection_identify_defect
 from config_version import code_version
 from app_disconnector_video import inspection_disconnector_video
+from app_yeweiji import inspection_level_gauge
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
+
+## 液位仪表读数
+@app.route('/inspection_level_gauge/', methods=['POST'])
+def inspection_level_gauge_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_level_gauge(data)
+    print("inspection_level_gauge result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
 
 @app.route('/inspection_state/', methods=['POST'])
 def inspection_state():
