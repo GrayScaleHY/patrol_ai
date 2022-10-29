@@ -253,10 +253,14 @@ def inspection_object_detection(input_data):
     ## 画出boxes
     for cfg in cfgs:
         c = cfg["coor"]; label = cfg["label"]
-        s = int((c[2] - c[0]) / 4) # 根据框子大小决定字号和线条粗细。
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
-        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
+        
+        if input_data["type"] == "counter" or input_data["type"] == "digital":
+            s = int(c[2] - c[0]) # 根据框子大小决定字号和线条粗细。
+            img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]-s), color=color_dict[label], size=s)
+        else:
+            s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+            img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
     ## 求出目标图像的感兴趣区域
     if roi is not None:
@@ -308,7 +312,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/patrol_ai/python_codes/inspection_result/rec_defect/09-22-10-56-35/input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/digital/input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
