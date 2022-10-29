@@ -13,11 +13,13 @@ yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 
 yolov5_rec_defect_x6 = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect_x6.pt") # 送检18类缺陷,x6模型
 yolov5_rec_defect = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect.pt") # 送检18类缺陷
 yolov5_counter= load_yolov5_model("/data/PatrolAi/yolov5/counter.pt") # 动作次数
-yolov5_digital= load_yolov5_model("/data/PatrolAi/yolov5/digital.pt") # led数字
+# yolov5_digital= load_yolov5_model("/data/PatrolAi/yolov5/digital.pt") # led数字
 yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
 yolov5_fire_smoke = load_yolov5_model("/data/PatrolAi/yolov5/fire_smoke.pt") # 烟火模型
 yolov5_helmet = load_yolov5_model("/data/PatrolAi/yolov5/helmet.pt") # 安全帽模型
 yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
+yolov5_ShuZiBiaoJi = load_yolov5_model("/data/PatrolAi/yolov5/ShuZiBiaoJi.pt")  # 数字表记模型
+yolov5_jmjs = load_yolov5_model("/data/PatrolAi/yolov5/jmjs.pt")  # 静默监视三个设备类模型
 
 ## 加载ppocr模型
 from lib_inference_ocr import load_ppocr

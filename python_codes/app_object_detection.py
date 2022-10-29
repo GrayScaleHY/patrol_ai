@@ -10,7 +10,15 @@ import config_object_name
 from config_object_name import convert_label
 import numpy as np
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_helmet, yolov5_fire_smoke, yolov5_led_color, yolov5_coco
+from config_load_models_var import yolov5_meter, \
+                                   yolov5_ErCiSheBei, \
+                                   yolov5_rec_defect_x6, \
+                                   yolov5_helmet, \
+                                   yolov5_fire_smoke, \
+                                   yolov5_led_color, \
+                                   yolov5_coco, \
+                                   yolov5_ShuZiBiaoJi, \
+                                   yolov5_jmjs
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -36,6 +44,21 @@ def is_include(sub_box, par_box, srate=0.8):
         return True
     else:
         return False
+
+def rank_digital(obj_data, obj_type="counter"):
+    """
+    args:
+        obj_data: 常规目标检测输出格式，[{"label": "0", "bbox": [xmin,ymin,xmax,ymax], "score":0.635}, ..]
+        obj_type: counter or digital
+    return:
+        new_data: 数字类排好序的格式，{"type": "counter", "values": ['6', '5'], "bboxes": [[xmin,ymin,xmax,ymax], ..]}
+    """
+    l = [cfg["bbox"][0] for cfg in obj_data]
+    rank = [index for index,value in sorted(list(enumerate(l)),key=lambda x:x[1])]
+    vals = [obj_data[i]["label"] for i in rank]
+    bboxes = [obj_data[i]["bbox"] for i in rank]
+    new_data = {"type": obj_type, "values": vals, "bboxes": bboxes}
+    return new_data
     
 def get_input_data(input_data):
     """
@@ -127,7 +150,15 @@ def inspection_object_detection(input_data):
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "led"
-
+    elif input_data["type"] == "digital":
+        yolov5_model = yolov5_ShuZiBiaoJi
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+        model_type = "digital"
+    elif input_data["type"] == "counter":
+        yolov5_model = yolov5_ShuZiBiaoJi
+        labels = ["0","1","2","3","4","5","6","7","8","9"]
+        model_type = "counter"
     elif input_data["type"] == "rec_defect":
         if label_list == ["xdwcr"]:
             yolov5_model = yolov5_coco
@@ -138,6 +169,10 @@ def inspection_object_detection(input_data):
             labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
             labels = [labels_dict[id] for id in labels_dict]
             model_type = "fire_smoke"
+        elif label_list == ["sb_bx"] or label_list == ["sb_dl"] or label_list == ["sb_qx"]:
+            yolov5_model = yolov5_jmjs
+            labels = label_list
+            model_type = "jmjs"
         else:
             yolov5_model = yolov5_rec_defect_x6
             labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
@@ -254,6 +289,9 @@ def inspection_object_detection(input_data):
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
             out_data["data"].append(cfg_out)
             bboxes.append(cfg["coor"])
+
+    if input_data["type"] == "counter" or input_data["type"] == "digital":
+        out_data["data"] = rank_digital(out_data["data"], obj_type=input_data["type"])
 
     if input_data["type"] == "key":
         out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
