@@ -3,7 +3,7 @@ import json
 import os
 from app_pointer import inspection_pointer
 from app_disconnector import inspection_disconnector
-from app_counter import inspection_counter
+# from app_counter import inspection_counter
 from app_object_detection import inspection_object_detection
 from app_qrcode_ocr import inspection_qrcode
 from app_panbie import inspection_identify_defect
