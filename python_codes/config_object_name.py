@@ -5,7 +5,7 @@ OBJECT_MAP = {
         "name": "静默监视",
         "sb_bx": "设备变形",
         "sb_dl": "设备断裂",
-        "sb_qx": "设备缺陷"
+        "sb_qx": "设备倾斜"
     },
     "meter": {
         "name": "表记",

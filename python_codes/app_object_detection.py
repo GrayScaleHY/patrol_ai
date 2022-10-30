@@ -224,11 +224,10 @@ def inspection_object_detection(input_data):
     if input_data["type"] == "rec_defect":
         if label_list == ["hzyw"] or label_list == ["xdwcr"]:
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
-            print(cfgs)
         else:
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
     else:
-        cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
+        cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
     if len(cfgs) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
@@ -312,7 +311,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/result_patrol/digital/input_data.json"
+    json_file = "/data/PatrolAi/patrol_ai/python_codes/test/test/digital/1_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
