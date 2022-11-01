@@ -3,7 +3,7 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5
+from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_help_base import color_list
 from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
@@ -228,6 +228,8 @@ def inspection_object_detection(input_data):
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
     else:
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
+    cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制
+
     if len(cfgs) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
         return out_data
@@ -311,7 +313,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/patrol_ai/python_codes/test/test/digital/1_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/digital/10-30-15-59-08_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

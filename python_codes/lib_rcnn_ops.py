@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import selectivesearch # pip install selectivesearch
+# import selectivesearch # pip install selectivesearch
 import cv2
 import numpy as np
 
