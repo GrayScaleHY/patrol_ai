@@ -296,7 +296,7 @@ def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
     kps1, feat1 = feat_ref
     kps2, feat2 = feat_tag
 
-    if  feat1 is None or feat2 is None or len(feat1) == 0 or len(feat2) == 0:
+    if  feat1 is None or feat2 is None or len(feat1) < 3 or len(feat2) < 3:
         print("warning: img have no sift feat!")
         return None
     
