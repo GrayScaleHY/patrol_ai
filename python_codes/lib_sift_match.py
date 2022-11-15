@@ -234,7 +234,7 @@ def sift_create(img, rm_regs=[]):
         thresh = 2;    # 3.5 /* Threshold on difference of Gaussians for feature pruning */
         minScale = 0.0;  # /* Minimum acceptable scale to remove fine-scale features */
         upScale = True;  # /* Whether to upscale image before extraction */
-        lmt = 43560000
+        lmt = 7372800
         rate = 1
         if img.size > lmt: ## 若图片分辨率过大会报错，因此需要resize
             rate = math.ceil(img.size / lmt)
