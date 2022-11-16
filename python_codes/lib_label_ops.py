@@ -302,6 +302,10 @@ def voc2yolo(img_file, xml_file, txt_file, class_file):
 def cvat2labelme(img_file, xml_file, json_file):
     """
     将cvat的labelme的xml格式的标签文件转成labelme软件保存的json格式标签文件。
+    args:
+        img_file: 图片
+        xml_file: cvat上导出的.xml格式的标签文件
+        json_file: 生成的labelme标准json格式文件
     """
     ## 读取xml文件，转成dict格式
     f = open(xml_file, 'r',encoding='utf-8')
@@ -382,11 +386,11 @@ def xml_merge(xml_raw, xml_part):
 
 def labelme_2_coco(labelme_folder, coco_json_file):
     """
-    labelme标注的目标分割数据转为coco格式
-    https://github.com/fcakyon/labelme2coco
-    注意：
-        coco_json_file不能在labelme_folder中，
-        最好是labelme_folder和img在同一个目录。
+    labelme标注的目标分割数据转为coco格式.https://github.com/fcakyon/labelme2coco
+    args:
+        labelme_folder: 文件夹，包含了图片和labelme标准格式的.json文件
+        coco_json_file: 生成的用于detectron2训练的标签文件, 习惯命名为trainval.json
+    注意：coco_json_file不能在labelme_folder目录中
     """
     labelme2coco.convert(labelme_folder, coco_json_file)
 
