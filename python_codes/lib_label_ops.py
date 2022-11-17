@@ -327,7 +327,11 @@ def cvat2labelme(img_file, xml_file, json_file):
         shapes.append({"label": label, "points": points, "group_id": None, "shape_type": "polygon", "flags": {}})
 
     imagePath = os.path.basename(img_file)
-    img = cv2.imread(img_file)
+    # img = cv2.imread(img_file)
+    img_pil = Image.open(img_file)
+    img = np.array(img_pil)
+    if len(img.shape) == 3:
+        img = img[:, :, ::-1] ## 颜色三个通道倒叙
     imageData = img2base64(img)
     imageHeight = img.shape[0]
     imageWidth = img.shape[1]
@@ -386,7 +390,7 @@ def xml_merge(xml_raw, xml_part):
 
 def labelme_2_coco(labelme_folder, coco_json_file):
     """
-    labelme标注的目标分割数据转为coco格式.https://github.com/fcakyon/labelme2coco
+    labelme标注的目标分割数据转为coco格式.https://github.com/fcakyon/labelme2coco, 注意需要安装0.1.2版本。
     args:
         labelme_folder: 文件夹，包含了图片和labelme标准格式的.json文件
         coco_json_file: 生成的用于detectron2训练的标签文件, 习惯命名为trainval.json
