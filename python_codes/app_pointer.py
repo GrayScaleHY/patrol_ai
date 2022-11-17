@@ -299,7 +299,47 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
         return i_max
     else:
         return 0
+
+
+def pointer_detect(img_tag):
+    """
+    args:
+        img_tag: 图片
+    return:
+        seg_cfgs: 指针信息, 格式为[{"seg": seg, "box": box, "score": score}, ..]
+        roi_tag: 感兴趣区域
+    """
+    ## 识别图中的表盘
+    h, w = img_tag.shape[:2]
+    cfgs = inference_yolov5(yolov5_meter, img_tag, resize=640)
+    bboxes = [[0, 0, w, h]] + [cfg["coor"] for cfg in cfgs]
+
+    ## 找到bboxes中的所有指针
+    seg_cfgs_all = [] ## 整张图来推理时检测的指针信息
+    seg_cfgs_part = [] ## 将表记部分抠出来检测的指针信息
+    for j, c in enumerate(bboxes):
+        img = img_tag[c[1]:c[3], c[0]:c[2]]
+        contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
+        segments = contour2segment(contours, boxes)
+        for i in range(len(scores)):
+            s = segments[i]; score = scores[i]; b = boxes[i]
+            box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
+            seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
+            if j == 0:
+                seg_cfgs_all.append({"seg": seg, "box": box, "score": score})
+            else:
+                seg_cfgs_part.append({"seg": seg, "box": box, "score": score})
     
+    if len(seg_cfgs_all) >= len(seg_cfgs_part):
+        seg_cfgs = seg_cfgs_all
+        roi_tag = bboxes[0]
+    else:
+        seg_cfgs = seg_cfgs_part
+        b = np.array(bboxes[1:], dtype=int)
+        roi_tag = [min(b[:,0]), min(b[:,1]), max(b[:,2]),max(b[:,3])]
+    
+    return seg_cfgs, roi_tag
+
 
 def inspection_pointer(input_data):
 
@@ -335,32 +375,8 @@ def inspection_pointer(input_data):
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
-    ## 识别图中的表盘
-    bboxes = inference_yolov5(yolov5_meter, img_tag, resize=640)
-    if len(bboxes) == 0:
-        bboxes = [{"label": "meter", "coor": [0, 0, img_tag.shape[1],img_tag.shape[0]], "score": 1.0}]
-    # roi_tag = bboxes[0]["coor"]
-    b = np.array([cfg["coor"] for cfg in bboxes], dtype=int)
-    roi_tag = [min(b[:,0]), min(b[:,1]), max(b[:,2]),max(b[:,3])]
-
-    ## 找到bboxes中的所有指针
-    seg_cfgs = []
-    for bbox in bboxes:
-        c = np.array(bbox["coor"],dtype=int)
-        img = img_tag[c[1]:c[3], c[0]:c[2]]
-        contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
-        segments = contour2segment(contours, boxes)
-        for i in range(len(scores)):
-            s = segments[i]; score = scores[i]; b = boxes[i]
-            box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
-            seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
-            seg_cfgs.append({"seg": seg, "box": box, "score": score})
-
-    ## 将所有表盘画出来
-    # for bbox in bboxes:
-    #     c = bbox["coor"]
-    #     cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
-    #     cv2.putText(img_tag_, "meter", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    ## 计算指针
+    seg_cfgs, roi_tag = pointer_detect(img_tag)
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
@@ -372,29 +388,27 @@ def inspection_pointer(input_data):
         seg = cfg["seg"]
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
-    ## 求出目标图像的感兴趣区域
+    ## 矫正信息
     feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
     feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
     M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-    if roi is not None:
-        if M is None:
-            out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-            roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]
-        else:
-            coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-            coors_ = []
-            for coor in coors:
-                coors_.append(list(convert_coor(coor, M)))
-            xs = [coor[0] for coor in coors_]
-            ys = [coor[1] for coor in coors_]
-            xmin = max(0, min(xs)); ymin = max(0, min(ys))
-            xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
-            roi_tag = [xmin, ymin, xmax, ymax]
+
+    ## 求出目标图像的感兴趣区域
+    if roi is not None and M is not None:
+        coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
+        coors_ = []
+        for coor in coors:
+            coors_.append(list(convert_coor(coor, M)))
+        xs = [coor[0] for coor in coors_]
+        ys = [coor[1] for coor in coors_]
+        xmin = max(0, min(xs)); ymin = max(0, min(ys))
+        xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
+        roi_tag = [xmin, ymin, xmax, ymax]
 
     ## 画出roi_tag
     c = roi_tag
     cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
-    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])-10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 将不在感兴趣区域的指针筛选出去
     _seg_cfgs = []
@@ -463,8 +477,8 @@ def inspection_pointer(input_data):
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
-
-def main():
+    
+if __name__ == '__main__':
     f = open("pointer/09-14-10-59-46/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
@@ -474,8 +488,5 @@ def main():
         if s != "img_result":
             print(s,":",out_data[s])
     print("------------------------------")
-
-if __name__ == '__main__':
-    main()
     
 
