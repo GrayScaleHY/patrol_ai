@@ -408,7 +408,7 @@ def inspection_pointer(input_data):
     ## 画出roi_tag
     c = roi_tag
     cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
-    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])-10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) + 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 将不在感兴趣区域的指针筛选出去
     _seg_cfgs = []
@@ -439,7 +439,7 @@ def inspection_pointer(input_data):
     for scale in pointers_tag:
         coor = pointers_tag[scale]
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
-        cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 根据线段末端与指针绕点的距离更正seg的头尾
     if "center" not in pointers_tag:
@@ -479,7 +479,7 @@ def inspection_pointer(input_data):
     return out_data
     
 if __name__ == '__main__':
-    f = open("pointer/09-14-10-59-46/input_data.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-23-16-49-58/11-12-13-53-53_input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
