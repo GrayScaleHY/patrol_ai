@@ -5,7 +5,7 @@
 detectron2的训练数据标签格式参考[说明文档](https://detectron2.readthedocs.io/en/latest/tutorials/datasets.html#standard-dataset-dicts), [demo](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5#scrollTo=b2bjrfb2LDeo)。也可根据下面步骤迅速制作简单的可训练数据集。  
 (1). 使用CVAT对目标镜进行分割标注,导出标签文件(.xml结尾)。"Exort task data" --> "LabelMe 3.0"  
 (2). 使用[cvat2labelme](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/lib_label_ops.py#L302)函数将.xml标签文件转换成labelme工具可读的.json标签文件。  
-(3). 使用[labelme_2_coco](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/lib_label_ops.py#L387)函数将需要训练的标签整合成一个文件"trainval.json"。  
+(3). 使用[labelme_2_coco](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/lib_label_ops.py#L391)函数将需要训练的标签整合成一个文件"trainval.json"。  
 (4). 将标签上传到训练服务器，并用以下结构存放。  
 ```
   train/
