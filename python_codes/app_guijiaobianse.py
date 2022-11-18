@@ -58,6 +58,7 @@ def inspection_xishiqi(input_data):
 
     if input_data["type"] != "xishiqi_color":
         out_data["msg"] = out_data["msg"] + "type isn't xishiqi_color; "
+        out_data["code"] = 1
         return out_data
     
     ## 提取输入请求信息
@@ -106,6 +107,7 @@ def inspection_xishiqi(input_data):
     contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_xishiqi, img_roi)
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -133,6 +135,7 @@ def inspection_xishiqi(input_data):
         label = "正常"
     else:
         label = "变色"
+        out_data["code"] = 1
     out_data["data"] = {"label": label, "value": value}
 
     ## 将contours还原到原图的坐标

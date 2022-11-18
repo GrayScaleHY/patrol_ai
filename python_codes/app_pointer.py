@@ -356,6 +356,7 @@ def inspection_pointer(input_data):
 
     if input_data["type"] != "pointer":
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
+        out_data["code"] = 1
         return out_data
 
     ## 提取输入请求信息
@@ -380,6 +381,7 @@ def inspection_pointer(input_data):
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -420,6 +422,7 @@ def inspection_pointer(input_data):
     
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -444,6 +447,7 @@ def inspection_pointer(input_data):
     ## 根据线段末端与指针绕点的距离更正seg的头尾
     if "center" not in pointers_tag:
         out_data["msg"] = out_data["msg"] + "Can not find conter in pointers_tag; "
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
         
@@ -458,6 +462,7 @@ def inspection_pointer(input_data):
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 

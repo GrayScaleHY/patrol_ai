@@ -103,10 +103,12 @@ def inspection_qrcode(input_data):
         boxes = inference_ppocr(img_roi, text_sys)
     else:
         out_data["msg"] = out_data["msg"] + "; Type is wrong !"
+        out_data["code"] = 1
         return out_data
 
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find qrcode"
+        out_data["code"] = 1
         return out_data
 
     ## 将bboxes映射到原图坐标

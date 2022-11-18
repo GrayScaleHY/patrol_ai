@@ -18,7 +18,8 @@ from config_load_models_var import yolov5_meter, \
                                    yolov5_led_color, \
                                    yolov5_coco, \
                                    yolov5_ShuZiBiaoJi, \
-                                   yolov5_jmjs
+                                   yolov5_jmjs, \
+                                   yolov5_dz
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -75,7 +76,8 @@ def get_input_data(input_data):
     img_ref = None
     if "img_ref" in input_data["config"]:
         if isinstance(input_data["config"]["img_ref"], str):
-            img_ref = base642img(input_data["config"]["img_ref"])      
+            if len(input_data["config"]["img_ref"]) > 10:
+                img_ref = base642img(input_data["config"]["img_ref"])
         
     ## 感兴趣区域
     roi = None # 初始假设
@@ -118,6 +120,9 @@ def inspection_object_detection(input_data):
     ## 初始化输入输出信息。
     img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+    if input_data["type"] == "rec_defect" or input_data["type"] == "fire_smoke":
+        out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
@@ -209,8 +214,13 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_ErCiSheBei
         labels = ["ys"]
         model_type = "ErCiSheBei"
+    elif input_data["type"] == "disconnector_notemp":
+        yolov5_model = yolov5_dz
+        labels = ["分","合"]
+        model_type = "disconnector_notemp"
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
+        out_data["code"] = 1
         return out_data
 
     if "augm" in input_data["config"]:
@@ -225,13 +235,17 @@ def inspection_object_detection(input_data):
         if label_list == ["hzyw"] or label_list == ["xdwcr"]:
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
         else:
-            cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels) # inference
+            cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels, conf_thres=0.7) # inference
     else:
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制
 
     if len(cfgs) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
+        if input_data["type"] == "rec_defect" or input_data["type"] == "fire_smoke":
+            out_data["code"] = 0
+        else:
+            out_data["code"] = 1
         return out_data
 
     ## labels 列表 和 color 列表
@@ -313,7 +327,7 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/result_patrol/digital/10-30-15-59-08_input_data.json"
+    json_file = "/data/PatrolAi/patrol_ai/python_codes/inspection_result/11-05-17-31-47_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

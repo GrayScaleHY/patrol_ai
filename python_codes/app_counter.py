@@ -56,6 +56,7 @@ def inspection_counter(input_data):
         yolov5_model = yolov5_digital
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't counter; "
+        out_data["code"] = 1
         return out_data  
 
     ## 将输入请求信息可视化
@@ -126,6 +127,7 @@ def inspection_counter(input_data):
     boxes = inference_yolov5(yolov5_model, img_roi, resize=640) # inference
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find counter"
+        out_data["code"] = 1
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
     

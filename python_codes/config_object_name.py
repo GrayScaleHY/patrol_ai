@@ -185,6 +185,11 @@ OBJECT_MAP = {
         'bj_wkps': '外壳破损',
         'hxq_gjtps': '硅胶筒破损',
         "sly_bjbmyw": '部件表面油污'
+    },
+        "disconnector_notemp": {
+        "name": "刀闸状态-无模板配置",
+        '分': '分闸正常',
+        '合': '合闸正常'
     }
 
 }

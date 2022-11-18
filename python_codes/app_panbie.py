@@ -99,9 +99,10 @@ def inspection_identify_defect(input_data):
 
     ## 初始化输入输出信息。
     img_tag, img_ref = get_input_data(input_data)
-    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+    out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     if img_ref is None:
         out_data["msg"] = out_data["msg"] + "; img_ref not exist;"
+        out_data["code"] = 1
         return out_data
     img_tag_ = img_tag.copy()
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
@@ -122,6 +123,7 @@ def inspection_identify_defect(input_data):
     if len(tag_diff) == 0:
         img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=20)
         out_cfg.append({"label": "0", "bbox":[]})
+        out_data["code"] = 0
     else:
         rec = tag_diff
         cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)

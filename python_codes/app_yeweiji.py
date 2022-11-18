@@ -73,6 +73,7 @@ def inspection_level_gauge(input_data):
 
     if input_data["type"] != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
+        out_data["code"] = 1
         return out_data
     
     ## 提取输入请求信息
@@ -122,6 +123,7 @@ def inspection_level_gauge(input_data):
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        out_data["code"] = 1
         return out_data
 
     ## 计算油率
