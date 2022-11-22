@@ -216,7 +216,7 @@ def inspection_object_detection(input_data):
         model_type = "ErCiSheBei"
     elif input_data["type"] == "disconnector_notemp":
         yolov5_model = yolov5_dz
-        labels = ["分","合"]
+        labels = ["合","分"]
         model_type = "disconnector_notemp"
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
