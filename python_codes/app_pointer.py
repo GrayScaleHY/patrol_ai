@@ -10,6 +10,7 @@ from lib_inference_mrcnn import inference_maskrcnn
 from lib_sift_match import sift_match, convert_coor, sift_create
 from lib_help_base import color_area
 import math
+import numpy.matlib
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 ## 指针模型， 表计
@@ -281,21 +282,32 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
             return widths.index(min(widths))
     
     elif color is not None:
+        if len(img.shape) == 2:
+            return 0
         area_max = 0
         i_max = 0
         for i in range(len(seg_cfgs)):
+            _img = img.copy()
             c = seg_cfgs[i]["box"]
-            img_b = img[int(c[1]):int(c[3]), int(c[0]):int(c[2]), :]
-            color_ = color_area(img_b, color_list=["black","white","red","red2"])
+            mask = seg_cfgs[i]["mask"]
+
+            ## 将mask外的区域填充为蓝色
+            for j in range(img.shape[-1]):
+                if j != 0:
+                    _img[:,:,j] = _img[:,:,j] * mask
+                else:
+                    _img[:,:,j] = _img[:,:,j] * mask + (mask - 1)
+            color_ = color_area(_img, color_list=["black","white","red","red2"])
             if int(color) == 0:
-                c_area = color_["black"] / max(1, (color_["red"] + color_["red2"]))
+                c_area = color_["black"]
             elif int(color) == 1:
-                c_area = color_["white"] / max(1, (color_["red"] + color_["red2"]))
+                c_area = color_["white"]
             elif int(color) == 2:
-                c_area = (color_["red"] + color_["red2"]) / max(1, color_["black"])
+                c_area = color_["red"] + color_["red2"]
             if c_area > area_max:
                 area_max = c_area
                 i_max = i
+
         return i_max
     else:
         return 0
@@ -322,13 +334,16 @@ def pointer_detect(img_tag):
         contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
         segments = contour2segment(contours, boxes)
         for i in range(len(scores)):
+            mask = np.zeros([h,w], dtype=np.uint8)
+            mask[c[1]:c[3], c[0]:c[2]] = masks[i]
             s = segments[i]; score = scores[i]; b = boxes[i]
             box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
             seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
+            cfg = {"seg": seg, "box": box, "score": score, "mask": mask}
             if j == 0:
-                seg_cfgs_all.append({"seg": seg, "box": box, "score": score})
+                seg_cfgs_all.append(cfg)
             else:
-                seg_cfgs_part.append({"seg": seg, "box": box, "score": score})
+                seg_cfgs_part.append(cfg)
     
     if len(seg_cfgs_all) >= len(seg_cfgs_part):
         seg_cfgs = seg_cfgs_all
@@ -484,7 +499,7 @@ def inspection_pointer(input_data):
     return out_data
     
 if __name__ == '__main__':
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/pointer/09-23-16-49-58/11-12-13-53-53_input_data.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/input_data.json","r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
