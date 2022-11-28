@@ -39,15 +39,15 @@ except:
         kmeans_lib = "sklearn"
         print("Notice: PCA and KMeans use sklearn !!!")
 
-try:
-    ## https://github.com/zldrobit/pycudasift/tree/Maxwell-fix
-    ## https://github.com/zldrobit/pycudasift/issues/1
-    import cudasift
-    sift_lib = "cudasift"
-    print("Notice: sift create use cudasift !!!")
-except:
-    sift_lib = "opencv"
-    print("Notice: sift create use cv2 !!!")
+# try:
+#     ## https://github.com/zldrobit/pycudasift/tree/Maxwell-fix
+#     ## https://github.com/zldrobit/pycudasift/issues/1
+#     import cudasift
+#     sift_lib = "cudasift"
+#     print("Notice: sift create use cudasift !!!")
+# except:
+sift_lib = "opencv"
+print("Notice: sift create use cv2 !!!")
 
 try:
     from pack_vector_set import pack_vector_set
