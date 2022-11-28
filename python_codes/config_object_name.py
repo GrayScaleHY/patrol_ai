@@ -1,6 +1,21 @@
 
 ## 目标检测中各标签的命名
 OBJECT_MAP = {
+    "coco": {
+        "name": "coco labels",
+        "person": "人员", "bicycle": "自行车", "car": "車", "motorcycle": "摩托", "airplane": "飞机", "bus": "公共汽车", "train": "火车", 
+        "truck": "卡车", "boat": "小船", "traffic light": "红绿灯", "fire hydrant": "消火栓", "stop sign": "停车标记", 
+        "parking meter": "停车记时器", "bench": "法官", "bird": "鸟", "cat": "猫", "dog": "狗", "horse": "馬", "sheep": "綿羊", "cow": "牛", 
+        "elephant": "大象", "bear": "熊", "zebra": "斑馬", "giraffe": "长颈鹿", "backpack": "背包", "umbrella": "伞", "handbag": "手提包", 
+        "tie": "领带", "suitcase": "手提箱", "frisbee": "飞盘", "skis": "滑雪板", "snowboard": "滑雪板", "sports ball": "体育运动", "kite": "鳶", 
+        "baseball bat": "棒球棒", "baseball glove": "棒球手套", "skateboard": "滑板", "surfboard": "冲浪板", "tennis racket": "球拍", "bottle": "瓶子", 
+        "wine glass": "酒杯", "cup": "杯子", "fork": "分叉", "knife": "小刀", "spoon": "勺子", "bowl": "碗", "banana": "香蕉", "apple": "苹果", 
+        "sandwich": "三明治", "orange": "橙色", "broccoli": "西兰花", "carrot": "胡萝卜", "hot dog": "热狗", "pizza": "比萨", "donut": "甜甜圈", 
+        "cake": "蛋糕", "chair": "椅子", "couch": "沙发", "potted plant": "车间", "bed": "床上", "dining table": "餐桌", "toilet": "厕所", "tv": "电视", 
+        "laptop": "笔记本", "mouse": "鼠标", "remote": "间接", "keyboard": "键盘", "cell phone": "手机", "microwave": "微波", "oven": "烤炉", 
+        "toaster": "烤面包机", "sink": "下沉", "refrigerator": "冰箱", "book": "书籍", "clock": "时钟", "vase": "花瓶", "scissors": "剪刀", 
+        "teddy bear": "泰迪熊", "hair drier": "干燥器", "toothbrush": "牙刷"
+    },
     "jmjs": {
         "name": "静默监视",
         "sb_bx": "设备变形",

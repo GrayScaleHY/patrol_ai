@@ -163,6 +163,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 @app.route('/inspection_digital/', methods=['POST'])
 @app.route('/inspection_counter/', methods=['POST'])
+@app.route('/inspection_person/', methods=['POST'])
 @app.route('/inspection_disconnector_notemp/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':

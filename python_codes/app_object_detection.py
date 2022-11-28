@@ -218,6 +218,10 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_dz
         labels = ["合","分"]
         model_type = "disconnector_notemp"
+    elif input_data["type"] == "person":
+        yolov5_model = yolov5_coco
+        labels = ["person"]
+        model_type = "coco"
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         out_data["code"] = 1
