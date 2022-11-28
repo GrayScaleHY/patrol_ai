@@ -1,7 +1,7 @@
 ## 巡检算法开发流程
 
 ##### 1. 算法接口
-需要接口文档给调用的人，方便查看。接口文档至少包含请求URL、post数据格式、返回数据格式。一般以wiki的形式编写，例如[接口文档](https://git.utapp.cn/xunshi-ai/json-http-interface/-/wikis/%E6%99%BA%E8%83%BD%E5%B7%A1%E6%A3%80-%E5%88%80%E9%97%B8%E5%88%86%E5%90%88%E7%8A%B6%E6%80%81%E5%88%A4%E6%96%AD-%E6%97%A0%E9%85%8D%E7%BD%AE)。
+需要接口文档给调用的人，方便查看。接口文档至少包含请求URL、post数据格式、返回数据格式。一般以wiki的形式编写，例如[接口文档](https://git.utapp.cn/xunshi-ai/json-http-interface/-/wikis/%E6%99%BA%E8%83%BD%E5%B7%A1%E6%A3%80-%E5%88%80%E9%97%B8%E5%88%86%E5%90%88%E7%8A%B6%E6%80%81%E5%88%A4%E6%96%AD-%E6%97%A0%E9%85%8D%E7%BD%AE)。  
 (1). URL, 算法调用地址。  
 (2). post数据，算法服务接收到的数据，一般是json字典形式，包含"image"、"config"、"type"三个元素。
 ```
