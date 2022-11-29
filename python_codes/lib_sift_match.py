@@ -584,10 +584,22 @@ def detect_diff(img_ref, img_tag):
     # dif_img = img_tag.astype(float) - img_ref.astype(float) ## 直接相减的差异
     # dif_img = np.abs(dif_img).astype(np.uint8)
     tol = 0.01
+
+    # Histogram Equalization
+    img_ref = cv2.equalizeHist(img_ref)
+    img_tag = cv2.equalizeHist(img_tag)
+
     dif_img = get_change_map(img_ref, img_tag, tol=tol) ## 周围像素相减，取最小值
     dif_img = cv2.resize(dif_img, (img_size[1], img_size[0]))
     dif_img = dif_img.astype(np.uint8)
     # cv2.imwrite("test1/tag_diff.jpg", dif_img)
+
+	# Remove OSD
+    osd_ratio = 0.1
+    margin = int(osd_ratio * dif_img.shape[0]) 
+    dif_img2 = np.zeros_like(dif_img, dtype=np.uint8)
+    dif_img2[margin:-margin, :] = dif_img[margin:-margin, :]
+    dif_img = dif_img2
 
     ## 对差异图进行二值化
     dif_img = pca_kmeans(dif_img) # pca-kmeans求二值图
