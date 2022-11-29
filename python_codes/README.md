@@ -21,6 +21,9 @@
 }
 
 ```
-##### 2. 算法主函数
-根据算法接口的输入输出编写主函数，
+##### 2. 编写代码
+(1). 根据算法接口的输入输出编写主函数，一般以函数文件名一般以app开头，参考[app_yeweiji.py](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/app_yeweiji.py)  
+(2). 将编写的算法加入到flask服务中，参考[util_patrol_server.py](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/util_patrol_server.py)
 
+##### 3. 合并代码
+使用git push将代码推到主分支。
