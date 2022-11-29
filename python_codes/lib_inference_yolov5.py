@@ -10,14 +10,19 @@ try:
     from utils.dataloaders import letterbox ## v7.0
 except:
     from utils.datasets import letterbox ## v6.0
-from utils.general import non_max_suppression, scale_coords
+from utils.general import non_max_suppression
+try:
+    from utils.general import scale_coords as scale_boxes # v6.2
+except:
+    from utils.general import scale_boxes # v7.0
+
 from models.common import DetectMultiBackend
 import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 from lib_rcnn_ops import iou
 
-device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("2")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def check_iou(cfgs_in, iou_limit=0.8):
     """
@@ -84,7 +89,7 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
 
     ## 使用NMS挑选预测结果
     pred_max = non_max_suppression(pred, conf_thres, iou_thres)[0] # Apply NMS
-    pred_max = scale_coords(img_resize_shape, pred_max, img_raw_shape) #bbox映射为resize之前的大小
+    pred_max = scale_boxes(img_resize_shape, pred_max, img_raw_shape) #bbox映射为resize之前的大小
 
     ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
     labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
@@ -100,8 +105,8 @@ def inference_yolov5(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.
 
 if __name__ == '__main__':
     import shutil
-    img_file = "/home/yh/image/python_codes/inspection_result/sy_10000007.jpg"
-    weight = "/data/PatrolAi/yolov5/rec_defect_x6.pt"
+    img_file = "/data/PatrolAi/patrol_ai/python_codes/test/11-28-23-28-46_img_tag.jpg"
+    weight = "/data/PatrolAi/yolov5/xf_yc.pt"
     img = cv2.imread(img_file)
     model_yolov5 = load_yolov5_model(weight)
     cfgs = inference_yolov5(model_yolov5, img, resize=1280, conf_thres=0.1, iou_thres=0.2)
