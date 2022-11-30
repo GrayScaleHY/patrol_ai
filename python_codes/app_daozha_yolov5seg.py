@@ -10,6 +10,7 @@ import torch
 
 from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
 from utils.segment.general import scale_image
+
 ## 加载模型
 yolov5seg_daozha = load_yolov5seg_model("best.pt") # 加载油位的maskrcnn模型
 
@@ -84,6 +85,34 @@ def get_input_data(input_data):
 
     return img_tag, img_ref, roi, status_map, label_list
 
+def rankBbox(out_data_list,data_masks,type='mask_size'):
+    '''type:score bbox_size mask_size'''
+    def cal_bbox_size(bbox):
+        return abs((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
+
+    if len(out_data_list)<=1:
+        return out_data_list
+    if type=='score':
+        max=out_data_list[0]
+        for i in range(len(out_data_list)):
+            if out_data_list[i]['score']>max['score']:
+                max= out_data_list[i]
+        return [max]
+    elif type=='bbox_size':
+        max = out_data_list[0]
+        for i in range(len(out_data_list)):
+            if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max['bbox']):
+                max = out_data_list[i]
+        return [max]
+    else:
+        max = out_data_list[0]
+        max_mask_idx=0
+        for i in range(len(out_data_list)):
+            if data_masks[i].sum() > data_masks[max_mask_idx].sum():
+                max = out_data_list[i]
+                max_mask_idx=i
+        return [max]
+
 def inspection_daozha_detection(input_data):
     """
     yolov5的目标检测推理。
@@ -124,7 +153,7 @@ def inspection_daozha_detection(input_data):
 
     ## 生成目标检测信息
     labels=['budaowei','fen','he']
-    cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.45)  # inference
+    cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
     cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
 
     if len(cfgs) == 0:  # 没有检测到目标
@@ -134,7 +163,7 @@ def inspection_daozha_detection(input_data):
         return out_data
 
     ## labels 列表 和 color 列表
-    colors = color_list(len(labels))
+    colors = [(0,255,255),(0,255,0),(0,0,255)]#color_list(len(labels))
     color_dict = {}
     name_dict = {}
     for i, label in enumerate(labels):
@@ -195,15 +224,18 @@ def inspection_daozha_detection(input_data):
         cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
 
-    ## 判断bbox是否在roi中
+    ## 判断bbox是否在roi中 进行筛选
     bboxes = []
+    out_data_data=[]
+    data_masks=[]
     for cfg in cfgs:
         if roi is None or is_include(cfg["coor"], roi_tag, srate=0.5):
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
-            out_data["data"].append(cfg_out)
+            out_data_data.append(cfg_out)
+            data_masks.append(cfg["mask"])
             bboxes.append(cfg["coor"])
 
-
+    out_data["data"]=rankBbox(out_data_data,data_masks)
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
