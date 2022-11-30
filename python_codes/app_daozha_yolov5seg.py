@@ -85,10 +85,27 @@ def get_input_data(input_data):
 
     return img_tag, img_ref, roi, status_map, label_list
 
-def rankBbox(out_data_list,data_masks,type='mask_size'):
-    '''type:score bbox_size mask_size score&mask_size'''
+def rankBbox(out_data_list,data_masks,roi,type='mask_size'):
+    '''type:score bbox_size mask_size iou score&mask_size'''
     def cal_bbox_size(bbox):
         return abs((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
+
+    def cal_bbox_iou(rec1,rec2):
+        S_rec1 = (rec1[2] - rec1[0]) * (rec1[3] - rec1[1])
+        S_rec2 = (rec2[2] - rec2[0]) * (rec2[3] - rec2[1])
+        sum_area = S_rec1 + S_rec2
+
+        left_line = max(rec1[1], rec2[1])
+        right_line = min(rec1[3], rec2[3])
+        top_line = max(rec1[0], rec2[0])
+        bottom_line = min(rec1[2], rec2[2])
+
+        # judge if there is intersect
+        if left_line >= right_line or top_line >= bottom_line:
+            return 0
+        else:
+            intersect = (right_line - left_line) * (bottom_line - top_line)
+            return (intersect / (sum_area - intersect)) * 1.0
 
     if len(out_data_list)<=1:
         return out_data_list
@@ -111,6 +128,12 @@ def rankBbox(out_data_list,data_masks,type='mask_size'):
             if (data_masks[i].sum())*out_data_list[i]['score'] > (data_masks[max_mask_idx].sum())*max['score']:
                 max = out_data_list[i]
                 max_mask_idx = i
+        return [max]
+    elif type=='iou':
+        max = out_data_list[0]
+        for i in range(len(out_data_list)):
+            if cal_bbox_iou(out_data_list[i]['bbox'],roi) > cal_bbox_iou(max['bbox'],roi):
+                max = out_data_list[i]
         return [max]
     else:
         max = out_data_list[0]
@@ -243,7 +266,7 @@ def inspection_daozha_detection(input_data):
             data_masks.append(cfg["mask"])
             bboxes.append(cfg["coor"])
 
-    out_data["data"]=rankBbox(out_data_data,data_masks)
+    out_data["data"]=rankBbox(out_data_data,data_masks,roi)
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
