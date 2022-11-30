@@ -86,7 +86,7 @@ def get_input_data(input_data):
     return img_tag, img_ref, roi, status_map, label_list
 
 def rankBbox(out_data_list,data_masks,type='mask_size'):
-    '''type:score bbox_size mask_size'''
+    '''type:score bbox_size mask_size score&mask_size'''
     def cal_bbox_size(bbox):
         return abs((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
 
@@ -103,6 +103,14 @@ def rankBbox(out_data_list,data_masks,type='mask_size'):
         for i in range(len(out_data_list)):
             if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max['bbox']):
                 max = out_data_list[i]
+        return [max]
+    elif type=='score&mask_size':
+        max = out_data_list[0]
+        max_mask_idx = 0
+        for i in range(len(out_data_list)):
+            if (data_masks[i].sum())*out_data_list[i]['score'] > (data_masks[max_mask_idx].sum())*max['score']:
+                max = out_data_list[i]
+                max_mask_idx = i
         return [max]
     else:
         max = out_data_list[0]
