@@ -85,12 +85,14 @@ def get_input_data(input_data):
 
     return img_tag, img_ref, roi, status_map, label_list
 
-def rankBbox(out_data_list,data_masks,roi,type='mask_size'):
+def rankBbox(out_data_list,data_masks,roi,type='iou'):
     '''type:score bbox_size mask_size iou score&mask_size'''
     def cal_bbox_size(bbox):
         return abs((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
 
     def cal_bbox_iou(rec1,rec2):
+        if rec2==None:
+            return abs((rec1[2] - rec1[0]) * (rec1[3] - rec1[1]))
         S_rec1 = (rec1[2] - rec1[0]) * (rec1[3] - rec1[1])
         S_rec2 = (rec2[2] - rec2[0]) * (rec2[3] - rec2[1])
         sum_area = S_rec1 + S_rec2
@@ -105,7 +107,7 @@ def rankBbox(out_data_list,data_masks,roi,type='mask_size'):
             return 0
         else:
             intersect = (right_line - left_line) * (bottom_line - top_line)
-            return (intersect / (sum_area - intersect)) * 1.0
+            return (intersect*1.0 / (sum_area - intersect)) * 1.0
 
     if len(out_data_list)<=1:
         return out_data_list
