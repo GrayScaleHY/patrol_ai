@@ -92,7 +92,7 @@ REPOSITORY           TAG                                   IMAGE ID       CREATE
 ```
 cd /data/PatrolAi
 sudo chmod +x run_PatrolAi.sh
-sudo docker run --gpus all -d --cpus="8." -e LANG=C.UTF-8 --shm-size 6g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.4-conda-cuml
+sudo docker run --gpus all -d --cpus="8." -e LANG=C.UTF-8 --shm-size 8g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.4-conda-cuml
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
