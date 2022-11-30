@@ -22,7 +22,7 @@ from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 from lib_rcnn_ops import iou
 
-device = select_device("2")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
+device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
 def check_iou(cfgs_in, iou_limit=0.8):
     """
