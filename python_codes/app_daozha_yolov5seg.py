@@ -153,7 +153,7 @@ def inspection_daozha_detection(input_data):
     ## 将输入请求信息可视化
     TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, "result_patrol")
+    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
     f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
@@ -201,7 +201,7 @@ def inspection_daozha_detection(input_data):
     name_dict = {}
     for i, label in enumerate(labels):
         color_dict[label] = colors[i]
-    name_dict = {'budaowei': '不到位', 'fen': '分', 'he': '合'}
+    name_dict = {'budaowei': '分合异常', 'fen': '分闸正常', 'he': '合闸正常'}
 
     ## 画出boxes
     #print(name_dict)
@@ -275,8 +275,8 @@ def inspection_daozha_detection(input_data):
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-    cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    #cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
