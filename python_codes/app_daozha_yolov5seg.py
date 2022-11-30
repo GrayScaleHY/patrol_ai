@@ -269,6 +269,8 @@ def inspection_daozha_detection(input_data):
             bboxes.append(cfg["coor"])
 
     out_data["data"]=rankBbox(out_data_data,data_masks,roi)
+    cv2.putText(img_tag_, "-selected", (int(0.5*out_data["data"][0]['bbox'][0]+0.5*out_data["data"][0]['bbox'][2]), int(out_data["data"][0]['bbox'][3])-10),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255),thickness=2)
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
