@@ -6,7 +6,7 @@ import os
 import glob
 import numpy as np
 #sys.path.append(r'E:\yolov5-master\yolov5-master') ## ultralytics/yolov5 存放的路径  /home/lde/daozha-yolov5/
-sys.path.append(r'/home/lde/daozha-yolov5/')
+sys.path.append(r'../yolov5')
 
 from models.common import DetectMultiBackend
 from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
@@ -55,7 +55,7 @@ def check_iou(cfgs_in, iou_limit=0.8):
     cfgs_out = [c for i, c in enumerate(cfgs_in) if i not in rm_ids]
     return cfgs_out
 
-def load_yolov5seg_model(model_file='best.pt'):
+def load_yolov5seg_model(model_file='/data/PatrolAi/yolov5/daozha_seg.pt'):
     """
     # load yolov5 FP32 model
     """
