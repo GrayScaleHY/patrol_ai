@@ -10,11 +10,29 @@ from app_panbie import inspection_identify_defect
 from config_version import code_version
 from app_disconnector_video import inspection_disconnector_video
 from app_yeweiji import inspection_level_gauge
+from app_daozha_yolov5seg import inspection_daozha_detection
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
+
+## 刀闸状态识别-无模板
+@app.route('/inspection_disconnector_notemp/', methods=['POST'])
+def inspection_disconnector_notemp_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_daozha_detection(data)
+    print("inspection_level_gauge result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
+
 
 ## 液位仪表读数
 @app.route('/inspection_level_gauge/', methods=['POST'])
@@ -164,7 +182,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_digital/', methods=['POST'])
 @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_person/', methods=['POST'])
-@app.route('/inspection_disconnector_notemp/', methods=['POST'])
+# @app.route('/inspection_disconnector_notemp/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
