@@ -333,6 +333,7 @@ def pointer_detect(img_tag):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
         contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
         segments = contour2segment(contours, boxes)
+
         for i in range(len(scores)):
             mask = np.zeros([h,w], dtype=np.uint8)
             mask[c[1]:c[3], c[0]:c[2]] = masks[i]
@@ -352,7 +353,6 @@ def pointer_detect(img_tag):
         seg_cfgs = seg_cfgs_part
         b = np.array(bboxes[1:], dtype=int)
         roi_tag = [min(b[:,0]), min(b[:,1]), max(b[:,2]),max(b[:,3])]
-    
     return seg_cfgs, roi_tag
 
 
@@ -473,7 +473,9 @@ def inspection_pointer(input_data):
         xo = pointers_tag["center"][0]; yo = pointers_tag["center"][1]
         if (seg[0]-xo)**2+(seg[1]-yo)**2 > (seg[2]-xo)**2+(seg[3]-yo)**2:
             seg = [seg[2], seg[3], seg[0], seg[1]]
-        val = cal_base_angle(pointers_tag, seg)
+        dx_ = seg[2] - seg[0]; dy_ = seg[3] - seg[1]
+        seg_ = [xo, yo, xo + dx_, yo + dy_]
+        val = cal_base_scale(pointers_tag, seg_)
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
@@ -499,9 +501,42 @@ def inspection_pointer(input_data):
     return out_data
     
 if __name__ == '__main__':
-    f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/input_data.json","r", encoding='utf-8')
-    input_data = json.load(f)
-    f.close()
+    import glob
+
+    # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
+    img_tag_file = "/data/PatrolAi/result_patrol/pointer/12-06-11-48-55_img_tag_cfg.jpg"
+    img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
+    # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
+    pointers ={"center": [986, 593],
+        "-0.1": [855, 694],
+        "0.2": [866, 482],
+        "0.4": [1001, 430],
+        "0.6": [1124, 514],
+        "0.9": [1086, 728]}
+    # bboxes = {"roi": [805, 256, 1217, 556]}
+    img_ref = cv2.imread(img_ref_file)
+    W = img_ref.shape[1]; H = img_ref.shape[0]
+    for t in pointers:
+        pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
+    # for b in bboxes:
+    #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
+    
+    img_tag = img2base64(cv2.imread(img_tag_file))
+    img_ref = img2base64(cv2.imread(img_ref_file))
+    config = {
+        "img_ref": img_ref, 
+        "number": 1, 
+        "pointers": pointers
+        # "length": 0, 
+        # "width": 0, 
+        # "color": 0, 
+        # "bboxes": bboxes
+    }
+    input_data = {"image": img_tag, "config": config, "type": "pointer"}
+
+    # f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/input_data.json","r", encoding='utf-8')
+    # input_data = json.load(f)
+    # f.close()
     out_data = inspection_pointer(input_data)
     print("------------------------------")
     for s in out_data:
