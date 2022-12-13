@@ -65,13 +65,22 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                        W = img_ref.shape[1];
-                        H = img_ref.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
+                    roi = input_data["config"]["bboxes"]["roi"]
+                    dim = np.array(roi).ndim
+                    if dim == 1:
+                        if len(input_data["config"]["bboxes"]["roi"]) == 4:
+                            W = img_ref.shape[1];
+                            H = img_ref.shape[0]
+                            roi = input_data["config"]["bboxes"]["roi"]
+                            roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
+                    else:
+                        for i in range(len(roi)):
+                            if len(input_data["config"]["bboxes"]["roi"][i]) == 4:
+                                W = img_ref.shape[1];
+                                H = img_ref.shape[0]
+                                roi[i]=[int(roi[i][0] * W), int(roi[i][1] * H), int(roi[i][2] * W), int(roi[i][3] * H)]
 
-                        ## 设备状态与显示名字的映射关系。
+    ## 设备状态与显示名字的映射关系。
     status_map = None
     if "status_map" in input_data["config"]:
         if isinstance(input_data["config"]["status_map"], dict):
@@ -171,10 +180,20 @@ def inspection_daozha_detection(input_data):
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
     if roi is not None:  # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
+        dim = np.array(roi).ndim
+        if dim == 1:
+            cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
+            cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+            cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+        else:
+            for i in range(len(roi)):
+                cv2.rectangle(img_ref_, (int(roi[i][0]), int(roi[i][1])), (int(roi[i][2]), int(roi[i][3])), (255, 0, 255),
+                              thickness=1)
+                cv2.putText(img_ref_, "roi"+str(i+1), (int(roi[i][0]), int(roi[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (255, 0, 255),
+                            thickness=1)
+                cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
 
     if "augm" in input_data["config"]:
@@ -235,42 +254,95 @@ def inspection_daozha_detection(input_data):
         feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
         feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
         M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        roi_tag=[]
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi
         else:
-            coors = [(roi[0], roi[1]), (roi[2], roi[1]), (roi[2], roi[3]), (roi[0], roi[3])]
-            coors_ = []
-            for coor in coors:
-                coors_.append(list(convert_coor(coor, M)))
-            xs = [coor[0] for coor in coors_]
-            ys = [coor[1] for coor in coors_]
-            xmin = max(0, min(xs));
-            ymin = max(0, min(ys))
-            xmax = min(img_tag.shape[1], max(xs));
-            ymax = min(img_tag.shape[0], max(ys))
-            roi_tag = [xmin, ymin, xmax, ymax]
+            dim = np.array(roi).ndim
+            if dim == 1:
+                coors = [(roi[0], roi[1]), (roi[2], roi[1]), (roi[2], roi[3]), (roi[0], roi[3])]
+                coors_ = []
+                for coor in coors:
+                    coors_.append(list(convert_coor(coor, M)))
+                xs = [coor[0] for coor in coors_]
+                ys = [coor[1] for coor in coors_]
+                xmin = max(0, min(xs));
+                ymin = max(0, min(ys))
+                xmax = min(img_tag.shape[1], max(xs));
+                ymax = min(img_tag.shape[0], max(ys))
+                roi_tag=[xmin, ymin, xmax, ymax]
+            else:
+                for i in range(len(roi)):
+                    coors = [(roi[i][0], roi[i][1]), (roi[i][2], roi[i][1]), (roi[i][2], roi[i][3]), (roi[i][0], roi[i][3])]
+                    coors_ = []
+                    for coor in coors:
+                        coors_.append(list(convert_coor(coor, M)))
+                    xs = [coor[0] for coor in coors_]
+                    ys = [coor[1] for coor in coors_]
+                    xmin = max(0, min(xs));
+                    ymin = max(0, min(ys))
+                    xmax = min(img_tag.shape[1], max(xs));
+                    ymax = min(img_tag.shape[0], max(ys))
+                    roi_tag = [xmin, ymin, xmax, ymax]
+                    roi_tag.appaned([xmin, ymin, xmax, ymax])
 
         ## 画出roi_tag
         c = roi_tag
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
+        dim = np.array(c).ndim
+        if dim == 1:
+            cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
+            cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
+        else:
+            for i in range(len(c)):
+                cv2.rectangle(img_tag_, (int(c[i][0]), int(c[i][1])), (int(c[i][2]), int(c[i][3])), (255, 0, 255), thickness=1)
+                cv2.putText(img_tag_, "roi"+str(i), (int(c[i][0]), int(c[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
+                            thickness=1)
 
     ## 判断bbox是否在roi中 进行筛选
     bboxes = []
     out_data_data=[]
     data_masks=[]
     for cfg in cfgs:
-        if roi is None or is_include(cfg["coor"], roi_tag, srate=0.5):
+        if roi is None:
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
             out_data_data.append(cfg_out)
             data_masks.append(cfg["mask"])
             bboxes.append(cfg["coor"])
+            out_data["data"] = rankBbox(out_data_data, data_masks, roi)
+            cv2.putText(img_tag_, "-selected", (
+                    int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
+                    int(out_data["data"][0]['bbox'][3]) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+        else:
+            dim = np.array(roi_tag).ndim
+            if dim == 1:
+                if is_include(cfg["coor"], roi_tag, srate=0.5):
+                    cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
+                    out_data_data.append(cfg_out)
+                    data_masks.append(cfg["mask"])
+                    bboxes.append(cfg["coor"])
+                    out_data["data"] = rankBbox(out_data_data, data_masks, roi)
+                    cv2.putText(img_tag_, "-selected", (
+                        int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
+                        int(out_data["data"][0]['bbox'][3]) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+            else:
+                for i in range(len(roi_tag)):
+                    if is_include(cfg["coor"], roi_tag[i], srate=0.5):
+                        cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
+                        out_data_data.append(cfg_out)
+                        data_masks.append(cfg["mask"])
+                        bboxes.append(cfg["coor"])
+                        tmp_data=rankBbox(out_data_data, data_masks, roi[i])
+                        out_data["data"].append(tmp_data)
 
-    out_data["data"]=rankBbox(out_data_data,data_masks,roi)
-    cv2.putText(img_tag_, "-selected", (int(0.5*out_data["data"][0]['bbox'][0]+0.5*out_data["data"][0]['bbox'][2]), int(out_data["data"][0]['bbox'][3])-10),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255),thickness=2)
+                        cv2.putText(img_tag_, "-selected"+str(i), (
+                            int(0.5 * tmp_data["data"][0]['bbox'][0] + 0.5 * tmp_data["data"][0]['bbox'][2]),
+                            int(tmp_data["data"][0]['bbox'][3]) - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
