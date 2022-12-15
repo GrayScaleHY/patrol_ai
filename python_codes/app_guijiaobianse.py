@@ -47,6 +47,8 @@ def inspection_xishiqi(input_data):
 
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -56,6 +58,7 @@ def inspection_xishiqi(input_data):
 
     out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
     img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
     
     ## 提取输入请求信息
     img_tag, img_ref, roi= get_input_data(input_data)
