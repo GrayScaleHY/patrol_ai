@@ -201,10 +201,11 @@ OBJECT_MAP = {
         'hxq_gjtps': '硅胶筒破损',
         "sly_bjbmyw": '部件表面油污'
     },
-        "disconnector_notemp": {
+        "disconnector_texie": {
         "name": "刀闸状态-无模板配置",
-        '分': '分闸正常',
-        '合': '合闸正常'
+        "he": "合闸正常",
+        "fen": "分闸正常",
+        "budaowei": "分合异常"
     }
 
 }

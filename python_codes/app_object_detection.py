@@ -19,7 +19,7 @@ from config_load_models_var import yolov5_meter, \
                                    yolov5_coco, \
                                    yolov5_ShuZiBiaoJi, \
                                    yolov5_jmjs, \
-                                   yolov5_dz
+                                   yolov5_dztx
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -218,9 +218,9 @@ def inspection_object_detection(input_data):
         labels = ["ys"]
         model_type = "ErCiSheBei"
     elif input_data["type"] == "disconnector_notemp":
-        yolov5_model = yolov5_dz
-        labels = ["合","分"]
-        model_type = "disconnector_notemp"
+        yolov5_model = yolov5_dztx
+        labels = ["he","fen","budaowei"]
+        model_type = "disconnector_texie"
     elif input_data["type"] == "person":
         yolov5_model = yolov5_coco
         labels = ["person"]
