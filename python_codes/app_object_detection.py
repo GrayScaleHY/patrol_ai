@@ -109,7 +109,9 @@ def inspection_object_detection(input_data):
     yolov5的目标检测推理。
     """
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -125,6 +127,7 @@ def inspection_object_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
@@ -225,6 +228,9 @@ def inspection_object_detection(input_data):
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     if "augm" in input_data["config"]:
@@ -250,6 +256,9 @@ def inspection_object_detection(input_data):
             out_data["code"] = 0
         else:
             out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## labels 列表 和 color 列表
@@ -323,15 +332,16 @@ def inspection_object_detection(input_data):
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-
+    
     ## 输出可视化结果的图片。
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
     out_data["img_result"] = img2base64(img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/patrol_ai/python_codes/inspection_result/11-05-17-31-47_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/12-15-11-30-07_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

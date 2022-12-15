@@ -3,7 +3,7 @@ import cv2
 import time
 import json
 import math
-from lib_image_ops import base642img, img2base64
+from lib_image_ops import base642img, img2base64, img_chinese
 from lib_help_base import oil_high
 import numpy as np
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn
@@ -61,7 +61,9 @@ def get_input_data(input_data):
 def inspection_level_gauge(input_data):
 
     ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -70,19 +72,24 @@ def inspection_level_gauge(input_data):
     f.close()
 
     out_data = {"code":0, "data":{}, "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
-
-    if input_data["type"] != "level_gauge":
-        out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
-        out_data["code"] = 1
-        return out_data
     
     ## 提取输入请求信息
     img_tag, img_ref, roi, sp, dp= get_input_data(input_data)
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
-        
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    
+
+    if input_data["type"] != "level_gauge":
+        out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
+        out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        return out_data
+
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
     if roi is not None and img_ref is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
@@ -122,8 +129,10 @@ def inspection_level_gauge(input_data):
     contours, _, (masks, classes, scores) = inference_maskrcnn(maskrcnn_oil, img_roi)
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## 计算油率

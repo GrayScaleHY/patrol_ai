@@ -47,12 +47,16 @@ def inspection_qrcode(input_data):
     解二维码
     """
     ## 初始化输入输出信息。
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
+
     img_tag, img_ref, roi = get_input_data(input_data)
     out_data = {"code": 0, "data":[], "img_result": "image", "msg": "Success request object detect; "} # 初始化out_data
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -104,11 +108,17 @@ def inspection_qrcode(input_data):
     else:
         out_data["msg"] = out_data["msg"] + "; Type is wrong !"
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find qrcode"
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## 将bboxes映射到原图坐标
@@ -139,10 +149,11 @@ def inspection_qrcode(input_data):
                     (int(coor[2]), int(coor[3])), (0, 225, 0), thickness=round(s/50))
         # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
         img_tag_ = img_chinese(img_tag_, label, (coor[0], coor[1]-round(s)), color=(0, 225, 0), size=round(s))
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-
+    
     ## 输出可视化结果的图片。
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
     out_data["img_result"] = img2base64(img_tag_)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     return out_data
 

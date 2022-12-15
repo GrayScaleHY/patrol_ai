@@ -214,12 +214,24 @@ def get_input_data(input_data):
                         roi = input_data["config"]["bboxes"]["roi"]
                         roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
     
+    ## osd区域
+    osd = None # 初始假设
+    if "bboxes" in input_data["config"]:
+        if isinstance(input_data["config"]["bboxes"], dict):
+            if "osd" in input_data["config"]["bboxes"]:
+                if isinstance(input_data["config"]["bboxes"]["osd"], list):
+                    osd_ = input_data["config"]["bboxes"]["osd"]
+                    osd=[]
+                    for o_ in osd_:
+                        osd.append([max(0,o_[0]-0.01),max(0,o_[1]-0.01),min(1,o_[2]+0.01),min(1,o_[3]+0.01)])
+    
     ## 其他信息
-    number = None
+    number = 1
     if "number" in input_data["config"]:
         if isinstance(input_data["config"]["number"], int):
             if input_data["config"]["number"] != -1:
                 number = input_data["config"]["number"]
+
     length = None
     if "length" in input_data["config"]:
         if isinstance(input_data["config"]["length"], int):
@@ -241,7 +253,7 @@ def get_input_data(input_data):
             if input_data["config"]["dp"] != -1:
                 dp = input_data["config"]["dp"]
     
-    return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp
+    return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp, osd
 
 def select_pointer(img, seg_cfgs, number, length, width, color):
     """
@@ -250,7 +262,7 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
     """
     if len(seg_cfgs) == 0:
         return 0
-
+ 
     if number is None or number == 1:
         return 0
     
@@ -313,7 +325,7 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
         return 0
 
 
-def pointer_detect(img_tag):
+def pointer_detect(img_tag, number):
     """
     args:
         img_tag: 图片
@@ -346,20 +358,33 @@ def pointer_detect(img_tag):
             else:
                 seg_cfgs_part.append(cfg)
     
-    if len(seg_cfgs_all) >= len(seg_cfgs_part):
+    ## 挑选最接近数量的指针为最终结果
+    if len(seg_cfgs_all) < number and len(seg_cfgs_part) >= number:
+        true_type = "part"
+    elif len(seg_cfgs_part) < number and len(seg_cfgs_all) >= number:
+        true_type = "all"
+    else:
+        if abs(len(seg_cfgs_part) - number) < abs(len(seg_cfgs_all) - number):
+            true_type = "part"
+        else:
+            true_type = "all"
+
+    if true_type == "all":
         seg_cfgs = seg_cfgs_all
         roi_tag = bboxes[0]
     else:
         seg_cfgs = seg_cfgs_part
         b = np.array(bboxes[1:], dtype=int)
         roi_tag = [min(b[:,0]), min(b[:,1]), max(b[:,2]),max(b[:,3])]
-    return seg_cfgs, roi_tag
 
+    return seg_cfgs, roi_tag
 
 def inspection_pointer(input_data):
 
     ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -367,18 +392,14 @@ def inspection_pointer(input_data):
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
-    out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request success; "} #初始化输出信息
-
-    if input_data["type"] != "pointer":
-        out_data["msg"] = out_data["msg"] + "type isn't pointer; "
-        out_data["code"] = 1
-        return out_data
+    out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request " + input_data["type"] + ";"} #初始化输出信息
 
     ## 提取输入请求信息
-    img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp= get_input_data(input_data)
+    img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp, osd= get_input_data(input_data)
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
     img_ref_ = img_ref.copy()
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
@@ -389,14 +410,30 @@ def inspection_pointer(input_data):
     if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    if osd is not None: ## 如果配置了感兴趣区域，则画出osd区域
+        for o_ in osd:
+            H, W = img_ref.shape[:2]
+            o_ = [int(o_[0]*W), int(o_[1]*H), int(o_[2]*W), int(o_[3]*H)]
+            cv2.rectangle(img_ref_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+            cv2.putText(img_ref_, "osd", (int(o_[0])-5, int(o_[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
+    if input_data["type"] != "pointer":
+        out_data["msg"] = out_data["msg"] + "type isn't pointer; "
+        out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        return out_data
+
     ## 计算指针
-    seg_cfgs, roi_tag = pointer_detect(img_tag)
+    seg_cfgs, roi_tag = pointer_detect(img_tag, number)
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -406,8 +443,12 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 矫正信息
-    feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
-    feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+    if osd is None:
+        feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+        feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+    else:
+        feat_ref = sift_create(img_ref, rm_regs=osd)
+        feat_tag = sift_create(img_tag)
     M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
     ## 求出目标图像的感兴趣区域
@@ -438,6 +479,8 @@ def inspection_pointer(input_data):
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -459,10 +502,11 @@ def inspection_pointer(input_data):
         cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
         cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    ## 根据线段末端与指针绕点的距离更正seg的头尾
     if "center" not in pointers_tag:
-        out_data["msg"] = out_data["msg"] + "Can not find conter in pointers_tag; "
+        out_data["msg"] = out_data["msg"] + "Can not find center in pointers_tag; "
         out_data["code"] = 1
+        out_data["img_result"] = img2base64(img_tag_)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
         
@@ -476,10 +520,15 @@ def inspection_pointer(input_data):
         dx_ = seg[2] - seg[0]; dy_ = seg[3] - seg[1]
         seg_ = [xo, yo, xo + dx_, yo + dy_]
         val = cal_base_scale(pointers_tag, seg_)
+        if val == None:
+            seg_ = [xo, yo, xo - dx_, yo - dy_]
+            val = cal_base_scale(pointers_tag, seg_)
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
         out_data["code"] = 1
+        out_data["img_result"] = img2base64(img_tag_)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -491,11 +540,12 @@ def inspection_pointer(input_data):
     ## 输出可视化结果的图片。
     s = (roi_tag[2] - roi_tag[0]) / 400
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(seg[3])-5),cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-
     f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
     json.dump(out_data, f, indent=2, ensure_ascii=False)
     f.close()
+
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
@@ -504,39 +554,39 @@ if __name__ == '__main__':
     import glob
 
     # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
-    img_tag_file = "/data/PatrolAi/result_patrol/pointer/12-06-11-48-55_img_tag_cfg.jpg"
-    img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
-    # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
-    pointers ={"center": [986, 593],
-        "-0.1": [855, 694],
-        "0.2": [866, 482],
-        "0.4": [1001, 430],
-        "0.6": [1124, 514],
-        "0.9": [1086, 728]}
-    # bboxes = {"roi": [805, 256, 1217, 556]}
-    img_ref = cv2.imread(img_ref_file)
-    W = img_ref.shape[1]; H = img_ref.shape[0]
-    for t in pointers:
-        pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
-    # for b in bboxes:
-    #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
+    # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2022-03-18 18-35-07.jpg"
+    # img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
+    # # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
+    # pointers ={"center": [986, 593],
+    #     "-0.1": [855, 694],
+    #     "0.2": [866, 482],
+    #     "0.4": [1001, 430],
+    #     "0.6": [1124, 514],
+    #     "0.9": [1086, 728]}
+    # # bboxes = {"roi": [805, 256, 1217, 556]}
+    # img_ref = cv2.imread(img_ref_file)
+    # W = img_ref.shape[1]; H = img_ref.shape[0]
+    # for t in pointers:
+    #     pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
+    # # for b in bboxes:
+    # #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
     
-    img_tag = img2base64(cv2.imread(img_tag_file))
-    img_ref = img2base64(cv2.imread(img_ref_file))
-    config = {
-        "img_ref": img_ref, 
-        "number": 1, 
-        "pointers": pointers
-        # "length": 0, 
-        # "width": 0, 
-        # "color": 0, 
-        # "bboxes": bboxes
-    }
-    input_data = {"image": img_tag, "config": config, "type": "pointer"}
+    # img_tag = img2base64(cv2.imread(img_tag_file))
+    # img_ref = img2base64(cv2.imread(img_ref_file))
+    # config = {
+    #     "img_ref": img_ref, 
+    #     "number": 1, 
+    #     "pointers": pointers
+    #     # "length": 0, 
+    #     # "width": 0, 
+    #     # "color": 0, 
+    #     # "bboxes": bboxes
+    # }
+    # input_data = {"image": img_tag, "config": config, "type": "pointer"}
 
-    # f = open("/data/PatrolAi/patrol_ai/python_codes/inspection_result/input_data.json","r", encoding='utf-8')
-    # input_data = json.load(f)
-    # f.close()
+    f = open("/data/PatrolAi/result_patrol/pointer/12-13-11-27-59_input_data.json","r", encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_pointer(input_data)
     print("------------------------------")
     for s in out_data:

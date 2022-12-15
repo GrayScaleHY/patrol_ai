@@ -55,19 +55,19 @@ def inspection_xishiqi(input_data):
     f.close()
 
     out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
+    img_tag_ = img_tag.copy()
+    
+    ## 提取输入请求信息
+    img_tag, img_ref, roi= get_input_data(input_data)
+    ## 将输入请求信息可视化
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
 
     if input_data["type"] != "xishiqi_color":
         out_data["msg"] = out_data["msg"] + "type isn't xishiqi_color; "
         out_data["code"] = 1
+        out_data["img_result"] = img2base64(img_tag_)
         return out_data
-    
-    ## 提取输入请求信息
-    img_tag, img_ref, roi= get_input_data(input_data)
 
-    ## 将输入请求信息可视化
-    img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
-        
     if roi is not None and img_ref is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
@@ -108,6 +108,7 @@ def inspection_xishiqi(input_data):
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
         out_data["code"] = 1
+        out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 

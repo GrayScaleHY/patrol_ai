@@ -46,21 +46,17 @@ def inspection_counter(input_data):
     """
     动作次数数字识别。
     """
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
+        
     ## 初始化输入输出信息。
     img_tag, img_ref, roi = get_input_data(input_data)
     out_data = {"code": 0, "data":{}, "msg": "Success request counter"} # 初始化out_data
 
-    if input_data["type"] == "counter":
-        yolov5_model = yolov5_counter
-    elif input_data["type"] == "digital":
-        yolov5_model = yolov5_digital
-    else:
-        out_data["msg"] = out_data["msg"] + "Type isn't counter; "
-        out_data["code"] = 1
-        return out_data  
-
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    ## 初始化输入输出信息。
+    img_tag_ = img_tag.copy()
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -77,6 +73,19 @@ def inspection_counter(input_data):
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+
+    if input_data["type"] == "counter":
+        yolov5_model = yolov5_counter
+    elif input_data["type"] == "digital":
+        yolov5_model = yolov5_digital
+    else:
+        out_data["msg"] = out_data["msg"] + "Type isn't counter or digital; "
+        out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
+        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        return out_data  
 
     ## 调整亮度与对比度
     if "augm" in input_data["config"]:
@@ -86,7 +95,7 @@ def inspection_counter(input_data):
                 augm = [float(augm[0]), float(augm[1])]
                 img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
 
-    img_tag_ = img_tag.copy()
+    
     ## 求出目标图像的感兴趣区域
     if roi is None:
         M = None
@@ -128,6 +137,8 @@ def inspection_counter(input_data):
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find counter"
         out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
     
@@ -168,11 +179,12 @@ def inspection_counter(input_data):
                     (int(coor[2]), int(coor[3])), color_dict[label], thickness=round(s/50))
         # cv2.putText(img_tag_, map_o[input_data["type"]][label], (int(coor[0])-5, int(coor[1])-5)),cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
         img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*8), color=color_dict[label], size=s*8)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
     out_data["img_result"] = img2base64(img_tag_)
-
+    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    
     return out_data
 
 if __name__ == '__main__':
