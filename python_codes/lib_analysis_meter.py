@@ -318,8 +318,8 @@ def contour2segment(contours, boxes):
                 coors.append(coor)
                 segment = segment + list(coor)
         
-        assert len(segment) == 4, str(segment) + " is wrong!"
-        segments.append(segment)
+        if len(segment) == 4:
+            segments.append(segment)
 
     return segments
 

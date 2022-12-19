@@ -208,11 +208,12 @@ def get_input_data(input_data):
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                        W = img_ref.shape[1]; H = img_ref.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
+                if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
+                    roi = input_data["config"]["bboxes"]["roi"][0]
+                else:
+                    roi = input_data["config"]["bboxes"]["roi"]
+                W = img_ref.shape[1]; H = img_ref.shape[0]
+                roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     ## osd区域
     osd = None # 初始假设
@@ -349,7 +350,7 @@ def pointer_detect(img_tag, number):
         contours, boxes, (masks, classes, scores) = inference_maskrcnn(maskrcnn_pointer, img)
         segments = contour2segment(contours, boxes)
 
-        for i in range(len(scores)):
+        for i in range(len(segments)):
             mask = np.zeros([h,w], dtype=np.uint8)
             mask[c[1]:c[3], c[0]:c[2]] = masks[i]
             s = segments[i]; score = scores[i]; b = boxes[i]
@@ -402,7 +403,7 @@ def inspection_pointer(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     img_ref_ = img_ref.copy()
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
@@ -430,7 +431,7 @@ def inspection_pointer(input_data):
     if input_data["type"] != "pointer":
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -441,7 +442,7 @@ def inspection_pointer(input_data):
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -486,7 +487,7 @@ def inspection_pointer(input_data):
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -513,7 +514,7 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + "Can not find center in pointers_tag; "
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
         
@@ -535,7 +536,7 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -552,7 +553,7 @@ def inspection_pointer(input_data):
     json.dump(out_data, f, indent=2, ensure_ascii=False)
     f.close()
 
-    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     out_data["img_result"] = img2base64(img_tag_)
 

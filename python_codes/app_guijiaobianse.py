@@ -35,11 +35,12 @@ def get_input_data(input_data):
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                        W = img_ref.shape[1]; H = img_ref.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
+                if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
+                    roi = input_data["config"]["bboxes"]["roi"][0]
+                else:
+                    roi = input_data["config"]["bboxes"]["roi"]
+                W = img_ref.shape[1]; H = img_ref.shape[0]
+                roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     return img_tag, img_ref, roi
 
@@ -58,7 +59,7 @@ def inspection_xishiqi(input_data):
 
     out_data = {"code":0, "data":[], "img_result": "image", "msg": "request sucdess; "} #初始化输出信息
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     
     ## 提取输入请求信息
     img_tag, img_ref, roi= get_input_data(input_data)

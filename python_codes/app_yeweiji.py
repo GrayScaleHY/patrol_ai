@@ -37,11 +37,12 @@ def get_input_data(input_data):
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                        W = img_ref.shape[1]; H = img_ref.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]
+                if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
+                    roi = input_data["config"]["bboxes"]["roi"][0]
+                else:
+                    roi = input_data["config"]["bboxes"]["roi"]
+                W = img_ref.shape[1]; H = img_ref.shape[0]
+                roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     ## 其他信息
     sp = 1
@@ -78,13 +79,13 @@ def inspection_level_gauge(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     
 
     if input_data["type"] != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -130,7 +131,7 @@ def inspection_level_gauge(input_data):
     if len(masks) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find oil_lelvel; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data

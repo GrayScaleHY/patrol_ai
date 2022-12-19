@@ -34,11 +34,12 @@ def get_input_data(input_data):
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                        W = img_ref.shape[1]; H = img_ref.shape[0]
-                        roi = input_data["config"]["bboxes"]["roi"]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]   
+                if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
+                    roi = input_data["config"]["bboxes"]["roi"][0]
+                else:
+                    roi = input_data["config"]["bboxes"]["roi"]
+                W = img_ref.shape[1]; H = img_ref.shape[0]
+                roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     return img_tag, img_ref, roi
 
@@ -73,7 +74,7 @@ def inspection_counter(input_data):
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), thickness=2)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
-    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
 
     if input_data["type"] == "counter":
         yolov5_model = yolov5_counter
@@ -82,7 +83,7 @@ def inspection_counter(input_data):
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't counter or digital; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data  
@@ -137,7 +138,7 @@ def inspection_counter(input_data):
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find counter"
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -181,7 +182,7 @@ def inspection_counter(input_data):
         img_tag_ = img_chinese(img_tag_, map_o[input_data["type"]][label], (coor[0], coor[1]-s*8), color=color_dict[label], size=s*8)
 
     ## 输出可视化结果的图片。
-    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     

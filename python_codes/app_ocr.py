@@ -104,7 +104,7 @@ def ocr_digit_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START, (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
