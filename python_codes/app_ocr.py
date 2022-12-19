@@ -7,12 +7,12 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import time
 import json
 import os
-from config_load_models_var import text_sys
+# from config_load_models_var import text_sys
 
-# det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
-# cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
-# rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
-# text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
+det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
+cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
+text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
 def get_input_data(input_data):
     """
@@ -87,9 +87,7 @@ def deal_str(ocr_str):
 def ocr_digit_detection(input_data):
 
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-        TIME_START = TIME_START + input_data["checkpoint"] + "_"
+    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -104,7 +102,6 @@ def ocr_digit_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
@@ -182,15 +179,15 @@ def ocr_digit_detection(input_data):
         # cv2.rectangle(img_tag_, (int(bbox[0]), int(bbox[1])),
         #               (int(bbox[2]), int(bbox[3])), (0, 0, 255), thickness=2)
         # img_tag_ = img_chinese(img_tag_, deal_str(content), (int(bbox[0]), int(bbox[1] - 20)), (0, 0, 255), size=20)
-        if content=='0.00' or content=='0.0' or content=='0.00A' or content=='0.0A':
-            for i in result:
-                i["content"] = '0.0A'
-            out_data["data"] = {"type": "digital",
-                                "values": ['0.0A', '0.0A', '0.0A'],
-                                "bboxes": [[int(xmin), int(ymin), int(xmax), int(0.667 * ymin + 0.333 * ymax)],
-                                           [int(xmin), int(0.667 * ymin + 0.333 * ymax), int(xmax),
-                                            int(0.333 * ymin + 0.667 * ymax)],
-                                           [int(xmin), int(0.333 * ymin + 0.667 * ymax), int(xmax), int(ymax)]]}
+        # if content=='0.00' or content=='0.0' or content=='0.00A' or content=='0.0A':
+        #     for i in result:
+        #         i["content"] = '0.0A'
+        #     out_data["data"] = {"type": "digital",
+        #                         "values": ['0.0A', '0.0A', '0.0A'],
+        #                         "bboxes": [[int(xmin), int(ymin), int(xmax), int(0.667 * ymin + 0.333 * ymax)],
+        #                                    [int(xmin), int(0.667 * ymin + 0.333 * ymax), int(xmax),
+        #                                     int(0.333 * ymin + 0.667 * ymax)],
+        #                                    [int(xmin), int(0.333 * ymin + 0.667 * ymax), int(xmax), int(ymax)]]}
                 # if i["bbox"][1] < ycenter and i["bbox"][3] < ycenter:
                 #     out_data["data"]['values'][0] = deal_str(i["content"])
                 #     out_data["data"]['bboxes'][0] = [int(i["bbox"][0]), int(i["bbox"][1]), int(i["bbox"][2]), int(i["bbox"][3])]
@@ -200,16 +197,16 @@ def ocr_digit_detection(input_data):
                 # elif i["bbox"][1] > ycenter and i["bbox"][3] > ycenter:
                 #     out_data["data"]['values'][2] = deal_str(i["content"])
                 #     out_data["data"]['bboxes'][2] = [int(i["bbox"][0]), int(i["bbox"][1]), int(i["bbox"][2]), int(i["bbox"][3])]
-        else:
-            if bbox[1]<ycenter and bbox[3]<ycenter:
-                out_data["data"]['values'][0]=deal_str(content)
-                out_data["data"]['bboxes'][0] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
-            elif bbox[1]<ycenter and bbox[3]>ycenter:
-                out_data["data"]['values'][1]=deal_str(content)
-                out_data["data"]['bboxes'][1] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
-            elif bbox[1]>ycenter and bbox[3]>ycenter:
-                out_data["data"]['values'][2]=deal_str(content)
-                out_data["data"]['bboxes'][2] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
+        # else:
+        if bbox[1]<ycenter and bbox[3]<ycenter:
+            out_data["data"]['values'][0]=deal_str(content)
+            out_data["data"]['bboxes'][0] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
+        elif bbox[1]<ycenter and bbox[3]>ycenter:
+            out_data["data"]['values'][1]=deal_str(content)
+            out_data["data"]['bboxes'][1] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
+        elif bbox[1]>ycenter and bbox[3]>ycenter:
+            out_data["data"]['values'][2]=deal_str(content)
+            out_data["data"]['bboxes'][2] = [int(bbox[0]), int(bbox[1]),int(bbox[2]), int(bbox[3])]
 
     # if len(result)<3:
     for i in range(3):
@@ -225,7 +222,7 @@ def ocr_digit_detection(input_data):
     f.close()
 
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-    # cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    #cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
