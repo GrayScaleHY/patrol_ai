@@ -309,13 +309,16 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
                     _img[:,:,j] = _img[:,:,j] * mask
                 else:
                     _img[:,:,j] = _img[:,:,j] * mask + (mask - 1)
-            color_ = color_area(_img, color_list=["black","white","red","red2"])
+            color_list=["black","white","red","red2"]
+            color_ = color_area(_img, color_list)
+            print(seg_cfgs[i]["seg"])
+            print(color_)
             if int(color) == 0:
-                c_area = color_["black"]
+                c_area = (color_["black"] + 1) / (sum([color_[_c] for _c in color_list]) + 1)
             elif int(color) == 1:
-                c_area = color_["white"]
+                c_area = (color_["white"] + 1) / (sum([color_[_c] for _c in color_list]) + 1)
             elif int(color) == 2:
-                c_area = color_["red"] + color_["red2"]
+                c_area = (color_["red"] + color_["red2"] + 1) / (sum([color_[_c] for _c in color_list]) + 1)
             if c_area > area_max:
                 area_max = c_area
                 i_max = i
@@ -410,12 +413,18 @@ def inspection_pointer(input_data):
     if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    
     if osd is not None: ## 如果配置了感兴趣区域，则画出osd区域
         for o_ in osd:
             H, W = img_ref.shape[:2]
             o_ = [int(o_[0]*W), int(o_[1]*H), int(o_[2]*W), int(o_[3]*H)]
             cv2.rectangle(img_ref_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_ref_, "osd", (int(o_[0])-5, int(o_[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+            cv2.putText(img_ref_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        for o_ in osd:
+            H, W = img_tag_.shape[:2]
+            o_ = [int(o_[0]*W), int(o_[1]*H), int(o_[2]*W), int(o_[3]*H)]
+            cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+            cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     if input_data["type"] != "pointer":
@@ -444,11 +453,9 @@ def inspection_pointer(input_data):
 
     ## 矫正信息
     if osd is None:
-        feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
-        feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
-    else:
-        feat_ref = sift_create(img_ref, rm_regs=osd)
-        feat_tag = sift_create(img_tag)
+        osd = [[0,0,1,0.1],[0,0.9,1,1]]
+    feat_ref = sift_create(img_ref, rm_regs=osd)
+    feat_tag = sift_create(img_tag)
     M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
     ## 求出目标图像的感兴趣区域
@@ -538,7 +545,8 @@ def inspection_pointer(input_data):
     out_data["data"] = {"type": "pointer", "values": val, "segment": seg, "bbox": roi_tag}
     
     ## 输出可视化结果的图片。
-    s = (roi_tag[2] - roi_tag[0]) / 400
+    H, W = img_tag.shape[:2]
+    s = W / 800
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(seg[3])-5),cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
     f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
     json.dump(out_data, f, indent=2, ensure_ascii=False)

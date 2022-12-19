@@ -141,7 +141,8 @@ def intersection_arc(line, arc):
     # """
     # line = [801, 302, 1352, 643] # [x1, y1, x2, y2]
     # arc = [1058, 462, 1327, 375, 1250, 732]# [xc, yc, x1, y1, x2, y2]
-    
+    # line = [837, 351, 731, 332]
+    # arc = [795, 345, 732, 358, 731, 332]
     line = np.array(line, dtype=float) ## int转float
     arc = np.array(arc, dtype=float)
     # 根据线段到圆心的远近，确定坐标的先后
@@ -321,3 +322,6 @@ def contour2segment(contours, boxes):
         segments.append(segment)
 
     return segments
+
+if __name__ == '__main__':
+    intersection_arc([], [])
