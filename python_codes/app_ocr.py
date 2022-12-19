@@ -87,7 +87,9 @@ def deal_str(ocr_str):
 def ocr_digit_detection(input_data):
 
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m-%d-%H-%M-%S") + "_"
+    TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+        TIME_START = TIME_START + input_data["checkpoint"] + "_"
     save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -102,6 +104,7 @@ def ocr_digit_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
     cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
