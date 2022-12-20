@@ -8,10 +8,7 @@ from lib_help_base import oil_high
 import numpy as np
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn
 from lib_sift_match import sift_match, convert_coor, sift_create
-
-## 加载模型
-maskrcnn_oil = load_maskrcnn_model("/data/PatrolAi/maskrcnn/oil_air.pth",num_classes=2) # 加载油位的maskrcnn模型
-
+from config_load_models_var import maskrcnn_oil
 
 def get_input_data(input_data):
     """

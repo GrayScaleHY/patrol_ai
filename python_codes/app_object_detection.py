@@ -13,13 +13,13 @@ import numpy as np
 from config_load_models_var import yolov5_meter, \
                                    yolov5_ErCiSheBei, \
                                    yolov5_rec_defect_x6, \
-                                   yolov5_helmet, \
-                                   yolov5_fire_smoke, \
-                                   yolov5_led_color, \
                                    yolov5_coco, \
                                    yolov5_ShuZiBiaoJi, \
-                                   yolov5_jmjs, \
                                    yolov5_dztx
+                                #    yolov5_jmjs, \
+                                #    yolov5_helmet, \
+                                #    yolov5_fire_smoke, \
+                                #    yolov5_led_color
 
 def is_include(sub_box, par_box, srate=0.8):
     
@@ -145,21 +145,21 @@ def inspection_object_detection(input_data):
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "meter"
-    elif input_data["type"] == "fire_smoke":
-        yolov5_model = yolov5_fire_smoke
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "fire_smoke"
-    elif input_data["type"] == "helmet":
-        yolov5_model = yolov5_helmet
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "helmet"
-    elif input_data["type"] == "led_color":
-        yolov5_model = yolov5_led_color
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "led"
+    # elif input_data["type"] == "fire_smoke":
+    #     yolov5_model = yolov5_fire_smoke
+    #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+    #     labels = [labels_dict[id] for id in labels_dict]
+    #     model_type = "fire_smoke"
+    # elif input_data["type"] == "helmet":
+    #     yolov5_model = yolov5_helmet
+    #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+    #     labels = [labels_dict[id] for id in labels_dict]
+    #     model_type = "helmet"
+    # elif input_data["type"] == "led_color":
+    #     yolov5_model = yolov5_led_color
+    #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+    #     labels = [labels_dict[id] for id in labels_dict]
+    #     model_type = "led"
     elif input_data["type"] == "digital":
         yolov5_model = yolov5_ShuZiBiaoJi
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
@@ -174,15 +174,15 @@ def inspection_object_detection(input_data):
             yolov5_model = yolov5_coco
             labels = ["bird", "cat", "dog", "sheep"]
             model_type = "meter"
-        elif label_list == ["hzyw"]:
-            yolov5_model = yolov5_fire_smoke
-            labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-            labels = [labels_dict[id] for id in labels_dict]
-            model_type = "fire_smoke"
-        elif label_list == ["sb_bx"] or label_list == ["sb_dl"] or label_list == ["sb_qx"]:
-            yolov5_model = yolov5_jmjs
-            labels = label_list
-            model_type = "jmjs"
+        # elif label_list == ["hzyw"]:
+        #     yolov5_model = yolov5_fire_smoke
+        #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        #     labels = [labels_dict[id] for id in labels_dict]
+        #     model_type = "fire_smoke"
+        # elif label_list == ["sb_bx"] or label_list == ["sb_dl"] or label_list == ["sb_qx"]:
+        #     yolov5_model = yolov5_jmjs
+        #     labels = label_list
+        #     model_type = "jmjs"
         else:
             yolov5_model = yolov5_rec_defect_x6
             labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
