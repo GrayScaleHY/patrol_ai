@@ -7,12 +7,12 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import time
 import json
 import os
-from config_load_models_var import text_sys
+# from config_load_models_var import text_sys
 
-# det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
-# cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
-# rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
-# text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
+det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
+cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
+text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
 def get_input_data(input_data):
     """
@@ -159,6 +159,7 @@ def ocr_digit_detection(input_data):
         srcImg[ymin:ymax, xmin:xmax] = img_tag_roi
     else: ##没有roi
         srcImg=img_tag_.copy()
+        roi_tag=[0,0,srcImg.shape[1]-1,srcImg.shape[0]-1]
 
     # from PIL import ImageEnhance
     # # 对比度增强
@@ -226,8 +227,8 @@ def ocr_digit_detection(input_data):
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
     f.close()
 
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-    #cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
