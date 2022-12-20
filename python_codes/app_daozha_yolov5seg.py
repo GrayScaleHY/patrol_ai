@@ -59,6 +59,9 @@ def get_input_data(input_data):
             if len(input_data["config"]["img_ref"]) > 10:
                 img_ref = base642img(input_data["config"]["img_ref"])
 
+    #if img_ref==None:
+    #    img_ref=img_tag.copy()
+
     ## 感兴趣区域
     roi = None  # 初始假设
     if "bboxes" in input_data["config"]:
@@ -121,39 +124,39 @@ def rankBbox(out_data_list,data_masks,roi,type='iou'):
     if len(out_data_list)<=1:
         return out_data_list
     if type=='score':
-        max=out_data_list[0]
+        max_dict=out_data_list[0]
         for i in range(len(out_data_list)):
-            if out_data_list[i]['score']>max['score']:
-                max= out_data_list[i]
-        return [max]
+            if out_data_list[i]['score']>max_dict['score']:
+                max_dict= out_data_list[i]
+        return [max_dict]
     elif type=='bbox_size':
-        max = out_data_list[0]
+        max_dict = out_data_list[0]
         for i in range(len(out_data_list)):
-            if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max['bbox']):
-                max = out_data_list[i]
-        return [max]
+            if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max_dict['bbox']):
+                max_dict = out_data_list[i]
+        return [max_dict]
     elif type=='score&mask_size':
-        max = out_data_list[0]
+        max_dict = out_data_list[0]
         max_mask_idx = 0
         for i in range(len(out_data_list)):
-            if (data_masks[i].sum())*out_data_list[i]['score'] > (data_masks[max_mask_idx].sum())*max['score']:
-                max = out_data_list[i]
+            if (data_masks[i].sum())*out_data_list[i]['score'] > (data_masks[max_mask_idx].sum())*max_dict['score']:
+                max_dict = out_data_list[i]
                 max_mask_idx = i
-        return [max]
+        return [max_dict]
     elif type=='iou':
-        max = out_data_list[0]
+        max_dict = out_data_list[0]
         for i in range(len(out_data_list)):
-            if cal_bbox_iou(out_data_list[i]['bbox'],roi) > cal_bbox_iou(max['bbox'],roi):
-                max = out_data_list[i]
-        return [max]
+            if cal_bbox_iou(out_data_list[i]['bbox'],roi) > cal_bbox_iou(max_dict['bbox'],roi):
+                max_dict = out_data_list[i]
+        return [max_dict]
     else:
-        max = out_data_list[0]
+        max_dict = out_data_list[0]
         max_mask_idx=0
         for i in range(len(out_data_list)):
             if data_masks[i].sum() > data_masks[max_mask_idx].sum():
-                max = out_data_list[i]
+                max_dict = out_data_list[i]
                 max_mask_idx=i
-        return [max]
+        return [max_dict]
 
 def inspection_daozha_detection(input_data):
     """
@@ -290,11 +293,12 @@ def inspection_daozha_detection(input_data):
                     ymin = max(0, min(ys))
                     xmax = min(img_tag.shape[1], max(xs));
                     ymax = min(img_tag.shape[0], max(ys))
-                    roi_tag = [xmin, ymin, xmax, ymax]
-                    roi_tag.appaned([xmin, ymin, xmax, ymax])
+                    #roi_tag = [xmin, ymin, xmax, ymax]
+                    roi_tag.append([xmin, ymin, xmax, ymax])
 
         ## 画出roi_tag
         c = roi_tag
+        print(c)
         dim = np.array(c).ndim
         if dim == 1:
             cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
@@ -302,6 +306,7 @@ def inspection_daozha_detection(input_data):
                     thickness=1)
         else:
             for i in range(len(c)):
+                print(c[i])
                 cv2.rectangle(img_tag_, (int(c[i][0]), int(c[i][1])), (int(c[i][2]), int(c[i][3])), (255, 0, 255), thickness=1)
                 cv2.putText(img_tag_, "roi"+str(i), (int(c[i][0]), int(c[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                             thickness=1)
@@ -310,44 +315,52 @@ def inspection_daozha_detection(input_data):
     bboxes = []
     out_data_data=[]
     data_masks=[]
-    for cfg in cfgs:
-        if roi is None:
+
+    if roi is None:
+        for cfg in cfgs:
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
             out_data_data.append(cfg_out)
             data_masks.append(cfg["mask"])
             bboxes.append(cfg["coor"])
-            out_data["data"] = rankBbox(out_data_data, data_masks, roi)
-            cv2.putText(img_tag_, "-selected", (
-                    int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
-                    int(out_data["data"][0]['bbox'][3]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-        else:
-            dim = np.array(roi_tag).ndim
-            if dim == 1:
+        out_data["data"] = rankBbox(out_data_data, data_masks, roi)
+        cv2.putText(img_tag_, "-selected", (
+                int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
+                int(out_data["data"][0]['bbox'][3]) - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+    else:
+        dim = np.array(roi_tag).ndim
+        print('dim',dim)
+        if dim == 1:
+            for cfg in cfgs:
                 if is_include(cfg["coor"], roi_tag, srate=0.5):
                     cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
                     out_data_data.append(cfg_out)
                     data_masks.append(cfg["mask"])
                     bboxes.append(cfg["coor"])
-                    out_data["data"] = rankBbox(out_data_data, data_masks, roi)
-                    cv2.putText(img_tag_, "-selected", (
-                        int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
-                        int(out_data["data"][0]['bbox'][3]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-            else:
-                for i in range(len(roi_tag)):
+            out_data["data"] = rankBbox(out_data_data, data_masks, roi)
+            cv2.putText(img_tag_, "-selected", (
+                int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
+                int(out_data["data"][0]['bbox'][3]) - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+        else:
+            for i in range(len(roi_tag)):
+                bboxes = []
+                out_data_data = []
+                data_masks = []
+                for cfg in cfgs:
                     if is_include(cfg["coor"], roi_tag[i], srate=0.5):
                         cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
                         out_data_data.append(cfg_out)
                         data_masks.append(cfg["mask"])
                         bboxes.append(cfg["coor"])
-                        tmp_data=rankBbox(out_data_data, data_masks, roi[i])
-                        out_data["data"].append(tmp_data)
-
-                        cv2.putText(img_tag_, "-selected"+str(i), (
-                            int(0.5 * tmp_data["data"][0]['bbox'][0] + 0.5 * tmp_data["data"][0]['bbox'][2]),
-                            int(tmp_data["data"][0]['bbox'][3]) - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+                # print(out_data_data)
+                tmp_data=rankBbox(out_data_data, data_masks, roi[i])
+                # print(tmp_data)
+                out_data["data"].append(tmp_data[0])
+                cv2.putText(img_tag_, "-selected"+str(i), (
+                    int(0.5 * tmp_data[0]['bbox'][0] + 0.5 * tmp_data[0]['bbox'][2]),
+                    int(tmp_data[0]['bbox'][3]) - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
 
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
@@ -363,7 +376,7 @@ def inspection_daozha_detection(input_data):
 
 
 if __name__ == '__main__':
-    json_file = "test.json"
+    json_file = "test2.json"
     f = open(json_file, "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
