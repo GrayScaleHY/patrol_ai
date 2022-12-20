@@ -7,12 +7,12 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import time
 import json
 import os
-# from config_load_models_var import text_sys
+from config_load_models_var import text_sys
 
-det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
-cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
-rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
-text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
+# det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
+# cls_model_dir = "/data/PatrolAi/ppocr/ch_ppocr_mobile_v2.0_cls_infer/"
+# rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
+# text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
 def get_input_data(input_data):
     """
@@ -150,13 +150,15 @@ def ocr_digit_detection(input_data):
         cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
 
-    '''------------------------------------------
-                         模型推理
-    ---------------------------------------------'''
-    img_tag_roi=img_tag[roi_tag[1]:roi_tag[3],roi_tag[0]:roi_tag[2]].copy()
-    srcImg=img_tag_.copy()
-    srcImg[:, :, :] = 0
-    srcImg[ymin:ymax, xmin:xmax] = img_tag_roi
+        '''------------------------------------------
+                             模型推理
+        ---------------------------------------------'''
+        img_tag_roi=img_tag[roi_tag[1]:roi_tag[3],roi_tag[0]:roi_tag[2]].copy()
+        srcImg=img_tag_.copy()
+        srcImg[:, :, :] = 0
+        srcImg[ymin:ymax, xmin:xmax] = img_tag_roi
+    else: ##没有roi
+        srcImg=img_tag_.copy()
 
     # from PIL import ImageEnhance
     # # 对比度增强
