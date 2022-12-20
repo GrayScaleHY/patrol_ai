@@ -34,12 +34,13 @@ def get_input_data(input_data):
     if "bboxes" in input_data["config"]:
         if isinstance(input_data["config"]["bboxes"], dict):
             if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
-                    roi = input_data["config"]["bboxes"]["roi"][0]
-                else:
-                    roi = input_data["config"]["bboxes"]["roi"]
-                W = img_ref.shape[1]; H = img_ref.shape[0]
-                roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
+                if isinstance(input_data["config"]["bboxes"]["roi"], list):
+                    if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
+                        roi = input_data["config"]["bboxes"]["roi"][0]
+                    else:
+                        roi = input_data["config"]["bboxes"]["roi"]
+                    W = img_ref.shape[1]; H = img_ref.shape[0]
+                    roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     return img_tag, img_ref, roi
 
