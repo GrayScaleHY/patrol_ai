@@ -15,7 +15,7 @@ import numpy as np
 import hashlib
 import json
 
-from config_load_models_var import maskrcnn_pointer, yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect, yolov5_coco
+from config_load_models_var import maskrcnn_pointer, yolov5_meter, yolov5_ErCiSheBei, yolov5_rec_defect_x6, yolov5_coco
 
 # ## 二次设备， coco， 17类缺陷， 表计， 指针
 # maskrcnn_pointer = load_maskrcnn_model("/mnt/data/PatrolAi/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 指针的maskrcnn模型
