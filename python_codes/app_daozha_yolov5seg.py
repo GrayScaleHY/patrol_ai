@@ -83,6 +83,9 @@ def get_input_data(input_data):
                                 H = img_ref.shape[0]
                                 roi[i]=[int(roi[i][0] * W), int(roi[i][1] * H), int(roi[i][2] * W), int(roi[i][3] * H)]
 
+    if roi==[]:
+        roi=None
+
     ## 设备状态与显示名字的映射关系。
     status_map = None
     if "status_map" in input_data["config"]:
@@ -188,10 +191,11 @@ def inspection_daozha_detection(input_data):
         img_ref_ = img_ref.copy()
         dim = np.array(roi).ndim
         if dim == 1:
-            cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
+            if len(roi)==4:
+                cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
+                cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
-            cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+                cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
         else:
             for i in range(len(roi)):
                 cv2.rectangle(img_ref_, (int(roi[i][0]), int(roi[i][1])), (int(roi[i][2]), int(roi[i][3])), (255, 0, 255),
