@@ -27,7 +27,6 @@ def inspection_digital_server():
     data = json.loads(request.get_data(as_text=True))
     start_time = time.time()
     res = ocr_digit_detection(data)
-    print("inspection_level_gauge result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
@@ -46,7 +45,6 @@ def inspection_disconnector_notemp_server():
     data = json.loads(request.get_data(as_text=True))
     start_time = time.time()
     res = inspection_daozha_detection(data)
-    print("inspection_level_gauge result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
@@ -64,7 +62,6 @@ def inspection_level_gauge_server():
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
     res = inspection_level_gauge(data)
-    print("inspection_level_gauge result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
@@ -214,11 +211,11 @@ def inspection_object():
     data = json.loads(request.get_data(as_text=True))
     start_time = time.time()
     res = inspection_object_detection(data)
-    print("spend total time:", time.time() - start_time)
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
             print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
     print("----------------------------------------------")
     return jsonify(res)
 

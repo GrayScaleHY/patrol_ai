@@ -78,7 +78,7 @@ def get_input_data(input_data):
         if isinstance(input_data["config"]["img_ref"], str):
             if len(input_data["config"]["img_ref"]) > 10:
                 img_ref = base642img(input_data["config"]["img_ref"])
-        
+
     ## 感兴趣区域
     roi = None # 初始假设
     if "bboxes" in input_data["config"]:
@@ -89,8 +89,13 @@ def get_input_data(input_data):
                         roi = input_data["config"]["bboxes"]["roi"][0]
                     else:
                         roi = input_data["config"]["bboxes"]["roi"]
-                    W = img_ref.shape[1]; H = img_ref.shape[0]
-                    roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
+                    
+                    if img_ref is None:
+                        print("Roi not match img_ref: ", input_data["checkpoint"])
+                        roi = None
+                    else:
+                        W = img_ref.shape[1]; H = img_ref.shape[0]
+                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
     
     ## 设备状态与显示名字的映射关系。
     status_map = None
@@ -219,7 +224,7 @@ def inspection_object_detection(input_data):
         yolov5_model = yolov5_ErCiSheBei
         labels = ["ys"]
         model_type = "ErCiSheBei"
-    elif input_data["type"] == "disconnector_notemp":
+    elif input_data["type"] == "disconnector_texie":
         yolov5_model = yolov5_dztx
         labels = ["he","fen","budaowei"]
         model_type = "disconnector_texie"
