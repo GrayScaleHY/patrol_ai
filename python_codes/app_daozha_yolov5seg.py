@@ -236,7 +236,7 @@ def inspection_daozha_detection(input_data):
     name_dict = {'budaowei': '分合异常', 'fen': '分闸正常', 'he': '合闸正常'}
 
     ## 画出boxes
-    #print(name_dict)
+    #print(cfgs)
     for cfg in cfgs:
         c = cfg["coor"];
         label = cfg["label"]
@@ -302,7 +302,7 @@ def inspection_daozha_detection(input_data):
 
         ## 画出roi_tag
         c = roi_tag
-        print(c)
+        print('roi:',c)
         dim = np.array(c).ndim
         if dim == 1:
             cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
@@ -310,7 +310,7 @@ def inspection_daozha_detection(input_data):
                     thickness=1)
         else:
             for i in range(len(c)):
-                print(c[i])
+                #print(c[i])
                 cv2.rectangle(img_tag_, (int(c[i][0]), int(c[i][1])), (int(c[i][2]), int(c[i][3])), (255, 0, 255), thickness=1)
                 cv2.putText(img_tag_, "roi"+str(i), (int(c[i][0]), int(c[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                             thickness=1)
@@ -357,14 +357,15 @@ def inspection_daozha_detection(input_data):
                         out_data_data.append(cfg_out)
                         data_masks.append(cfg["mask"])
                         bboxes.append(cfg["coor"])
-                # print(out_data_data)
+                print(out_data_data)
                 tmp_data=rankBbox(out_data_data, data_masks, roi[i])
-                # print(tmp_data)
-                out_data["data"].append(tmp_data[0])
-                cv2.putText(img_tag_, "-selected"+str(i), (
-                    int(0.5 * tmp_data[0]['bbox'][0] + 0.5 * tmp_data[0]['bbox'][2]),
-                    int(tmp_data[0]['bbox'][3]) - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+                print(tmp_data)
+                if tmp_data!=[]:
+                    out_data["data"].append(tmp_data[0])
+                    cv2.putText(img_tag_, "-selected"+str(i), (
+                        int(0.5 * tmp_data[0]['bbox'][0] + 0.5 * tmp_data[0]['bbox'][2]),
+                        int(tmp_data[0]['bbox'][3]) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
 
     ## 可视化计算结果
     f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
@@ -380,7 +381,7 @@ def inspection_daozha_detection(input_data):
 
 
 if __name__ == '__main__':
-    json_file = "test2.json"
+    json_file = "1223110334_input_data.json"
     f = open(json_file, "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
