@@ -1,4 +1,4 @@
-"""
+s"""
 加载深度学习模型
 """
 
@@ -21,6 +21,7 @@ yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
 yolov5_ShuZiBiaoJi = load_yolov5_model("/data/PatrolAi/yolov5/ShuZiBiaoJi.pt")  # 数字表记模型
 # yolov5_jmjs = load_yolov5_model("/data/PatrolAi/yolov5/jmjs.pt")  # 静默监视三个设备类模型
 yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
+yolov5_action=load_yolov5_model("/data/PatrolAi/yolov5/action.pt")  # 动作识别，倒地
 # 加载ppocr模型
 from lib_inference_ocr import load_ppocr
 det_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_det_infer/"
