@@ -131,10 +131,10 @@ def ocr_digit_detection(input_data):
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi
-            xmin = max(0, min(roi[0]));
-            ymin = max(0, min(roi[1]))
-            xmax = min(img_tag.shape[1], max(roi[2]));
-            ymax = min(img_tag.shape[0], max(roi[3]))
+            xmin = max(0, min(roi[0], roi[2]))
+            ymin = max(0, min(roi[1], roi[3]))
+            xmax = min(img_tag.shape[1], max(roi[0], roi[2]))
+            ymax = min(img_tag.shape[0], max(roi[1], roi[3]))
         else:
             coors = [(roi[0], roi[1]), (roi[2], roi[1]), (roi[2], roi[3]), (roi[0], roi[3])]
             coors_ = []
