@@ -43,8 +43,16 @@ def inspection_disconnector_notemp_server():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
+    data = GetInputData(data)
+    data={'img_tag':data.img_tag,'img_ref ':data.img_ref,'roi':data.roi,'config':data.config,'type':data.type}
     start_time = time.time()
     res = inspection_daozha_detection(data)
+
+    '''f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
+    json.dump(res, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
+    f.close()'''
+
+    print("inspection_level_gauge result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
