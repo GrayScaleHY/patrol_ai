@@ -41,7 +41,7 @@ def is_include(sub_box, par_box, srate=0.8):
     else:
         return False
 
-def get_input_data(input_data):
+'''def get_input_data(input_data):
     """
     提取input_data中的信息。
     return:
@@ -99,6 +99,7 @@ def get_input_data(input_data):
             label_list = input_data["config"]["label_list"]
 
     return img_tag, img_ref, roi, status_map, label_list
+'''
 
 def rankBbox(out_data_list,data_masks,roi,type='iou'):
     '''type:score bbox_size mask_size iou score&mask_size'''
@@ -169,24 +170,28 @@ def inspection_daozha_detection(input_data):
     TIME_START = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
         TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    '''save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
     f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
+    f.close()'''
 
     ## 初始化输入输出信息。
-    img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
-    out_data = {"code": 0, "data": [], "img_result": input_data["image"],
+    #img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
+    img_tag = input_data['img_tag']
+    img_ref = input_data['img_ref']
+    roi = input_data['roi']
+
+    out_data = {"code": 0, "data": [], "img_result": input_data["img_tag"],
                 "msg": "Success request object detect; "}  # 初始化out_data
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
-    if img_ref is not None:
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
+    #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
+    #if img_ref is not None:
+        #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
     if roi is not None:  # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         dim = np.array(roi).ndim
@@ -195,7 +200,7 @@ def inspection_daozha_detection(input_data):
                 cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
                 cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
-                cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+                #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
         else:
             for i in range(len(roi)):
                 cv2.rectangle(img_ref_, (int(roi[i][0]), int(roi[i][1])), (int(roi[i][2]), int(roi[i][3])), (255, 0, 255),
@@ -203,7 +208,7 @@ def inspection_daozha_detection(input_data):
                 cv2.putText(img_ref_, "roi"+str(i+1), (int(roi[i][0]), int(roi[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                             (255, 0, 255),
                             thickness=1)
-                cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+                #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
 
     if "augm" in input_data["config"]:
@@ -224,7 +229,7 @@ def inspection_daozha_detection(input_data):
         out_data["data"]=[]
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## labels 列表 和 color 列表
@@ -368,10 +373,10 @@ def inspection_daozha_detection(input_data):
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
 
     ## 可视化计算结果
-    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
+    '''f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
     json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    f.close()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    f.close()'''
+    #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     #cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
     ## 输出可视化结果的图片。
