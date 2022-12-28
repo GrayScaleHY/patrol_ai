@@ -5,7 +5,199 @@ import math
 from config_object_name import COLOR_HSV_MAP
 import cv2
 import numpy as np
+from lib_image_ops import base642img
 
+class GetInputData:
+    """
+    获取巡视输入信息。
+    """
+
+    def __init__(self, data):
+        # self.input_data = input_data
+        self.checkpoint = self.get_checkpoint(data)  # 点位名称
+        self.img_tag = self.get_img_tag(data)  # 测试图
+        self.type = self.get_type(data)  # 分析类型
+        self.config = self.get_config(data)  # 模板信息
+        self.img_ref = self.get_img_ref(self.config) # 模板图
+        self.roi = self.get_roi(self.config, self.img_ref)  # roi框
+        self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
+        self.osd = self.get_osd(self.config, self.img_ref) # osd框
+        self.number, self.length, self.width, self.color = self.get_pointer_cfg(self.config) # 多指针的性质
+
+    def get_checkpoint(self, data):
+        """
+        获取checkpoint(巡检点位名称)。
+        """
+        if "checkpoint" in data and isinstance(data["checkpoint"], str):
+            checkpoint = data["checkpoint"]
+        else:
+            checkpoint = ""
+        return checkpoint
+    
+    def get_img_tag(self, data):
+        """
+        获取测试图
+        return:
+            img_tag: numpy的图像数据。
+        """
+        if "image" in data and isinstance(data["image"], str):
+            img_tag = base642img(data["image"])
+        else:
+            img_tag = None
+        return img_tag
+    
+    def get_type(self, data):
+        """
+        获取分析类型。
+        """
+        if "type" in data and isinstance(data["type"], str):
+            type_ = data["type"]
+        else:
+            type_ = None
+        return type_
+    
+    def get_config(self, data):
+        """
+        获取模板信息。
+        """
+        if "config" in data and isinstance(data["config"], dict):
+            config = data["config"]
+        else:
+            config = {}
+        return config
+
+    def get_img_ref(self, config):
+        """
+        获取模板图。
+        """
+        if "img_ref" in config and isinstance(config["img_ref"], str):
+            img_ref = base642img(config["img_ref"])
+        else:
+            img_ref = None
+        return img_ref
+    
+    def get_roi(self, config, img_ref):
+        """
+        获取roi感兴趣区域
+        return:
+            roi: 格式为二维列表[[xmin, ymin, xmax, ymax], ..], 或者空列表[]
+        """
+        if img_ref is None:
+            return []
+
+        if "bboxes" in config and isinstance(config["bboxes"], dict):
+            bboxes = config["bboxes"]
+        else:
+            bboxes = {}
+
+        if "roi" in bboxes and isinstance(bboxes["roi"], list):
+            raw_roi = bboxes["roi"]
+        else:
+            return []
+        
+        dim = np.array(raw_roi).ndim
+        if dim == 1:
+            raw_roi = [raw_roi]
+        
+        W, H = img_ref.shape[:2]
+        roi = []
+        for _roi in raw_roi:
+            roi.append([int(_roi[0]*W), int(_roi[1]*H), int(_roi[2]*W), int(_roi[3]*H)])
+        
+        return roi
+    
+    def get_osd(self, config, img_ref):
+        """
+        获取osd区域
+        return:
+            osd: 格式为二维列表[[xmin, ymin, xmax, ymax], ..], 或者空列表[]
+        """
+        if img_ref is None:
+            return []
+
+        if "bboxes" in config and isinstance(config["bboxes"], dict):
+            bboxes = config["bboxes"]
+        else:
+            bboxes = {}
+
+        if "osd" in bboxes and isinstance(bboxes["osd"], list):
+            raw_osd = bboxes["osd"]
+        else:
+            return []
+        
+        dim = np.array(raw_osd).ndim
+        if dim == 1:
+            raw_osd = [raw_osd]
+        
+        osd = []
+        W, H = img_ref.shape[:2]
+        for _osd in raw_osd:
+            osd.append([int(_osd[0]*W), int(_osd[1]*H), int(_osd[2]*W), int(_osd[3]*H)])
+        
+        return osd
+    
+    def get_pointers(self, config, img_ref):
+        """
+        获取仪表各刻度的位置。
+        """
+        if img_ref is None:
+            return {}
+
+        if "pointers" in config and isinstance(config["pointers"], dict):
+            raw_pointers = config["pointers"]
+        else:
+            raw_pointers = {}
+
+        W, H = img_ref.shape[:2]
+        pointers = {}
+        for scale in raw_pointers:
+            point = raw_pointers[scale]
+            pointers[scale] = [int(point[0] * W), int(point[1] * H)]
+        
+        return pointers
+    
+    def get_dp(self, config):
+        """
+        获取数值小数点位数
+        """
+        if "dp" in config and isinstance(config["dp"], str):
+            dp = int(config["dp"])
+        else:
+            dp = 3
+        return dp
+    
+    def get_pointer_cfg(self, config):
+        """
+        获取指针个数, 长短， 宽窄， 颜色。
+        """
+        if "number" in config and isinstance(config["number"], int):
+            number = int(config["number"])
+        else:
+            number = 3
+
+        if "length" in config and isinstance(config["length"], int):
+            length = int(config["length"])
+        else:
+            length = 2
+        
+        if "width" in config and isinstance(config["width"], int):
+            width = int(config["width"])
+        else:
+            width = 0
+
+        if "color" in config and isinstance(config["color"], int):
+            color = int(config["color"])
+        else:
+            color = 0
+        
+        return number, length, width, color
+
+    def get_status_map(self, config):
+        if "status_map" in config and isinstance(config["status_map"], dict):
+            status_map = config["status_map"]
+        else:
+            status_map = {}
+        return status_map
 
 class Logger(object):
     """
@@ -108,12 +300,10 @@ def color_area(img, color_list=["black","white","red","red2","orange","yellow","
 
 
 if __name__ == '__main__':
-    import cv2
-    import numpy as np
-    c_list = color_list(10)
-    for c in c_list:
-        a = np.ones([1000, 1000,3], dtype=np.uint8)
-        b = a * list(c)
-        b = b.astype(np.uint8)
-        cv2.imshow(str(c), b)
-        cv2.waitKey(0)
+    import json
+    json_file = "/data/PatrolAi/result_patrol/12-16-15-34-34_input_data.json"
+    f = open(json_file, "r", encoding='utf-8')
+    in_data = json.load(f)
+    f.close()
+    a = GetInputData(in_data)
+    print(a.pointers)
