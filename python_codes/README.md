@@ -24,6 +24,8 @@
 ##### 2. 编写代码
 (1). 根据算法接口的输入输出编写主函数，一般以函数文件名一般以app开头，参考[app_yeweiji.py](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/app_yeweiji.py)  
 (2). 将编写的算法加入到flask服务中，参考[util_patrol_server.py](https://git.utapp.cn/yuanhui/patrol_ai/-/blob/main/python_codes/util_patrol_server.py)
-
-##### 3. 合并代码
-使用git push将代码推到主分支。
+##### 3. 编写代码注意事项
+(1). 返回的"img_result"尽量信息详尽，有利于往后查找算法错误
+(2). 写好的函数尽量想办法多测试，等更新到现场再发现问题的话，改起来就会相对麻烦了。
+##### 4. 合并代码
+将代码推到主分支。
