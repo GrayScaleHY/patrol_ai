@@ -3,13 +3,14 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_help_base import color_list
+from lib_help_base import color_list,GetInputData
 from lib_sift_match import sift_match, convert_coor, sift_create
 import numpy as np
 import torch
 
 from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
 from utils.segment.general import scale_image
+
 
 ## 加载模型
 yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载油位的maskrcnn模型
@@ -167,9 +168,9 @@ def inspection_daozha_detection(input_data):
     yolov5的目标检测推理。
     """
     ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-        TIME_START = TIME_START + input_data["checkpoint"] + "_"
+    # TIME_START = time.strftime("%m%d%H%M%S") + "_"
+    # if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
+    #     TIME_START = TIME_START + input_data["checkpoint"] + "_"
     '''save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     save_path = os.path.join(save_path, "result_patrol", input_data["type"])
     os.makedirs(save_path, exist_ok=True)
@@ -178,17 +179,19 @@ def inspection_daozha_detection(input_data):
     f.close()'''
 
     ## 初始化输入输出信息。
-    #img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
-    img_tag = input_data['img_tag']
-    img_ref = input_data['img_ref']
-    roi = input_data['roi']
+    data = GetInputData(input_data)
+    # img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
+    img_tag = data.img_tag
+    img_ref = data.img_ref
+    roi = data.roi
+    checkpoint = data.checkpoint
 
-    out_data = {"code": 0, "data": [], "img_result": input_data["img_tag"],
+    out_data = {"code": 0, "data": [], "img_result": data.img_tag,
                 "msg": "Success request object detect; "}  # 初始化out_data
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, checkpoint + data.type , (10, 10), color=(255, 0, 0), size=60)
     #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
     #if img_ref is not None:
         #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
@@ -211,10 +214,10 @@ def inspection_daozha_detection(input_data):
                 #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
 
-    if "augm" in input_data["config"]:
-        if isinstance(input_data["config"]["augm"], list):
-            if len(input_data["config"]["augm"]) == 2:
-                augm = input_data["config"]["augm"]
+    if "augm" in data.config:
+        if isinstance(data.config["augm"], list):
+            if len(data.config["augm"]) == 2:
+                augm = data.config["augm"]
                 augm = [float(augm[0]), float(augm[1])]
                 img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
 
