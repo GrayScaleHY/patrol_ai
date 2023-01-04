@@ -1,402 +1,152 @@
-import os
-import time
 import cv2
-import json
-from lib_image_ops import base642img, img2base64, img_chinese
-from lib_help_base import color_list,GetInputData
-from lib_sift_match import sift_match, convert_coor, sift_create
-import numpy as np
 import torch
+import sys
+import time
+import os
+import glob
+import numpy as np
+#sys.path.append(r'E:\yolov5-master\yolov5-master') ## ultralytics/yolov5 存放的路径  /home/lde/daozha-yolov5/
+sys.path.append(r'../daozha-yolov5')
 
-from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
+from models.common import DetectMultiBackend
+from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
+                           increment_path, non_max_suppression, print_args, scale_boxes, scale_segments,
+                           strip_optimizer, xyxy2xywh)
+from utils.segment.general import masks2segments, process_mask
+from utils.torch_utils import select_device, smart_inference_mode
+
+from utils.augmentations import (Albumentations, augment_hsv, classify_albumentations, classify_transforms, copy_paste,
+                                 letterbox, mixup, random_perspective)
+from lib_rcnn_ops import iou
+from utils.plots import Annotator, colors, save_one_box
 from utils.segment.general import scale_image
 
+device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
-## 加载模型
-yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载油位的maskrcnn模型
 
-def is_include(sub_box, par_box, srate=0.8):
-    sb = sub_box;
-    pb = par_box
-    sb = [min(sb[0], sb[2]), min(sb[1], sb[3]), max(sb[0], sb[2]), max(sb[1], sb[3])]
-    pb = [min(pb[0], pb[2]), min(pb[1], pb[3]), max(pb[0], pb[2]), max(pb[1], pb[3])]
-
-    ## 至少一个点在par_box里面
-    points = [[sb[0], sb[1]], [sb[2], sb[1]], [sb[0], sb[3]], [sb[2], sb[3]]]
-    is_in = False
-    for p in points:
-        if p[0] >= pb[0] and p[0] <= pb[2] and p[1] >= pb[1] and p[1] <= pb[3]:
-            is_in = True
-    if not is_in:
-        return False
-
-    ## 判断交集占多少
-    xmin = max(pb[0], sb[0]);
-    ymin = max(pb[1], sb[1])
-    xmax = min(pb[2], sb[2]);
-    ymax = min(pb[3], sb[3])
-    s_include = (xmax - xmin) * (ymax - ymin)
-    s_box = (sb[2] - sb[0]) * (sb[3] - sb[1])
-    if s_include / s_box >= srate:
-        return True
-    else:
-        return False
-
-'''def get_input_data(input_data):
+def check_iou(cfgs_in, iou_limit=0.8):
     """
-    提取input_data中的信息。
+    将模型推理结果中重合度高的框去掉（即使label不一样）。
+    args:
+        cfgs_in: inference_yolov5的输出,格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        iou_limit: iou阈值
     return:
-        img_tag: 目标图片数据
-        img_ref: 模板图片数据
-        roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
+        cfgs_out: 去重后的cfgs
     """
+    if len(cfgs_in) < 2:
+        return cfgs_in
 
-    img_tag = base642img(input_data["image"])
+    rm_ids = []
+    for i in range(len(cfgs_in)):
+        for j in range(len(cfgs_in)):
+            if j == i:
+                continue
+            if iou(cfgs_in[i]["coor"], cfgs_in[j]["coor"]) < iou_limit:
+                continue
 
-    ## 是否有模板图
-    img_ref = None
-    if "img_ref" in input_data["config"]:
-        if isinstance(input_data["config"]["img_ref"], str):
-            if len(input_data["config"]["img_ref"]) > 10:
-                img_ref = base642img(input_data["config"]["img_ref"])
-
-    #if img_ref==None:
-    #    img_ref=img_tag.copy()
-
-    ## 感兴趣区域
-    roi = None  # 初始假设
-    if "bboxes" in input_data["config"]:
-        if isinstance(input_data["config"]["bboxes"], dict):
-            if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    roi = input_data["config"]["bboxes"]["roi"]
-                    dim = np.array(roi).ndim
-                    if dim == 1:
-                        if len(input_data["config"]["bboxes"]["roi"]) == 4:
-                            W = img_ref.shape[1];
-                            H = img_ref.shape[0]
-                            roi = input_data["config"]["bboxes"]["roi"]
-                            roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
-                    else:
-                        for i in range(len(roi)):
-                            if len(input_data["config"]["bboxes"]["roi"][i]) == 4:
-                                W = img_ref.shape[1];
-                                H = img_ref.shape[0]
-                                roi[i]=[int(roi[i][0] * W), int(roi[i][1] * H), int(roi[i][2] * W), int(roi[i][3] * H)]
-
-    if roi==[]:
-        roi=None
-
-    ## 设备状态与显示名字的映射关系。
-    status_map = None
-    if "status_map" in input_data["config"]:
-        if isinstance(input_data["config"]["status_map"], dict):
-            status_map = input_data["config"]["status_map"]
-
-    ## 指定label_list。
-    label_list = None
-    if "label_list" in input_data["config"]:
-        if isinstance(input_data["config"]["label_list"], list):
-            label_list = input_data["config"]["label_list"]
-
-    return img_tag, img_ref, roi, status_map, label_list
-'''
-
-def rankBbox(out_data_list,data_masks,roi,type='iou'):
-    '''type:score bbox_size mask_size iou score&mask_size'''
-    def cal_bbox_size(bbox):
-        return abs((bbox[2]-bbox[0])*(bbox[3]-bbox[1]))
-
-    def cal_bbox_iou(rec1,rec2):
-        if rec2==None:
-            return abs((rec1[2] - rec1[0]) * (rec1[3] - rec1[1]))
-        S_rec1 = (rec1[2] - rec1[0]) * (rec1[3] - rec1[1])
-        S_rec2 = (rec2[2] - rec2[0]) * (rec2[3] - rec2[1])
-        sum_area = S_rec1 + S_rec2
-
-        left_line = max(rec1[1], rec2[1])
-        right_line = min(rec1[3], rec2[3])
-        top_line = max(rec1[0], rec2[0])
-        bottom_line = min(rec1[2], rec2[2])
-
-        # judge if there is intersect
-        if left_line >= right_line or top_line >= bottom_line:
-            return 0
-        else:
-            intersect = (right_line - left_line) * (bottom_line - top_line)
-            return (intersect*1.0 / (sum_area - intersect)) * 1.0
-
-    if len(out_data_list)<=1:
-        return out_data_list
-    if type=='score':
-        max_dict=out_data_list[0]
-        for i in range(len(out_data_list)):
-            if out_data_list[i]['score']>max_dict['score']:
-                max_dict= out_data_list[i]
-        return [max_dict]
-    elif type=='bbox_size':
-        max_dict = out_data_list[0]
-        for i in range(len(out_data_list)):
-            if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max_dict['bbox']):
-                max_dict = out_data_list[i]
-        return [max_dict]
-    elif type=='score&mask_size':
-        max_dict = out_data_list[0]
-        max_mask_idx = 0
-        for i in range(len(out_data_list)):
-            if (data_masks[i].sum())*out_data_list[i]['score'] > (data_masks[max_mask_idx].sum())*max_dict['score']:
-                max_dict = out_data_list[i]
-                max_mask_idx = i
-        return [max_dict]
-    elif type=='iou':
-        max_dict = out_data_list[0]
-        for i in range(len(out_data_list)):
-            if cal_bbox_iou(out_data_list[i]['bbox'],roi) > cal_bbox_iou(max_dict['bbox'],roi):
-                max_dict = out_data_list[i]
-        return [max_dict]
-    else:
-        max_dict = out_data_list[0]
-        max_mask_idx=0
-        for i in range(len(out_data_list)):
-            if data_masks[i].sum() > data_masks[max_mask_idx].sum():
-                max_dict = out_data_list[i]
-                max_mask_idx=i
-        return [max_dict]
-
-def inspection_daozha_detection(input_data):
-    """
-    yolov5的目标检测推理。
-    """
-    ## 将输入请求信息可视化
-    # TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    # if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-    #     TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    '''save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()'''
-
-    ## 初始化输入输出信息。
-    data = GetInputData(input_data)
-    # img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
-    img_tag = data.img_tag
-    img_ref = data.img_ref
-    roi = data.roi
-    checkpoint = data.checkpoint
-
-    out_data = {"code": 0, "data": [], "img_result": data.img_tag,
-                "msg": "Success request object detect; "}  # 初始化out_data
-
-    ## 将输入请求信息可视化
-    img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + data.type , (10, 10), color=(255, 0, 0), size=60)
-    #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
-    #if img_ref is not None:
-        #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
-    if roi is not None:  # 如果配置了感兴趣区域，则画出感兴趣区域
-        img_ref_ = img_ref.copy()
-        dim = np.array(roi).ndim
-        if dim == 1:
-            if len(roi)==4:
-                cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
-                cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
-                    thickness=1)
-                #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
-        else:
-            for i in range(len(roi)):
-                cv2.rectangle(img_ref_, (int(roi[i][0]), int(roi[i][1])), (int(roi[i][2]), int(roi[i][3])), (255, 0, 255),
-                              thickness=1)
-                cv2.putText(img_ref_, "roi"+str(i+1), (int(roi[i][0]), int(roi[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (255, 0, 255),
-                            thickness=1)
-                #cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
-
-
-    if "augm" in data.config:
-        if isinstance(data.config["augm"], list):
-            if len(data.config["augm"]) == 2:
-                augm = data.config["augm"]
-                augm = [float(augm[0]), float(augm[1])]
-                img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
-
-    ## 生成目标检测信息
-    labels=['budaowei','fen','he']
-    cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
-    cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
-
-    if len(cfgs) == 0:  # 没有检测到目标
-        out_data["msg"] = out_data["msg"] + "; Not find object"
-        out_data["code"] = 1
-        out_data["data"]=[]
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
-        #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-        return out_data
-
-    ## labels 列表 和 color 列表
-    colors = [(0,255,255),(0,255,0),(0,0,255)]#color_list(len(labels))
-    color_dict = {}
-    name_dict = {}
-    for i, label in enumerate(labels):
-        color_dict[label] = colors[i]
-    name_dict = {'budaowei': '分合异常', 'fen': '分闸正常', 'he': '合闸正常'}
-
-    ## 画出boxes
-    #print(cfgs)
-    for cfg in cfgs:
-        c = cfg["coor"];
-        label = cfg["label"]
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), color_dict[label], thickness=2)
-
-        # Mask plotting
-        masks = cfg["mask"]
-        masks = masks.unsqueeze(0)
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
-        masks = masks.permute(1, 2, 0).contiguous()
-        masks = masks.cpu().numpy()
-        masks = scale_image(masks.shape[:2], masks, img_tag_.shape)
-
-        masks = np.asarray(masks, dtype=np.float32)
-        alpha=0.3
-        colors = np.asarray([color_dict[label]], dtype=np.float32)  # shape(n,3)
-        print('shape', masks.shape, colors.shape)
-        masks = (masks @ colors).clip(0, 255)  # (h,w,n) @ (n,3) = (h,w,3)
-        s = masks.sum(2, keepdims=True).clip(0, 1)
-        print(masks.shape,img_tag_.shape)
-        img_tag_[:]= masks * alpha + img_tag_ * (1 - s * alpha)
-
-        s = int((c[2] - c[0]) / 6)  # 根据框子大小决定字号和线条粗细。
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
-
-    ## 求出目标图像的感兴趣区域
-    if roi is not None:
-        feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-        roi_tag=[]
-        if M is None:
-            out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-            roi_tag = roi
-        else:
-            dim = np.array(roi).ndim
-            if dim == 1:
-                coors = [(roi[0], roi[1]), (roi[2], roi[1]), (roi[2], roi[3]), (roi[0], roi[3])]
-                coors_ = []
-                for coor in coors:
-                    coors_.append(list(convert_coor(coor, M)))
-                xs = [coor[0] for coor in coors_]
-                ys = [coor[1] for coor in coors_]
-                xmin = max(0, min(xs));
-                ymin = max(0, min(ys))
-                xmax = min(img_tag.shape[1], max(xs));
-                ymax = min(img_tag.shape[0], max(ys))
-                roi_tag=[xmin, ymin, xmax, ymax]
+            if cfgs_in[i]["score"] > cfgs_in[j]["score"]:
+                rm_ids.append(j)
+            elif cfgs_in[i]["score"] > cfgs_in[j]["score"]:
+                continue
             else:
-                for i in range(len(roi)):
-                    coors = [(roi[i][0], roi[i][1]), (roi[i][2], roi[i][1]), (roi[i][2], roi[i][3]), (roi[i][0], roi[i][3])]
-                    coors_ = []
-                    for coor in coors:
-                        coors_.append(list(convert_coor(coor, M)))
-                    xs = [coor[0] for coor in coors_]
-                    ys = [coor[1] for coor in coors_]
-                    xmin = max(0, min(xs));
-                    ymin = max(0, min(ys))
-                    xmax = min(img_tag.shape[1], max(xs));
-                    ymax = min(img_tag.shape[0], max(ys))
-                    #roi_tag = [xmin, ymin, xmax, ymax]
-                    roi_tag.append([xmin, ymin, xmax, ymax])
+                rm_ids.append(i)
+    rm_ids = list(set(rm_ids))
 
-        ## 画出roi_tag
-        c = roi_tag
-        print('roi:',c)
-        dim = np.array(c).ndim
-        if dim == 1:
-            cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
-                    thickness=1)
-        else:
-            for i in range(len(c)):
-                #print(c[i])
-                cv2.rectangle(img_tag_, (int(c[i][0]), int(c[i][1])), (int(c[i][2]), int(c[i][3])), (255, 0, 255), thickness=1)
-                cv2.putText(img_tag_, "roi"+str(i), (int(c[i][0]), int(c[i][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
-                            thickness=1)
+    cfgs_out = [c for i, c in enumerate(cfgs_in) if i not in rm_ids]
+    return cfgs_out
 
-    ## 判断bbox是否在roi中 进行筛选
-    bboxes = []
-    out_data_data=[]
-    data_masks=[]
+def load_yolov5seg_model(model_file='/data/PatrolAi/yolov5/daozha_seg.pt'):
+    """
+    # load yolov5 FP32 model
+    """
+    yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
+    # yolov5_weights = attempt_load(model_file, device) # 加载模型
+    return yolov5_weights
 
-    if roi is None:
-        for cfg in cfgs:
-            cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
-            out_data_data.append(cfg_out)
-            data_masks.append(cfg["mask"])
-            bboxes.append(cfg["coor"])
-        out_data["data"] = rankBbox(out_data_data, data_masks, roi)
-        cv2.putText(img_tag_, "-selected", (
-                int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
-                int(out_data["data"][0]['bbox'][3]) - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-    else:
-        dim = np.array(roi_tag).ndim
-        print('dim',dim)
-        if dim == 1:
-            for cfg in cfgs:
-                if is_include(cfg["coor"], roi_tag, srate=0.5):
-                    cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
-                    out_data_data.append(cfg_out)
-                    data_masks.append(cfg["mask"])
-                    bboxes.append(cfg["coor"])
-            out_data["data"] = rankBbox(out_data_data, data_masks, roi)
-            cv2.putText(img_tag_, "-selected", (
-                int(0.5 * out_data["data"][0]['bbox'][0] + 0.5 * out_data["data"][0]['bbox'][2]),
-                int(out_data["data"][0]['bbox'][3]) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-        else:
-            for i in range(len(roi_tag)):
-                bboxes = []
-                out_data_data = []
-                data_masks = []
-                for cfg in cfgs:
-                    if is_include(cfg["coor"], roi_tag[i], srate=0.5):
-                        cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
-                        out_data_data.append(cfg_out)
-                        data_masks.append(cfg["mask"])
-                        bboxes.append(cfg["coor"])
-                print(out_data_data)
-                tmp_data=rankBbox(out_data_data, data_masks, roi[i])
-                print(tmp_data)
-                if tmp_data!=[]:
-                    out_data["data"].append(tmp_data[0])
-                    cv2.putText(img_tag_, "-selected"+str(i), (
-                        int(0.5 * tmp_data[0]['bbox'][0] + 0.5 * tmp_data[0]['bbox'][2]),
-                        int(tmp_data[0]['bbox'][3]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
+def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.2, pre_labels=None):
+    """
+    使用yolov5对图片做推理，返回bbox信息。
+    args:
+        model_yolov5: 加载后的yolov5模型，使用load_yolov5_model_seg(model_file)加载
+        img_file: 需要预测的图片
+    return:
+        bbox_cfg: 预测的bbox信息，json文件格式为格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+    """
+    model=model_yolov5
+    imgsz=(resize,resize)
+    stride, names, pt = model.stride, model.names, model.pt
+    imgsz = check_img_size(imgsz, s=stride)  # check image size
 
-    ## 可视化计算结果
-    '''f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
-    json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    f.close()'''
-    #cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-    #cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
+    # Run inference
+    bs = 1  # batch_size
+    model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
+    seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
 
-    ## 输出可视化结果的图片。
-    out_data["img_result"] = img2base64(img_tag_)
+    img_raw_shape = img.shape  # 记录原图大小。
 
-    return out_data
+    ## 将numpy转成yolov5格式input data.
+    stride = max(int(model_yolov5.stride), 32)
+    img = letterbox(img, new_shape=resize, auto=True, stride=stride)[0]  # resize图片
+    img_resize_shape = img.shape  # 记录resize后图片大小
+    img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3 x 640 x 640
+    img = torch.from_numpy(img.copy()).to(model.device)  # numpy转tenso
+    img = img.float()
+    img /= 255  # 0 - 255 to 0.0 - 1.0
+    im = img.unsqueeze(0)  # 添加一维
 
+    print(im.shape)
+
+    # Inference
+    with dt[1]:
+        pred, proto = model(im, augment=False, visualize=False)[:2]
+
+    # NMS
+    with dt[2]:
+        pred = non_max_suppression(pred, conf_thres=conf_thres, iou_thres=iou_thres, max_det=1000, nm=32)
+
+    ## 生成bbox_cfg 的json格式，有助于人看[{"label": "", "coor": [x0, y0, x1, y1]}, {}, ..]
+    labels = model_yolov5.module.names if hasattr(model_yolov5, 'module') else model_yolov5.names
+    bbox_cfg = []
+    # Process predictions
+    for i, det in enumerate(pred):  # per image
+        print('det shape',det.shape)
+        if len(det):
+            masks = process_mask(proto[i], det[:, 6:], det[:, :4], im.shape[2:], upsample=True)  # HWC
+
+            det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], img_raw_shape).round()  # rescale boxes to im0 size
+
+            print('inf', masks.shape)
+
+            bbox=det[:, :4]
+            score=det[:,4]
+            classes=det[:,5]
+
+            for i in range(len(det.cpu().numpy())):
+                label = labels[int(classes[i])]
+                print('maski',masks[i].shape)
+                tmp = {"label": label, "coor": bbox[i].cpu().numpy().astype(int).tolist(), "score": float(score[i]),"mask":masks[i]}
+                if pre_labels is None or label in pre_labels:
+                    bbox_cfg.append(tmp)
+
+    #print('result',bbox_cfg)
+
+    return bbox_cfg
 
 if __name__ == '__main__':
-    json_file = "1223110334_input_data.json"
-    f = open(json_file, "r", encoding='utf-8')
-    input_data = json.load(f)
-    f.close()
-    out_data = inspection_daozha_detection(input_data)
-    print("inspection_daozha_detection result:")
-    print("-----------------------------------------------")
-    for s in out_data:
-        if s != "img_result":
-            print(s, ":", out_data[s])
-    print("----------------------------------------------")
+    import shutil
+
+    img_file = "11-11-14-01-37_img_tag_cfg.jpg"
+    weight = "best.pt"
+    img = cv2.imread(img_file)
+    model=load_yolov5seg_model()
+    bbox_cfg=inference_yolov5seg(model,img)
+
+    for i in range(len(bbox_cfg)):
+        tmp=bbox_cfg[i]
+        c = tmp["coor"];
+        label = tmp["label"];
+        score = tmp["score"]
+        cv2.rectangle(img, (int(c[0]),int(c[1])), (int(c[2]),int(c[3])), (0, 255, 0), 2)
+        cv2.putText(img, label + ": " + str(score), (int(c[0]), int(c[1]) + 10), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (255, 0, 255), thickness=2)
+    cv2.imwrite('33.jpg', img)
