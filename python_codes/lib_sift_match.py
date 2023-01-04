@@ -58,7 +58,7 @@ except:
     print("Notice: vector_set use python !!!")
 
 if sift_lib == "cudasift":
-    sift_data = cudasift.PySiftData(25000)
+    sift_data = cudasift.PySiftData(10000)
 
 if kmeans_lib == "cuml":
     kmeans = KMeans(n_clusters=2, max_iter=100, tol=1e-2)

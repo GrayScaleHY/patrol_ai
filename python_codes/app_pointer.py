@@ -8,7 +8,7 @@ from lib_inference_yolov5 import inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, contour2segment
 from lib_inference_mrcnn import inference_maskrcnn
 from lib_sift_match import sift_match, convert_coor, sift_create
-from lib_help_base import color_area
+from lib_help_base import color_area, GetInputData
 import math
 import numpy.matlib
 
@@ -174,89 +174,6 @@ def add_head_end_ps(pointers):
 
     return pointers
 
-        
-def get_input_data(input_data):
-    """
-    提取input_data中的信息。
-    return:
-        img_tag: 目标图片数据
-        img_ref: 模板图片数据
-        pointers_ref: 坐标点, 结构为{"center": [100，200], "-0.1": [200，300], "0.9": [400，500]}
-        roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
-        number: None 或者 指针数量
-        length: None 或者 指针长短
-        width: None 或者 指针粗细
-        color: None 或者 指针颜色
-        dp: 3 或者 需要保留的小数位
-    """
-    img_tag = base642img(input_data["image"])
-    img_ref = base642img(input_data["config"]["img_ref"])
-
-    W = img_ref.shape[1]; H = img_ref.shape[0]
-
-    ## 点坐标
-    pointers = input_data["config"]["pointers"]
-    pointers_ref = {}
-    for coor in pointers:
-        pointers_ref[coor] = [int(pointers[coor][0] * W), int(pointers[coor][1] * H)]
-
-    ## pointers_ref头尾增加两个点
-    pointers_ref = add_head_end_ps(pointers_ref)
-
-    ## 感兴趣区域
-    roi = None # 初始假设
-    if "bboxes" in input_data["config"]:
-        if isinstance(input_data["config"]["bboxes"], dict):
-            if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
-                        roi = input_data["config"]["bboxes"]["roi"][0]
-                    else:
-                        roi = input_data["config"]["bboxes"]["roi"]
-                    W = img_ref.shape[1]; H = img_ref.shape[0]
-                    roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
-    
-    ## osd区域
-    osd = None # 初始假设
-    if "bboxes" in input_data["config"]:
-        if isinstance(input_data["config"]["bboxes"], dict):
-            if "osd" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["osd"], list):
-                    osd_ = input_data["config"]["bboxes"]["osd"]
-                    osd=[]
-                    for o_ in osd_:
-                        osd.append([max(0,o_[0]-0.01),max(0,o_[1]-0.01),min(1,o_[2]+0.01),min(1,o_[3]+0.01)])
-    
-    ## 其他信息
-    number = 1
-    if "number" in input_data["config"]:
-        if isinstance(input_data["config"]["number"], int):
-            if input_data["config"]["number"] != -1:
-                number = input_data["config"]["number"]
-
-    length = None
-    if "length" in input_data["config"]:
-        if isinstance(input_data["config"]["length"], int):
-            if input_data["config"]["length"] != -1:
-                length = input_data["config"]["length"]
-    color = None
-    if "color" in input_data["config"]:
-        if isinstance(input_data["config"]["color"], int):
-            if input_data["config"]["color"] != -1:
-                color = input_data["config"]["color"]
-    width = None
-    if "width" in input_data["config"]:
-        if isinstance(input_data["config"]["width"], int):
-            if input_data["config"]["width"] != -1:
-                width = input_data["config"]["width"]
-    dp = 3
-    if "dp" in input_data["config"]:
-        if isinstance(input_data["config"]["dp"], int):
-            if input_data["config"]["dp"] != -1:
-                dp = input_data["config"]["dp"]
-    
-    return img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp, osd
-
 def select_pointer(img, seg_cfgs, number, length, width, color):
     """
     根据指针长短，粗细，颜色来筛选指针
@@ -386,58 +303,32 @@ def pointer_detect(img_tag, number):
 
 def inspection_pointer(input_data):
 
-    ## 初始化输入输出信息。
-    TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-        TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
-
-    out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request " + input_data["type"] + ";"} #初始化输出信息
-
     ## 提取输入请求信息
-    img_tag, img_ref, pointers_ref, roi, number, length, width, color, dp, osd= get_input_data(input_data)
+    DATA = GetInputData(input_data)
+    checkpoint = DATA.checkpoint; an_type = DATA.type
+    img_tag = DATA.img_tag; img_ref = DATA.img_ref
+    pointers_ref = DATA.pointers; number = DATA.number
+    roi = DATA.roi; osd = DATA.osd; dp = DATA.dp
+    length = DATA.length; width = DATA.width; color = DATA.color
 
-    ## 将输入请求信息可视化
+    ## 初始化输出结果
+    out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request " + an_type + ";"} #初始化输出信息
+
+    ## 画上点位名称和osd区域
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
-    img_ref_ = img_ref.copy()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag_)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
-    for scale in pointers_ref:  # 将坐标点标注在图片上
-        coor = pointers_ref[scale]
-        cv2.circle(img_ref_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
-        cv2.putText(img_ref_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    if roi is not None:   ## 如果配置了感兴趣区域，则画出感兴趣区域
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_ref_, "roi", (int(roi[0])-5, int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    
-    if osd is not None: ## 如果配置了感兴趣区域，则画出osd区域
-        for o_ in osd:
-            H, W = img_ref.shape[:2]
-            o_ = [int(o_[0]*W), int(o_[1]*H), int(o_[2]*W), int(o_[3]*H)]
-            cv2.rectangle(img_ref_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_ref_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-        for o_ in osd:
-            H, W = img_tag_.shape[:2]
-            o_ = [int(o_[0]*W), int(o_[1]*H), int(o_[2]*W), int(o_[3]*H)]
-            cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=60)
+    for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
+        cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    if input_data["type"] != "pointer":
+    if an_type != "pointer":
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    ## 计算指针
+    ## 检测指针
     seg_cfgs, roi_tag = pointer_detect(img_tag, number)
 
     if len(seg_cfgs) == 0:
@@ -445,61 +336,47 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    ## 将所有指针画出来
+    ## 画出所有指针
     for cfg in seg_cfgs:
         seg = cfg["seg"]
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
-    ## 矫正信息
-    if osd is None:
+    ## 求偏移矩阵
+    if len(osd) > 0:
         osd = [[0,0,1,0.1],[0,0.9,1,1]]
     feat_ref = sift_create(img_ref, rm_regs=osd)
     feat_tag = sift_create(img_tag)
     M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
 
-    ## 求出目标图像的感兴趣区域
-    if roi is not None and M is not None:
+    ## 求出测试图的感兴趣区域
+    if len(roi) > 0 and M is not None:
+        roi = roi[0]
         coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-        coors_ = []
-        for coor in coors:
-            coors_.append(list(convert_coor(coor, M)))
-        xs = [coor[0] for coor in coors_]
-        ys = [coor[1] for coor in coors_]
-        xmin = max(0, min(xs)); ymin = max(0, min(ys))
-        xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
-        roi_tag = [xmin, ymin, xmax, ymax]
+        coors_ = [list(convert_coor(coor, M)) for coor in coors]
+        c_ = np.array(coors_, dtype=int)
+        roi_tag = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
 
     ## 画出roi_tag
     c = roi_tag
     cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
     cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) + 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    ## 将不在感兴趣区域的指针筛选出去
-    _seg_cfgs = []
-    for cfg in seg_cfgs:
-        box_ = cfg["box"]
-        if is_include(box_, roi_tag, srate=0.8):
-            _seg_cfgs.append(cfg)
-    seg_cfgs = _seg_cfgs
+    ## 保留在roi_tag中的指针
+    seg_cfgs = [cfg for cfg in seg_cfgs if is_include(cfg["box"], roi_tag, srate=0.8)]
     
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    
-    ## 将指针按score从大到小排列
+    ## 将指针按score从大到小排列，筛选指针
     scores = [cfg["score"] for cfg in seg_cfgs]
     i_sort = np.argsort(np.array(scores))
-    seg_cfgs = [seg_cfgs[i_sort[i]] for i in range(len(i_sort))]
-
-    ## 筛选指针
+    seg_cfgs = [seg_cfgs[i_sort[i]] for i in range(len(i_sort))] # 排序
     i = select_pointer(img_tag, seg_cfgs, number, length, width, color)
     seg = seg_cfgs[i]["seg"]
     cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
@@ -516,7 +393,6 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
         
     ## 求指针读数
@@ -538,7 +414,6 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     val = round(val, dp)
@@ -546,16 +421,11 @@ def inspection_pointer(input_data):
     roi_tag = [float(roi_tag[0]), float(roi_tag[1]), float(roi_tag[2]), float(roi_tag[3])]
     out_data["data"] = {"type": "pointer", "values": val, "segment": seg, "bbox": roi_tag}
     
-    ## 输出可视化结果的图片。
+    ## 画出指针读数
     H, W = img_tag.shape[:2]
     s = W / 800
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(seg[3])-5),cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
-    f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
-    json.dump(out_data, f, indent=2, ensure_ascii=False)
-    f.close()
-
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data

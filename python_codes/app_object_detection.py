@@ -9,6 +9,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create
 import config_object_name
 from config_object_name import convert_label
 import numpy as np
+from lib_help_base import GetInputData
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 from config_load_models_var import yolov5_meter, \
                                    yolov5_ErCiSheBei, \
@@ -60,89 +61,29 @@ def rank_digital(obj_data, obj_type="counter"):
     bboxes = [obj_data[i]["bbox"] for i in rank]
     new_data = {"type": obj_type, "values": vals, "bboxes": bboxes}
     return new_data
-    
-def get_input_data(input_data):
-    """
-    提取input_data中的信息。
-    return:
-        img_tag: 目标图片数据
-        img_ref: 模板图片数据
-        roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
-    """
-
-    img_tag = base642img(input_data["image"])
-
-    ## 是否有模板图
-    img_ref = None
-    if "img_ref" in input_data["config"]:
-        if isinstance(input_data["config"]["img_ref"], str):
-            if len(input_data["config"]["img_ref"]) > 10:
-                img_ref = base642img(input_data["config"]["img_ref"])
-
-    ## 感兴趣区域
-    roi = None # 初始假设
-    if "bboxes" in input_data["config"]:
-        if isinstance(input_data["config"]["bboxes"], dict):
-            if "roi" in input_data["config"]["bboxes"]:
-                if isinstance(input_data["config"]["bboxes"]["roi"], list):
-                    if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
-                        roi = input_data["config"]["bboxes"]["roi"][0]
-                    else:
-                        roi = input_data["config"]["bboxes"]["roi"]
-                    
-                    if img_ref is None:
-                        print("Roi not match img_ref: ", input_data["checkpoint"])
-                        roi = None
-                    else:
-                        W = img_ref.shape[1]; H = img_ref.shape[0]
-                        roi = [int(roi[0]*W), int(roi[1]*H), int(roi[2]*W), int(roi[3]*H)]  
-    
-    ## 设备状态与显示名字的映射关系。
-    status_map = None
-    if "status_map" in input_data["config"]:
-        if isinstance(input_data["config"]["status_map"], dict):
-            status_map = input_data["config"]["status_map"]
-
-    ## 指定label_list。
-    label_list = None
-    if "label_list" in input_data["config"]:
-        if isinstance(input_data["config"]["label_list"], list):
-            label_list = input_data["config"]["label_list"]
-    
-    return img_tag, img_ref, roi, status_map, label_list
 
 def inspection_object_detection(input_data):
     """
     yolov5的目标检测推理。
     """
-    ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-        TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
+    ## 提取输入请求信息
+    DATA = GetInputData(input_data)
+    checkpoint = DATA.checkpoint; an_type = DATA.type
+    img_tag = DATA.img_tag; img_ref = DATA.img_ref
+    roi = DATA.roi; osd = DATA.osd
+    status_map = DATA.status_map; label_list = DATA.label_list
 
-    ## 初始化输入输出信息。
-    img_tag, img_ref, roi, status_map, label_list = get_input_data(input_data)
-    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+    ## 初始化out_data
+    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Request; "} 
     if input_data["type"] == "rec_defect" or input_data["type"] == "fire_smoke":
-        out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+        out_data["code"] = 1
 
-    ## 将输入请求信息可视化
+    ## 画上点位名称和osd区域
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"] , (10, 10), color=(255, 0, 0), size=60)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
-    if img_ref is not None:
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
-    if roi is not None:   # 如果配置了感兴趣区域，则画出感兴趣区域
-        img_ref_ = img_ref.copy()
-        cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])),(int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=60)
+    for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
+        cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 选择模型
     if input_data["type"] == "meter":
@@ -192,10 +133,9 @@ def inspection_object_detection(input_data):
             yolov5_model = yolov5_rec_defect_x6
             labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
             labels = [labels_dict[id] for id in labels_dict]
-            if label_list is not None:
+            if len(label_list) > 0:
                 labels = [convert_label(l, "rec_defect") for l in label_list]
             model_type = "rec_defect"
-
     elif input_data["type"] == "pressplate": 
         yolov5_model = yolov5_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
@@ -237,15 +177,7 @@ def inspection_object_detection(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
-
-    if "augm" in input_data["config"]:
-        if isinstance(input_data["config"]["augm"], list):
-            if len(input_data["config"]["augm"]) == 2:
-                augm = input_data["config"]["augm"]
-                augm = [float(augm[0]), float(augm[1])]
-                img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
 
     ## 生成目标检测信息
     if input_data["type"] == "rec_defect":
@@ -265,7 +197,6 @@ def inspection_object_detection(input_data):
             out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## labels 列表 和 color 列表
@@ -274,7 +205,7 @@ def inspection_object_detection(input_data):
     name_dict = {}
     for i, label in enumerate(labels):
         color_dict[label] = colors[i]
-        if status_map is not None and label in status_map:
+        if len(status_map) > 0 and label in status_map:
             name_dict[label] = status_map[label]
         elif label in config_object_name.OBJECT_MAP[model_type]:
             name_dict[label] = config_object_name.OBJECT_MAP[model_type][label]
@@ -298,23 +229,21 @@ def inspection_object_detection(input_data):
             img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
     ## 求出目标图像的感兴趣区域
-    if roi is not None:
-        feat_ref = sift_create(img_ref, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
-        feat_tag = sift_create(img_tag, rm_regs=[[0,0,1,0.1],[0,0.9,1,1]])
+    if len(roi) > 0:
+        if len(osd) > 0:
+            osd = [[0,0,1,0.1],[0,0.9,1,1]]
+        feat_ref = sift_create(img_ref, rm_regs=osd)
+        feat_tag = sift_create(img_tag)
         M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-            roi_tag = roi
+            roi_tag = roi[0]
         else:
+            roi = roi[0]
             coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-            coors_ = []
-            for coor in coors:
-                coors_.append(list(convert_coor(coor, M)))
-            xs = [coor[0] for coor in coors_]
-            ys = [coor[1] for coor in coors_]
-            xmin = max(0, min(xs)); ymin = max(0, min(ys))
-            xmax = min(img_tag.shape[1], max(xs)); ymax = min(img_tag.shape[0], max(ys))
-            roi_tag = [xmin, ymin, xmax, ymax]
+            coors_ = [list(convert_coor(coor, M)) for coor in coors]
+            c_ = np.array(coors_, dtype=int)
+            roi_tag = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
 
         ## 画出roi_tag
         c = roi_tag
@@ -324,10 +253,13 @@ def inspection_object_detection(input_data):
     ## 判断bbox是否在roi中
     bboxes = []
     for cfg in cfgs:
-        if roi is None or is_include(cfg["coor"], roi_tag, srate=0.5):
+        if len(roi) == 0 or is_include(cfg["coor"], roi_tag, srate=0.5):
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
             out_data["data"].append(cfg_out)
             bboxes.append(cfg["coor"])
+
+    if len(out_data["data"]) == 0:
+        out_data["code"] = 1
 
     if input_data["type"] == "counter" or input_data["type"] == "digital":
         out_data["data"] = rank_digital(out_data["data"], obj_type=input_data["type"])
@@ -335,20 +267,13 @@ def inspection_object_detection(input_data):
     if input_data["type"] == "key":
         out_data["data"] = {"label": input_data["type"], "number": len(bboxes), "boxes": bboxes}
     
-    ## 可视化计算结果
-    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
-    json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    f.close()
-    
-    ## 输出可视化结果的图片。
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/result_patrol/12-15-11-30-07_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/1230065026_02-18开关状态_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

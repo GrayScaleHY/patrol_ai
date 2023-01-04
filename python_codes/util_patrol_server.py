@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import json
+from lib_help_base import get_save_head, save_input_data, save_output_data
 import os
 from app_pointer import inspection_pointer
 from app_disconnector import inspection_disconnector
@@ -16,6 +17,8 @@ import time
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
+draw_img = True
+
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
 
@@ -25,8 +28,13 @@ def inspection_digital_server():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
+    
     start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = ocr_digit_detection(data)
+    save_output_data(res, save_dir, name_head)
+
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
@@ -43,16 +51,13 @@ def inspection_disconnector_notemp_server():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
-    data = GetInputData(data)
-    data={'img_tag':data.img_tag,'img_ref ':data.img_ref,'roi':data.roi,'config':data.config,'type':data.type}
+
     start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_daozha_detection(data)
+    save_output_data(res, save_dir, name_head)
 
-    '''f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
-    json.dump(res, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    f.close()'''
-
-    print("inspection_level_gauge result:")
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
@@ -69,30 +74,116 @@ def inspection_level_gauge_server():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
+
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_level_gauge(data)
+    save_output_data(res, save_dir, name_head)
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 仪表指针读数
+@app.route('/inspection_pointer/', methods=['POST'])
+def inspection_pointer_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = inspection_pointer(data)
+    save_output_data(res, save_dir, name_head)
+
+    print("----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 二维码识别，文本标识牌识别
+@app.route('/inspection_qrcode/', methods=['POST'])
+@app.route('/inspection_ocr/', methods=['POST'])
+def inspection_qrcode_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = inspection_qrcode(data)
+    save_output_data(res, save_dir, name_head)
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 目标检测
+@app.route('/inspection_pressplate/', methods=['POST']) # 压板
+@app.route('/inspection_led/', methods=['POST']) # led灯
+@app.route('/inspection_led_color/', methods=['POST']) # led灯
+@app.route('/inspection_fire_smoke/', methods=['POST']) # 烟火
+@app.route('/inspection_air_switch/', methods=['POST']) # 空气开关
+@app.route('/inspection_fangpaiqi/', methods=['POST']) # 翻牌器
+@app.route('/inspection_helmet/', methods=['POST']) # 安全帽
+@app.route('/inspection_meter/', methods=['POST']) # 表盘
+@app.route('/inspection_rotary_switch/', methods=['POST']) # 旋钮开关
+@app.route('/inspection_door/', methods=['POST']) # 箱门
+@app.route('/inspection_key/', methods=['POST']) # 钥匙
+@app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
+# @app.route('/inspection_digital/', methods=['POST'])
+@app.route('/inspection_counter/', methods=['POST'])
+@app.route('/inspection_person/', methods=['POST'])
+@app.route('/inspection__disconnector_texie/', methods=['POST'])
+def inspection_object():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = inspection_object_detection(data)
+    save_output_data(res, save_dir, name_head)
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+## 判别算法
+@app.route('/inspection_identify_defect/', methods=['POST'])
+def inspection_identify_defect_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = inspection_identify_defect(data)
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
             print(s,":",res[s])
     print("----------------------------------------------")
-    return jsonify(res)
-
-@app.route('/inspection_state/', methods=['POST'])
-def inspection_state():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    else:
-        res = {"code": 0}
-    return jsonify(res)
-
-@app.route('/inspection_version/', methods=['POST'])
-def inspection_version():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    else:
-        res = {"data":code_version, "code": 0}
     return jsonify(res)
 
 ## 刀闸分合识别
@@ -127,106 +218,23 @@ def inspection_disconnector_video_server():
     print("----------------------------------------------")
     return jsonify(res)
 
-## 仪表指针读数
-@app.route('/inspection_pointer/', methods=['POST'])
-def inspection_pointer_server():
+@app.route('/inspection_state/', methods=['POST'])
+def inspection_state():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    start_time = time.time()
-    res = inspection_pointer(data)
-    print("inspection_pointer result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    else:
+        res = {"code": 0}
     return jsonify(res)
 
-## 判别算法
-@app.route('/inspection_identify_defect/', methods=['POST'])
-def inspection_identify_defect_server():
+@app.route('/inspection_version/', methods=['POST'])
+def inspection_version():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_identify_defect(data)
-    print("inspection_identify_defect result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
+    else:
+        res = {"data":code_version, "code": 0}
     return jsonify(res)
-
-## 仪表计数器读数
-# @app.route('/inspection_digital/', methods=['POST'])
-# @app.route('/inspection_counter/', methods=['POST'])
-# def inspection_counter_server():
-#     if request.method != 'POST':
-#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-#         return jsonify(res)
-#     data = json.loads(request.get_data(as_text=True))
-#     res = inspection_counter(data)
-#     print("inspection_pointer result:")
-#     print("-----------------------------------------------")
-#     for s in res:
-#         if s != "img_result":
-#             print(s,":",res[s])
-#     print("----------------------------------------------")
-#     return jsonify(res)
-
-## 二维码识别，文本标识牌识别
-@app.route('/inspection_qrcode/', methods=['POST'])
-@app.route('/inspection_ocr/', methods=['POST'])
-def inspection_qrcode_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_qrcode(data)
-    print("meter_location result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
-
-## 目标检测
-@app.route('/inspection_pressplate/', methods=['POST']) # 压板
-@app.route('/inspection_led/', methods=['POST']) # led灯
-@app.route('/inspection_led_color/', methods=['POST']) # led灯
-@app.route('/inspection_fire_smoke/', methods=['POST']) # 烟火
-@app.route('/inspection_air_switch/', methods=['POST']) # 空气开关
-@app.route('/inspection_fangpaiqi/', methods=['POST']) # 翻牌器
-@app.route('/inspection_helmet/', methods=['POST']) # 安全帽
-@app.route('/inspection_meter/', methods=['POST']) # 表盘
-@app.route('/inspection_rotary_switch/', methods=['POST']) # 旋钮开关
-@app.route('/inspection_door/', methods=['POST']) # 箱门
-@app.route('/inspection_key/', methods=['POST']) # 钥匙
-@app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
-# @app.route('/inspection_digital/', methods=['POST'])
-@app.route('/inspection_counter/', methods=['POST'])
-@app.route('/inspection_person/', methods=['POST'])
-@app.route('/inspection__disconnector_texie/', methods=['POST'])
-def inspection_object():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    start_time = time.time()
-    res = inspection_object_detection(data)
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
-    return jsonify(res)
-
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)

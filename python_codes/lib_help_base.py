@@ -6,6 +6,9 @@ from config_object_name import COLOR_HSV_MAP
 import cv2
 import numpy as np
 from lib_image_ops import base642img
+import json
+import os
+import time
 
 class GetInputData:
     """
@@ -22,7 +25,10 @@ class GetInputData:
         self.roi = self.get_roi(self.config, self.img_ref)  # roi框
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
+        self.dp = self.get_dp(self.config)
         self.number, self.length, self.width, self.color = self.get_pointer_cfg(self.config) # 多指针的性质
+        self.status_map = self.get_status_map(self.config)
+        self.label_list = self.get_label_list(self.config)
 
     def get_checkpoint(self, data):
         """
@@ -199,6 +205,13 @@ class GetInputData:
             status_map = {}
         return status_map
 
+    def get_label_list(self, config):
+        if "label_list" in config and isinstance(config["label_list"], list):
+            label_list = config["label_list"]
+        else:
+            label_list = []
+        return label_list
+
 class Logger(object):
     """
     将控制端log保存下来的方法。
@@ -298,6 +311,74 @@ def color_area(img, color_list=["black","white","red","red2","orange","yellow","
     
     return color_dict
 
+def get_save_head(input_data):
+    """
+    根据input_data和当前时刻获取保存文件夹和文件名头
+    args:
+        input_data: 巡视算法输入数据
+    return:
+        save_dir: 保存的文件夹路径
+        name_head: 文件名的开头
+    """
+    save_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_dir = os.path.join(save_dir, "result_patrol", input_data["type"])
+    os.makedirs(save_dir, exist_ok=True)
+    name_head = time.strftime("%m%d%H%M%S") + "_"
+    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str):
+        name_head = name_head + input_data["checkpoint"] + "_"
+    return save_dir, name_head
+
+
+def save_input_data(input_data, save_dir, name_head, draw_img=False):
+    """
+    保存巡视算法输入数据
+    args:
+        input_data: 巡视传过来的输入数据
+        save_dir: 保存的文件夹路径
+        name_head: 文件名的开头
+        draw_img： 是否画图，if False: 只保存input_data; if True: 将信息画在图上
+    """
+
+    f = open(os.path.join(save_dir, name_head + "input_data.json"), "w")
+    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
+
+    if not draw_img:
+        return 0
+
+    DATA = GetInputData(input_data)
+    img_tag = DATA.img_tag; img_ref = DATA.img_ref
+    pointers_ref = DATA.pointers
+    roi = DATA.roi; osd = DATA.osd
+    cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
+    cv2.imwrite(os.path.join(save_dir, name_head + "ref.jpg"), img_ref)
+
+    for scale in pointers_ref:  # 将坐标点标注在图片上
+        coor = pointers_ref[scale]
+        cv2.circle(img_ref, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
+        cv2.putText(img_ref, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    if o_ in roi:   ## 如果配置了感兴趣区域，则画出感兴趣区域
+        cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, "roi", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
+        cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+
+    cv2.imwrite(os.path.join(save_dir, name_head + "ref_cfg.jpg"), img_ref)
+
+def save_output_data(output_data, save_dir, name_head):
+    """
+    保存巡视算法输入数据
+    args:
+        output_data: 算法分析的结果
+        save_dir: 保存的文件夹路径
+        name_head: 文件名的开头
+    """
+    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w")
+    json.dump(output_data, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
+    img_tag_cfg = base642img(output_data["img_result"])
+    cv2.imwrite(os.path.join(save_dir, name_head + "tag_cfg.jpg"), img_tag_cfg)
 
 if __name__ == '__main__':
     import json
@@ -307,3 +388,4 @@ if __name__ == '__main__':
     f.close()
     a = GetInputData(in_data)
     print(a.pointers)
+    print(a.type)
