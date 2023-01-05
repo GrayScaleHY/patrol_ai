@@ -105,7 +105,7 @@ class GetInputData:
         if dim == 1:
             raw_roi = [raw_roi]
         
-        W, H = img_ref.shape[:2]
+        H, W = img_ref.shape[:2]
         roi = []
         for _roi in raw_roi:
             roi.append([int(_roi[0]*W), int(_roi[1]*H), int(_roi[2]*W), int(_roi[3]*H)])
@@ -136,7 +136,7 @@ class GetInputData:
             raw_osd = [raw_osd]
         
         osd = []
-        W, H = img_ref.shape[:2]
+        H, W = img_ref.shape[:2]
         for _osd in raw_osd:
             osd.append([int(_osd[0]*W), int(_osd[1]*H), int(_osd[2]*W), int(_osd[3]*H)])
         
@@ -154,7 +154,7 @@ class GetInputData:
         else:
             raw_pointers = {}
 
-        W, H = img_ref.shape[:2]
+        H, W = img_ref.shape[:2]
         pointers = {}
         for scale in raw_pointers:
             point = raw_pointers[scale]
@@ -166,7 +166,7 @@ class GetInputData:
         """
         获取数值小数点位数
         """
-        if "dp" in config and isinstance(config["dp"], str):
+        if "dp" in config and isinstance(config["dp"], int) and config["dp"] != -1:
             dp = int(config["dp"])
         else:
             dp = 3
@@ -176,25 +176,25 @@ class GetInputData:
         """
         获取指针个数, 长短， 宽窄， 颜色。
         """
-        if "number" in config and isinstance(config["number"], int):
+        if "number" in config and isinstance(config["number"], int) and config["number"] != -1:
             number = int(config["number"])
         else:
-            number = 3
+            number = 1
 
-        if "length" in config and isinstance(config["length"], int):
+        if "length" in config and isinstance(config["length"], int) and config["length"] != -1:
             length = int(config["length"])
         else:
-            length = 2
+            length = None
         
-        if "width" in config and isinstance(config["width"], int):
+        if "width" in config and isinstance(config["width"], int) and config["width"] != -1:
             width = int(config["width"])
         else:
-            width = 0
+            width = None
 
-        if "color" in config and isinstance(config["color"], int):
+        if "color" in config and isinstance(config["color"], int) and config["color"] != -1:
             color = int(config["color"])
         else:
-            color = 0
+            color = None
         
         return number, length, width, color
 
