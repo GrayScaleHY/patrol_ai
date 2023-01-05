@@ -103,6 +103,10 @@ def ocr_digit_detection(input_data):
     data = GetInputData(input_data)
     img_tag, img_ref, roi = data.img_tag, data.img_ref, data.roi
     checkpoint = data.checkpoint
+    if data.roi==[]:
+        roi=None
+    else:
+        roi=roi[0]
     
     out_data = {"code": 0, "data": {}, "img_result": data.img_tag,
                 "msg": "Success request object detect; "}  # 初始化out_data
