@@ -150,7 +150,7 @@ def inspection_qrcode_server():
 # @app.route('/inspection_digital/', methods=['POST'])
 @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_person/', methods=['POST'])
-@app.route('/inspection__disconnector_texie/', methods=['POST'])
+@app.route('/inspection_disconnector_texie/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}

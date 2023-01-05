@@ -357,7 +357,7 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
         coor = pointers_ref[scale]
         cv2.circle(img_ref, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
         cv2.putText(img_ref, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    if o_ in roi:   ## 如果配置了感兴趣区域，则画出感兴趣区域
+    for o_ in roi:   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref, "roi", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
