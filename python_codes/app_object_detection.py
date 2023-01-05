@@ -10,6 +10,7 @@ import config_object_name
 from config_object_name import convert_label
 import numpy as np
 from lib_help_base import GetInputData
+from lib_help_base import is_include
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 from config_load_models_var import yolov5_meter, \
                                    yolov5_ErCiSheBei, \
@@ -22,30 +23,6 @@ from config_load_models_var import yolov5_meter, \
                                 #    yolov5_fire_smoke, \
                                 #    yolov5_led_color
 
-def is_include(sub_box, par_box, srate=0.8):
-    
-    sb = sub_box; pb = par_box
-    sb = [min(sb[0],sb[2]), min(sb[1],sb[3]), max(sb[0],sb[2]), max(sb[1],sb[3])]
-    pb = [min(pb[0],pb[2]), min(pb[1],pb[3]), max(pb[0],pb[2]), max(pb[1],pb[3])]
-
-    ## 至少一个点在par_box里面
-    points = [[sb[0],sb[1]], [sb[2],sb[1]], [sb[0],sb[3]], [sb[2],sb[3]]]
-    is_in = False
-    for p in points:
-        if p[0] >= pb[0] and p[0] <= pb[2] and p[1] >= pb[1] and p[1] <= pb[3]:
-            is_in = True
-    if not is_in:
-        return False
-    
-    ## 判断交集占多少
-    xmin = max(pb[0], sb[0]); ymin = max(pb[1], sb[1])
-    xmax = min(pb[2], sb[2]); ymax = min(pb[3], sb[3])
-    s_include = (xmax-xmin) * (ymax-ymin)
-    s_box = (sb[2]-sb[0]) * (sb[3]-sb[1])
-    if s_include / s_box >= srate:
-        return True
-    else:
-        return False
 
 def rank_digital(obj_data, obj_type="counter"):
     """
