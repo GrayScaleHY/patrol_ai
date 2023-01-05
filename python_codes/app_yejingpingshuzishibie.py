@@ -64,7 +64,7 @@ def contrast_control():
     pass
 
 
-def inspection_level_gauge(input_data,item):
+def inspection_level_gauge(input_data):
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
