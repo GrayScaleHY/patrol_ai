@@ -12,7 +12,8 @@ from config_version import code_version
 from app_disconnector_video import inspection_disconnector_video
 from app_yeweiji import inspection_level_gauge
 from app_daozha_yolov5seg import inspection_daozha_detection
-from app_ocr import ocr_digit_detection
+# from app_ocr import ocr_digit_detection
+from app_yejingpingshuzishibie import inspection_digital_rec
 import time
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -32,7 +33,7 @@ def inspection_digital_server():
     start_time = time.time()
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
-    res = ocr_digit_detection(data)
+    res = inspection_digital_rec(data)
     save_output_data(res, save_dir, name_head)
 
     print("-----------------------------------------------")
