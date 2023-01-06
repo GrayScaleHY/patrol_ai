@@ -289,7 +289,7 @@ def getAffine(center, angle, scale, trans):
     M = M[:2]  
     return M 
 
-def cupy_affine(img_ref, img_tag):
+def cupy_affine(img_tag, img_ref):
     if len(img_ref.shape) == 3:
         img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
     if len(img_tag.shape) == 3:
