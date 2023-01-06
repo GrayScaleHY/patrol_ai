@@ -126,7 +126,7 @@ class GetInputData:
         else:
             bboxes = {}
 
-        if "osd" in bboxes and isinstance(bboxes["osd"], list):
+        if "osd" in bboxes and isinstance(bboxes["osd"], list) and len(bboxes["osd"]) > 0:
             raw_osd = bboxes["osd"]
         else:
             return []
