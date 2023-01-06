@@ -344,7 +344,7 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 求偏移矩阵
-    if len(osd) > 0:
+    if len(osd) == 0:
         osd = [[0,0,1,0.1],[0,0.9,1,1]]
     feat_ref = sift_create(img_ref, rm_regs=osd)
     feat_tag = sift_create(img_tag)

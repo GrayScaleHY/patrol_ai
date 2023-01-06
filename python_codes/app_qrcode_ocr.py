@@ -53,7 +53,7 @@ def inspection_qrcode(input_data):
 
     ## 求出目标图像的感兴趣区域
     if len(roi) > 0:
-        if len(osd) > 0:
+        if len(osd) == 0:
             osd = [[0,0,1,0.1],[0,0.9,1,1]]
         feat_ref = sift_create(img_ref, rm_regs=osd)
         feat_tag = sift_create(img_tag)
