@@ -96,7 +96,7 @@ class GetInputData:
         else:
             bboxes = {}
 
-        if "roi" in bboxes and isinstance(bboxes["roi"], list):
+        if "roi" in bboxes and isinstance(bboxes["roi"], list) and len(bboxes["roi"]) > 0:
             raw_roi = bboxes["roi"]
         else:
             return []
