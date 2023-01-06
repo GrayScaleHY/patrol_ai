@@ -64,7 +64,7 @@ from lib_help_base import GetInputData
 #     pass
 
 
-def inspection_level_gauge(input_data):
+def inspection_digital_rec(input_data):
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
@@ -229,7 +229,7 @@ if __name__ == '__main__':
             with open("test/"+item,"r",encoding="utf8") as f :
                 input_data=json.load(f)
             # print(input_data)
-            out_data = inspection_level_gauge(input_data)
+            out_data = inspection_digital_rec(input_data)
             print(item,out_data['msg'])
             # print(out_data['data']['values'])
             print("==================================")
