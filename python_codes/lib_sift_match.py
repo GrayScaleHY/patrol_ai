@@ -17,6 +17,7 @@ from collections import Counter
 from skimage import exposure
 import cupy as cp ## pip install cupy-cuda114
 import math
+from imreg import similarity
 
 try:
     ## https://rapids.ai/start.html#get-rapids
@@ -280,6 +281,27 @@ def sift_create(img, rm_regs=[]):
 
     return (kps, feat)
 
+def getAffine(center, angle, scale, trans):             
+    R = cv2.getRotationMatrix2D(center, angle, scale)
+    R = np.vstack((R, np.array([0, 0, 1])))                         
+    T = np.array([[1., 0., trans[0]], [0., 1., trans[1]]])                         
+    M = T @ R                                                       
+    M = M[:2]  
+    return M 
+
+def cupy_affine(img_ref, img_tag):
+    if len(img_ref.shape) == 3:
+        img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
+    if len(img_tag.shape) == 3:
+        img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
+    img_ref = cp.array(img_ref)
+    img_tag = cp.array(img_tag)
+    im_warped, scale, angle, (t0, t1) = similarity(img_ref, img_tag) 
+    scale, angle, t0, t1 = float(scale), float(angle.get()), t0.get(), t1.get()
+    tx, ty = -t1, -t0
+    center = img_ref.shape[1] // 2, img_tag.shape[0] // 2
+    M = getAffine(center, angle, scale, (tx, ty))
+    return M
 
 def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
     """
