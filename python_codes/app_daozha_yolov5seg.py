@@ -185,6 +185,8 @@ def inspection_daozha_detection(input_data):
     img_ref = data.img_ref
     roi = data.roi
     checkpoint = data.checkpoint
+    if roi==[]:
+        roi=None
 
     out_data = {"code": 0, "data": [], "img_result": data.img_tag,
                 "msg": "Success request object detect; "}  # 初始化out_data
