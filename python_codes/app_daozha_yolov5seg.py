@@ -391,7 +391,7 @@ def inspection_daozha_detection(input_data):
 
 
 if __name__ == '__main__':
-    json_file = "1223110334_input_data.json"
+    json_file = "input_data.json"
     f = open(json_file, "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()

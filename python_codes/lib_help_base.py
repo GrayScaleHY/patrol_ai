@@ -76,7 +76,7 @@ class GetInputData:
         """
         获取模板图。
         """
-        if "img_ref" in config and isinstance(config["img_ref"], str):
+        if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
             img_ref = base642img(config["img_ref"])
         else:
             img_ref = None
