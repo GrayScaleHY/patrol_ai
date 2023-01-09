@@ -18,10 +18,12 @@ from config_load_models_var import yolov5_meter, \
                                    yolov5_coco, \
                                    yolov5_ShuZiBiaoJi, \
                                    yolov5_dztx
+                                #    yolov5_action, \
                                 #    yolov5_jmjs, \
                                 #    yolov5_helmet, \
                                 #    yolov5_fire_smoke, \
-                                #    yolov5_led_color
+                                #    yolov5_led_color, \
+                                
 
 
 def rank_digital(obj_data, obj_type="counter"):
@@ -97,6 +99,11 @@ def inspection_object_detection(input_data):
             yolov5_model = yolov5_coco
             labels = ["bird", "cat", "dog", "sheep"]
             model_type = "meter"
+        # elif label_list == ["rydd"]:
+        #     yolov5_model == yolov5_action
+        #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        #     labels = ["fall"]
+        #     model_type = "action_recognition"
         # elif label_list == ["hzyw"]:
         #     yolov5_model = yolov5_fire_smoke
         #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
@@ -158,7 +165,7 @@ def inspection_object_detection(input_data):
 
     ## 生成目标检测信息
     if input_data["type"] == "rec_defect":
-        if label_list == ["hzyw"] or label_list == ["xdwcr"]:
+        if label_list == ["hzyw"] or label_list == ["xdwcr"] or label_list == label_list == ["rydd"]:
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels) # inference
         else:
             cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels, conf_thres=0.7) # inference
