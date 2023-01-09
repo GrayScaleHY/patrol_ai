@@ -3,7 +3,7 @@ import cv2
 import glob
 import numpy as np
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_sift_match import sift_match, convert_coor, sift_create , cupy_affine
 import time
 import json
 import os
@@ -134,9 +134,10 @@ def ocr_digit_detection(input_data):
 
     ## 求出目标图像的感兴趣区域
     if roi is not None:
-        feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        # feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
+        # feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
+        # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        M = cupy_affine(img_ref, img_tag)
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi
