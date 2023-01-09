@@ -7,7 +7,7 @@ import numpy as np
 from lib_inference_yolov5 import inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, contour2segment
 from lib_inference_mrcnn import inference_maskrcnn
-from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_sift_match import sift_match, convert_coor, sift_create, cupy_affine
 from lib_help_base import color_area, GetInputData
 import math
 import numpy.matlib
@@ -311,6 +311,9 @@ def inspection_pointer(input_data):
     roi = DATA.roi; osd = DATA.osd; dp = DATA.dp
     length = DATA.length; width = DATA.width; color = DATA.color
 
+    ## 刻度点左右添加两个点。
+    pointers_ref = add_head_end_ps(pointers_ref)
+
     ## 初始化输出结果
     out_data = {"code":0, "data":{}, "img_result": input_data["image"], "msg": "Request " + an_type + ";"} #初始化输出信息
 
@@ -344,12 +347,12 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     ## 求偏移矩阵
-    if len(osd) == 0:
-        osd = [[0,0,1,0.1],[0,0.9,1,1]]
-    feat_ref = sift_create(img_ref, rm_regs=osd)
-    feat_tag = sift_create(img_tag)
-    M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-
+    # if len(osd) == 0:
+    #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
+    # feat_ref = sift_create(img_ref, rm_regs=osd)
+    # feat_tag = sift_create(img_tag)
+    # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+    M = cupy_affine(img_ref, img_tag)
     ## 求出测试图的感兴趣区域
     if len(roi) > 0 and M is not None:
         roi = roi[0]

@@ -7,7 +7,7 @@ from lib_image_ops import base642img, img2base64, img_chinese
 from lib_help_base import oil_high
 import numpy as np
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn
-from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_sift_match import sift_match, convert_coor, sift_create, cupy_affine
 from config_load_models_var import maskrcnn_oil
 from lib_help_base import GetInputData
 
@@ -38,11 +38,12 @@ def inspection_level_gauge(input_data):
 
     ## 求出目标图像的感兴趣区域
     if len(roi) > 0:
-        if len(osd) == 0:
-            osd = [[0,0,1,0.1],[0,0.9,1,1]]
-        feat_ref = sift_create(img_ref, rm_regs=osd)
-        feat_tag = sift_create(img_tag)
-        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        # if len(osd) == 0:
+        #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
+        # feat_ref = sift_create(img_ref, rm_regs=osd)
+        # feat_tag = sift_create(img_tag)
+        # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        M = cupy_affine(img_ref, img_tag)
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi[0]

@@ -5,7 +5,7 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_help_base import color_list
-from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_sift_match import sift_match, convert_coor, sift_create, cupy_affine
 import config_object_name
 from config_object_name import convert_label
 import numpy as np
@@ -207,11 +207,12 @@ def inspection_object_detection(input_data):
 
     ## 求出目标图像的感兴趣区域
     if len(roi) > 0:
-        if len(osd) == 0:
-            osd = [[0,0,1,0.1],[0,0.9,1,1]]
-        feat_ref = sift_create(img_ref, rm_regs=osd)
-        feat_tag = sift_create(img_tag)
-        M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        # if len(osd) == 0:
+        #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
+        # feat_ref = sift_create(img_ref, rm_regs=osd)
+        # feat_tag = sift_create(img_tag)
+        # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
+        M = cupy_affine(img_ref, img_tag)
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi[0]
@@ -250,12 +251,16 @@ def inspection_object_detection(input_data):
     return out_data
 
 if __name__ == '__main__':
-    json_file = "/data/PatrolAi/result_patrol/1230065026_02-18开关状态_input_data.json"
+    from lib_help_base import get_save_head, save_input_data, save_output_data
+    json_file = "/data/PatrolAi/result_patrol/led/0109103455_B11-09综保故障指示_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
+    
     out_data = inspection_object_detection(input_data)
-    print("inspection_object_detection result:")
+    save_dir, name_head = get_save_head(input_data)
+    save_input_data(input_data, save_dir, name_head, draw_img=True)
+    save_output_data(out_data, save_dir, name_head)
     print("-----------------------------------------------")
     for s in out_data:
         if s != "img_result":

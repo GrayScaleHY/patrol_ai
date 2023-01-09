@@ -290,16 +290,16 @@ def getAffine(center, angle, scale, trans):
     return M 
 
 def cupy_affine(img_ref, img_tag):
-    if len(img_ref.shape) == 3:
-        img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
     if len(img_tag.shape) == 3:
         img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
-    img_ref = cp.array(img_ref)
+    if len(img_ref.shape) == 3:
+        img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
     img_tag = cp.array(img_tag)
-    im_warped, scale, angle, (t0, t1) = similarity(img_ref, img_tag) 
+    img_ref = cp.array(img_ref)
+    im_warped, scale, angle, (t0, t1) = similarity(img_tag, img_ref) 
     scale, angle, t0, t1 = float(scale), float(angle.get()), t0.get(), t1.get()
     tx, ty = -t1, -t0
-    center = img_ref.shape[1] // 2, img_tag.shape[0] // 2
+    center = img_tag.shape[1] // 2, img_ref.shape[0] // 2
     M = getAffine(center, angle, scale, (tx, ty))
     return M
 
