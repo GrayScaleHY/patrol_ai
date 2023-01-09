@@ -46,7 +46,7 @@ class GetInputData:
         return:
             img_tag: numpy的图像数据。
         """
-        if "image" in data and isinstance(data["image"], str):
+        if "image" in data and isinstance(data["image"], str) and data["image"] != "":
             img_tag = base642img(data["image"])
         else:
             img_tag = None
@@ -56,7 +56,7 @@ class GetInputData:
         """
         获取分析类型。
         """
-        if "type" in data and isinstance(data["type"], str):
+        if "type" in data and isinstance(data["type"], str) and data['type'] != "":
             type_ = data["type"]
         else:
             type_ = None
