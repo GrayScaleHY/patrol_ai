@@ -69,9 +69,14 @@ def inspection_silent_monitor(input_data):
     cfgs = cfgs_rec_defect + cfgs_action
     labels = labels_rec_defect + labels_action
     #  筛选4种需要的类别
-    # select_labels = ['wcaqm', 'wcgz', 'xy', '摔倒']
-    # for i in cfgs:
-    #   if i[''] not in select_labels:
+    select_labels = ['wcaqm', 'wcgz', 'xy', '摔倒']
+    res_cfgs = []
+    for i in cfgs:
+        print(i)
+        if i['label'] in select_labels:
+            res_cfgs.append(i)
+
+    cfgs = res_cfgs
 
     ## labels 列表 和 color 列表
     colors = color_list(len(labels))
