@@ -123,7 +123,7 @@ def translation(im0, im1):
     return [t0, t1]
 
 
-def similarity(im0, im1):
+def similarity(im0, im1, retained_angle=60):
     """Return similarity transformed image im1 and transformation parameters.
     Transformation parameters are: isotropic scale factor, rotation angle (in
     degrees), and translation vector.
@@ -155,6 +155,9 @@ def similarity(im0, im1):
     f1 = fft2(f1)
     r0 = abs(f0) * abs(f1)
     ir = abs(ifft2((f0 * f1.conjugate()) / r0))
+    margin_angle = 90 - retained_angle
+    ir[int((90 - margin_angle) / 180 * ir.shape[0]): 
+       int((90 + margin_angle) / 180 * ir.shape[0])] = -xp.inf
     i0, i1 = xp.unravel_index(xp.argmax(ir), ir.shape)
     angle = 180.0 * i0 / ir.shape[0]
     scale = log_base**i1

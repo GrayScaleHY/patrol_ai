@@ -9,6 +9,7 @@ from lib_image_ops import base642img
 import json
 import os
 import time
+import shutil
 
 class GetInputData:
     """
@@ -21,6 +22,7 @@ class GetInputData:
         self.img_tag = self.get_img_tag(data)  # 测试图
         self.type = self.get_type(data)  # 分析类型
         self.config = self.get_config(data)  # 模板信息
+        self.video_path = self.get_video_path(data)
         self.img_ref = self.get_img_ref(self.config) # 模板图
         self.roi = self.get_roi(self.config, self.img_ref)  # roi框
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
@@ -29,7 +31,7 @@ class GetInputData:
         self.number, self.length, self.width, self.color = self.get_pointer_cfg(self.config) # 多指针的性质
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
-
+        
     def get_checkpoint(self, data):
         """
         获取checkpoint(巡检点位名称)。
@@ -211,6 +213,16 @@ class GetInputData:
         else:
             label_list = []
         return label_list
+    
+    def get_video_path(self, data):
+        """
+        获取测试视频路径
+        """
+        if "video_path" in data and isinstance(data["video_path"], str) and data["video_path"].endswith(".mp4"):
+            video_path = data["video_path"]
+        else:
+            video_path = ""
+        return video_path
 
 class Logger(object):
     """
@@ -350,8 +362,14 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     pointers_ref = DATA.pointers
     roi = DATA.roi; osd = DATA.osd
-    cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
-    cv2.imwrite(os.path.join(save_dir, name_head + "ref.jpg"), img_ref)
+    video_path = DATA.video_path
+    
+    if img_tag is not None:
+        cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
+    if img_ref is not None:
+        cv2.imwrite(os.path.join(save_dir, name_head + "ref.jpg"), img_ref)
+    if os.path.exists(video_path):
+        shutil.copy(video_path, os.path.join(save_dir, name_head + "tag.mp4"))
 
     for scale in pointers_ref:  # 将坐标点标注在图片上
         coor = pointers_ref[scale]
