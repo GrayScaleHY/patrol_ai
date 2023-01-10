@@ -15,54 +15,6 @@ from lib_help_base import GetInputData
 # rec_model_dir = "/data/PatrolAi/ppocr/ch_PP-OCRv2_rec_infer/"
 # text_sys = load_ppocr(det_model_dir, cls_model_dir, rec_model_dir)
 
-# def get_input_data(input_data):
-#     """
-#     提取input_data中的信息。
-#     return:
-#         img_tag: 目标图片数据
-#         img_ref: 模板图片数据
-#         roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
-#     """
-# 
-#     img_tag = base642img(input_data["image"])
-# 
-#     ## 是否有模板图
-#     img_ref = None
-#     if "img_ref" in input_data["config"]:
-#         if isinstance(input_data["config"]["img_ref"], str):
-#             if len(input_data["config"]["img_ref"]) > 10:
-#                 img_ref = base642img(input_data["config"]["img_ref"])
-# 
-#     ## 感兴趣区域
-#     roi = None  # 初始假设
-#     if "bboxes" in input_data["config"]:
-#         if isinstance(input_data["config"]["bboxes"], dict):
-#             if "roi" in input_data["config"]["bboxes"]:
-#                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-#                     if len(input_data["config"]["bboxes"]["roi"]) == 4:
-#                         W = img_ref.shape[1];
-#                         H = img_ref.shape[0]
-#                         roi = input_data["config"]["bboxes"]["roi"]
-#                         roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
-# 
-#                         ## 设备状态与显示名字的映射关系。
-#                     roi = input_data["config"]["bboxes"]["roi"]
-#                     dim = np.array(roi).ndim
-#                     if dim == 1:
-#                         if len(input_data["config"]["bboxes"]["roi"]) == 4:
-#                             W = img_ref.shape[1];
-#                             H = img_ref.shape[0]
-#                             roi = input_data["config"]["bboxes"]["roi"]
-#                             roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
-#                     else:
-#                         for i in range(len(roi)):
-#                             if len(input_data["config"]["bboxes"]["roi"][i]) == 4:
-#                                 W = img_ref.shape[1];
-#                                 H = img_ref.shape[0]
-#                                 roi[i]=[int(roi[i][0] * W), int(roi[i][1] * H), int(roi[i][2] * W), int(roi[i][3] * H)]
-# 
-#     return img_tag, img_ref, roi
-
 def deal_str(ocr_str):
     deal_ocr_str = ocr_str[:-1]
     deal_ocr_str = deal_ocr_str.replace('C','0')
@@ -87,17 +39,6 @@ def deal_str(ocr_str):
 
 def ocr_digit_detection(input_data):
 
-    ## 将输入请求信息可视化
-    # TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    # if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-    #     TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    # save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    # save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    # os.makedirs(save_path, exist_ok=True)
-    # f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
-    # json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    # f.close()
-
     ## 初始化输入输出信息。
     # img_tag, img_ref, roi = get_input_data(input_data)
     data = GetInputData(input_data)
@@ -114,15 +55,12 @@ def ocr_digit_detection(input_data):
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, checkpoint + data.type , (10, 10), color=(255, 0, 0), size=60)
-    # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)  # 将输入图片可视化
-    # if img_ref is not None:
-    #     cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref)  # 将输入图片可视化
+
     if roi is not None:  # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
         cv2.rectangle(img_ref_, (int(roi[0]), int(roi[1])), (int(roi[2]), int(roi[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref_, "roi", (int(roi[0]), int(roi[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255),
                     thickness=1)
-        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
 
     if "augm" in data.config:
         if isinstance(data.config["augm"], list):
@@ -235,21 +173,10 @@ def ocr_digit_detection(input_data):
         img_tag_ = img_chinese(img_tag_, deal_str(out_data["data"]['values'][i]), (int(out_data["data"]['bboxes'][i][0]), int(out_data["data"]['bboxes'][i][1] - 20)), (0, 0, 255), size=20)
 
 
-
-    ## 可视化计算结果
-    # f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
-    # json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    # f.close()
-    # 
-    # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-    # cv2.imwrite(os.path.join( TIME_START + "img_tag_cfg.jpg"), img_tag_)
-
     ## 输出可视化结果的图片。
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
-
-    # cv2.imwrite(image_file[:-4] + "_result.jpg", img)
 
 if __name__ == '__main__':
     json_file = "test.json"

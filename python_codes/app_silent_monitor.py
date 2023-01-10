@@ -72,7 +72,7 @@ def inspection_silent_monitor(input_data):
     select_labels = ['wcaqm', 'wcgz', 'xy', '摔倒']
     res_cfgs = []
     for i in cfgs:
-        print(i)
+        # print(i)
         if i['label'] in select_labels:
             res_cfgs.append(i)
 
@@ -86,7 +86,7 @@ def inspection_silent_monitor(input_data):
         color_dict[label] = colors[i]
         name_dict[label] = label
 
-    print(color_dict, name_dict)
+    # print(color_dict, name_dict)
 
 
     if len(cfgs) == 0:  # 没有检测到目标
