@@ -67,7 +67,9 @@ def inspection_qrcode(input_data):
             coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
             coors_ = [list(convert_coor(coor, M)) for coor in coors]
             c_ = np.array(coors_, dtype=int)
-            roi_tag = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
+            H, W = img_tag.shape[:2]
+            r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
+            roi_tag = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
     else:
         roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]
     img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]

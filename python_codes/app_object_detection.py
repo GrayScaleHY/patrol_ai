@@ -228,8 +228,9 @@ def inspection_object_detection(input_data):
             coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
             coors_ = [list(convert_coor(coor, M)) for coor in coors]
             c_ = np.array(coors_, dtype=int)
-            roi_tag = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
-
+            H, W = img_tag.shape[:2]
+            r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
+            roi_tag = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
         ## 画出roi_tag
         c = roi_tag
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
@@ -259,7 +260,7 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/led/0109103455_B11-09综保故障指示_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/led/0109142726_A7-2综保报警指示_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
