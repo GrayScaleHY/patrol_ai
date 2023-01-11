@@ -100,9 +100,9 @@ def inspection_object_detection(input_data):
             labels = ["bird", "cat", "dog", "sheep"]
             model_type = "meter"
         # elif label_list == ["rydd"]:
-        #     yolov5_model == yolov5_action
+        #     yolov5_model = yolov5_action
         #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        #     labels = ["fall"]
+        #     labels = ["摔倒"]
         #     model_type = "action_recognition"
         # elif label_list == ["hzyw"]:
         #     yolov5_model = yolov5_fire_smoke
