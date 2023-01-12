@@ -7,7 +7,7 @@ import numpy as np
 from lib_inference_yolov5 import inference_yolov5
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, contour2segment
 from lib_inference_mrcnn import inference_maskrcnn
-from lib_sift_match import sift_match, convert_coor, sift_create, cupy_affine
+from lib_sift_match import sift_match, convert_coor, sift_create, fft_registration
 from lib_help_base import color_area, GetInputData
 import math
 import numpy.matlib
@@ -352,7 +352,7 @@ def inspection_pointer(input_data):
     # feat_ref = sift_create(img_ref, rm_regs=osd)
     # feat_tag = sift_create(img_tag)
     # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-    M = cupy_affine(img_ref, img_tag)
+    M = fft_registration(img_ref, img_tag)
     ## 求出测试图的感兴趣区域
     if len(roi) > 0 and M is not None:
         roi = roi[0]

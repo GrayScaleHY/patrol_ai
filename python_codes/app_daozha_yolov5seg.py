@@ -4,7 +4,7 @@ import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_help_base import color_list,GetInputData
-from lib_sift_match import sift_match, convert_coor, sift_create,cupy_affine
+from lib_sift_match import sift_match, convert_coor, sift_create,fft_registration
 import numpy as np
 import torch
 
@@ -201,7 +201,7 @@ def inspection_daozha_detection(input_data):
         # feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
         # feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
         # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-        M = cupy_affine(img_ref, img_tag)
+        M = fft_registration(img_ref, img_tag)
         roi_tag=[]
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"

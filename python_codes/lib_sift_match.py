@@ -289,18 +289,47 @@ def getAffine(center, angle, scale, trans):
     M = M[:2]  
     return M 
 
-def cupy_affine(img_ref, img_tag, retained_angle=45):
+def fft_registration(img_ref, img_tag, retained_angle=45):
+    """
+    基于fft的图像矫正方法
+    https://github.com/zldrobit/imreg/tree/opencv
+    args:
+        img_ref: 参考图
+        img_tag: 待矫正图
+        retained_angle: 旋转角度限制
+    return:
+        M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
+    """
     if len(img_tag.shape) == 3:
         img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
     if len(img_ref.shape) == 3:
         img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
+    
+    ## 判断img_tag和img_ref是否分辨率一样，若不一样则需要resize.
+    h_r, w_r = img_ref.shape[:2]
+    h_t, w_t = img_tag.shape[:2]
+    if h_r != h_t or w_r != w_t:
+        resize_scale = [w_t / w_r, h_t / h_r, 1]
+        ref_resize = cv2.resize(img_ref, (w_t, h_t))
+    else:
+        resize_scale = [1 ,1, 1]
+        ref_resize = img_ref
+    M_scale = np.diag(np.array(resize_scale)) 
+
+    ## 使用cupy打包array
     img_tag = cp.array(img_tag)
-    img_ref = cp.array(img_ref)
-    im_warped, scale, angle, (t0, t1) = similarity(img_tag, img_ref, retained_angle) 
+    ref_resize = cp.array(ref_resize)
+
+    ## 计算偏移矩阵
+    im_warped, scale, angle, (t0, t1) = similarity(img_tag, ref_resize, retained_angle) 
     scale, angle, t0, t1 = 1 / float(scale), float(angle.get()), t0.get(), t1.get()
     tx, ty = -t1, -t0
     center = img_tag.shape[1] // 2, img_ref.shape[0] // 2
     M = getAffine(center, angle, scale, (tx, ty))
+
+    ## 若resize过，则将resize信息放入到M中
+    M = np.dot(M, M_scale)
+
     return M
 
 def sift_match(feat_ref, feat_tag, ratio=0.5, ops="Affine"):
