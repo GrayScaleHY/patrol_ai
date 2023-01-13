@@ -11,7 +11,7 @@ from lib_inference_yolov5 import inference_yolov5,check_iou
 import config_object_name
 from lib_inference_yolov5 import load_yolov5_model
 
-yolov5_yeweiji = load_yolov5_model("/data/home/zgl/datasets/Project/runs/train/ywj6/weights/best.pt") # 加载液位计模型
+yolov5_yeweiji = load_yolov5_model("/data/PatrolAi/yolov5/yeweiji.pt") # 加载液位计模型
 
 def conv_coor(coordinates, M, d_ref=(0,0), d_tag=(0,0)):
     """
@@ -113,6 +113,7 @@ def inspection_level_gauge(input_data):
     if input_data["type"] != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
         out_data["code"] = 1
+        return out_data
     else:
         out_data["code"] = 0
         yolov5_model = yolov5_yeweiji
@@ -129,6 +130,7 @@ def inspection_level_gauge(input_data):
     # print("cfgs:", cfgs)
 
     if len(cfgs) == 0: #没有检测到目标
+        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "; Not find object"
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
