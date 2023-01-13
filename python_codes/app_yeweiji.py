@@ -3,9 +3,9 @@ import cv2
 import time
 import json
 import math
-from lib_image_ops import base642img, img2base64, img_chinese
+from lib_image_ops import img2base64, img_chinese
 import numpy as np
-from lib_sift_match import sift_match, convert_coor, fft_registration
+from lib_sift_match import convert_coor, fft_registration
 from lib_help_base import GetInputData,color_list,is_include,save_output_data,get_save_head,save_output_data
 from lib_inference_yolov5 import inference_yolov5,check_iou
 import config_object_name
@@ -48,18 +48,20 @@ def cal_oil_value(coordinates,oil_bbox,oil_type="updown"):
         使用刻度计算液位高度。
         args:
             coordinates: 刻度的坐标点，格式如 {"0": [300, 600],....,"1": [600, 200]} 至少包含最小、最大两个刻度
-            oil_bbox: 检测出的液位框，格式为[x0, y0, x1, y1] 
+            oil_bbox: 检测出的液位框，格式为[x0, y0, x1, y1]
     """
+
     if len(coordinates) < 2:
         return None
 
     if oil_type == "updown":            #默认竖向
         for k,v in coordinates.items(): #取出y值
-            coordinates[k] = v[1]   #{'0': 600, '10': 200, '20': 50} 刻度值越大y坐标越小
+            coordinates[k] = v[1]       #{'0': 600, '10': 200, '20': 50} 刻度值越大y坐标越小
 
-        ##找出coordinates中距离液位最近的前后两个值
+    ##找出coordinates中距离液位最近的前后两个值
     oil_h = min(oil_bbox[1],oil_bbox[3]) #返回ymin 对应液位最高点
     y_list = list(coordinates.values())
+    ##将配置的刻度分成上、下两个list
     up_list = []
     down_list = []
     for j in y_list:
@@ -67,23 +69,34 @@ def cal_oil_value(coordinates,oil_bbox,oil_type="updown"):
             down_list.append(j)
         else:
             up_list.append(j)
+    ##如果某个list为空 那么下方list取y坐标的最大值（刻度的最小值），上list取y坐标的最小值（刻度的最大值）
+    if len(down_list) == 0:
+        down_list = [max(y_list)]
+    elif len(up_list) == 0:
+        up_list = [min(y_list)]
 
-    index_down = list(coordinates.values()).index(min(down_list))
-    index_up = list(coordinates.values()).index(max(up_list))
+    ##返回对应的配置刻度
+    y_min = max(up_list)
+    y_max = min(down_list) 
+
+    index_down = list(coordinates.values()).index(y_max)
+    index_up = list(coordinates.values()).index(y_min)
 
     _down = list(coordinates.keys())[index_down] #接近检测值的下刻度
     _up = list(coordinates.keys())[index_up]     #接近检测值的上刻度
     
-    #返回s对应的刻度值
-    if oil_type == "updown":        ## 默认竖向
-        y_min = max(up_list)  # 对应 上刻度的高度 ymin
-        y_max = min(down_list)  # 对应 下刻度的高度 ymax
+    bias = 0.001  #引入小偏移量
+    y_min = y_min - bias  # 对应 上刻度的高度 ymin
+    y_max = y_max + bias  # 对应 下刻度的高度 ymax
+
+    #返回s对应的刻度值，默认竖向
+    if oil_type == "updown": 
         rate_ = (y_max - oil_h)/(y_max - y_min)
         value =  float(_down) + rate_ * (float(_up) - float(_down))  # 刻度下线 + 刻度(上-下)* 百分比 # 刻度下线 + 刻度(上-下)* 百分比
     else:
         # oil_type == "liftright":
         pass
-    return abs(value)
+    return value
 
 def inspection_level_gauge(input_data):
 
@@ -200,8 +213,13 @@ def inspection_level_gauge(input_data):
         out_data["code"] = 1
     
     value = cal_oil_value(pointers,cfgs[0]["coor"],oil_type="updown")
-    value = round(value, dp)
-    out_data["data"]["value"] = value
+    if value != None :
+        value = round(value, dp)
+        out_data["data"]["value"] = value
+    else:
+        out_data["code"] = 1
+        out_data["msg"] = out_data["msg"] + "at least two coordinates are required"
+        return out_data
 
     ## 可视化最终计算结果
     s = (c[2] - c[0]) / 30 # 根据框子大小决定字号和线条粗细。
