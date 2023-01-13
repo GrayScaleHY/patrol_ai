@@ -206,8 +206,10 @@ OBJECT_MAP = {
         "he": "合闸正常",
         "fen": "分闸正常",
         "budaowei": "分合异常"
-    }
-
+    },
+    "level_gauge": {
+        "name": "油位液位",
+        "oil": "油位"}
 }
 
 ## 不同颜色对应的hsv范围
