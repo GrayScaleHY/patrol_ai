@@ -13,7 +13,7 @@ from utils.segment.general import scale_image
 
 
 ## 加载模型
-yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载油位的maskrcnn模型
+yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载刀闸yolov5分割模型
 
 def is_include(sub_box, par_box, srate=0.8):
     sb = sub_box;
