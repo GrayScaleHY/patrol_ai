@@ -16,18 +16,25 @@ def load_maskrcnn_model(mask_rcnn_weight, num_classes=1, score_thresh=0.3,decode
     cfg = get_cfg()
     cfg.merge_from_file(
         "/data/PatrolAi/maskrcnn/mask_rcnn_R_101_FPN_3x.yaml")
-    if decode:
-        mask_rcnn_weight = decode_model(mask_rcnn_weight)[0]
-        cfg.MODEL.WEIGHTS = mask_rcnn_weight
-    else:
-        cfg.MODEL.WEIGHTS = mask_rcnn_weight
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_thresh
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
     cfg.DATASETS.TEST = ("meter", )
     # cfg.MODEL.DEVICE='cpu'
-    maskrcnn_weights = DefaultPredictor(cfg)
-    if decode:
+    '''if decode:
+        mask_rcnn_weight = decode_model(mask_rcnn_weight)[0]
+        cfg.MODEL.WEIGHTS = mask_rcnn_weight
+    else:
+        cfg.MODEL.WEIGHTS = mask_rcnn_weight'''
+    try:
+        cfg.MODEL.WEIGHTS = mask_rcnn_weight
+        maskrcnn_weights = DefaultPredictor(cfg)
+    except:
+        mask_rcnn_weight = decode_model(mask_rcnn_weight)[0]
+        cfg.MODEL.WEIGHTS = mask_rcnn_weight
+        maskrcnn_weights = DefaultPredictor(cfg)
         os.remove(mask_rcnn_weight)
+    # if decode:
+    #     os.remove(mask_rcnn_weight)
     return maskrcnn_weights
 
 def sel_boxes(boxes, include=0.9):

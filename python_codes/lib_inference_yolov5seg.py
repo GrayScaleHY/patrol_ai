@@ -59,14 +59,21 @@ def load_yolov5seg_model(model_file='/data/PatrolAi/yolov5/daozha_seg.pt',decode
     """
     # load yolov5 FP32 model
     """
-    from lib_decode_model import decode_model
+    '''from lib_decode_model import decode_model
     if decode:
         model_file = decode_model(model_file)[0]
         yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
         os.remove(model_file)
     else:
-        yolov5_weights = DetectMultiBackend(model_file,device=device)
+        yolov5_weights = DetectMultiBackend(model_file,device=device)'''
     # yolov5_weights = attempt_load(model_file, device) # 加载模型
+    try:
+        yolov5_weights = DetectMultiBackend(model_file, device)  # 加载模型
+    except:
+        from lib_decode_model import decode_model
+        model_file = decode_model(model_file)[0]
+        yolov5_weights = DetectMultiBackend(model_file, device)  # 加载模型
+        os.remove(model_file)
     return yolov5_weights
 
 def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres=0.2, pre_labels=None):

@@ -17,7 +17,7 @@ def decode_model(encode_model_name, keys=1,length=5000):
     byteskey = np.uint8(random.randint(0, 255))
 
     # time1 = time.time()
-    decode_model_ = decode(encode_model, byteskey)
+    decode_model_ = xor(encode_model, byteskey)
     # time2 = time.time()
     # print(time2-time1)
 
@@ -33,12 +33,35 @@ def decode_model(encode_model_name, keys=1,length=5000):
 
 
 @numba.jit
-def decode(encode_model, byteskey):
+def xor(encode_model, byteskey):
     tmp = np.empty_like(encode_model)
     for i in range(len(encode_model)):
         tmp[i] = encode_model[i] ^ byteskey
     return tmp
 
+
+#加密
+def encode_model(origin_model_name,encode_model_name, keys=1,length=5000):
+    f = open(origin_model_name, "rb")
+    origin_model = f.read()
+    f.close()
+    random.seed(keys)
+    origin_model = np.frombuffer(origin_model, dtype=np.uint8)
+    byteskey = np.uint8(random.randint(0, 255))
+
+    # time1 = time.time()
+    encode_model_ = xor(origin_model, byteskey)
+    # time2 = time.time()
+    # print(time2-time1)
+
+    encode_model_ = bytes(encode_model_)
+
+    #  写加密文件
+    with open(encode_model_name, "wb") as fp:
+        fp.write(encode_model_)
+
+    encode_model_ = io.BytesIO(encode_model_)  # 返回io对象
+    return encode_model_name, encode_model_
 
 if __name__ == '__main__':
     filename = 'hs_bj_infer_encode.pt'
