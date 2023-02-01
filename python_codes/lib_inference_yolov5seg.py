@@ -55,14 +55,17 @@ def check_iou(cfgs_in, iou_limit=0.8):
     cfgs_out = [c for i, c in enumerate(cfgs_in) if i not in rm_ids]
     return cfgs_out
 
-def load_yolov5seg_model(model_file='/data/PatrolAi/yolov5/daozha_seg.pt'):
+def load_yolov5seg_model(model_file='/data/PatrolAi/yolov5/daozha_seg.pt',decode=False):
     """
     # load yolov5 FP32 model
     """
     from lib_decode_model import decode_model
-    model_file = decode_model(model_file)[0]
-    yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
-    os.remove(model_file)
+    if decode:
+        model_file = decode_model(model_file)[0]
+        yolov5_weights = DetectMultiBackend(model_file, device=device) #, dnn=False, data='data/coco128.yaml', fp16=False
+        os.remove(model_file)
+    else:
+        yolov5_weights = DetectMultiBackend(model_file,device=device)
     # yolov5_weights = attempt_load(model_file, device) # 加载模型
     return yolov5_weights
 

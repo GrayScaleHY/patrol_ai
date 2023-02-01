@@ -42,7 +42,7 @@ def decode(encode_model, byteskey):
 
 if __name__ == '__main__':
     filename = 'hs_bj_infer_encode.pt'
-    str_4 = decode_model('hs_bj_infer_encode.pt')
+    str_4 = decode_model('hs_bj_infer_encode.pt')[1]
     # print(type(str_4))
     test = torch.load(str_4)
 
