@@ -8,7 +8,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create,fft_registratio
 import numpy as np
 import torch
 
-from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
+from lib_inference_yolov5 import load_yolov5seg_model, inference_yolov5seg, check_iou
 from utils.segment.general import scale_image
 
 
