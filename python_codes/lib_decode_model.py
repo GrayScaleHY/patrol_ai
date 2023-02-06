@@ -1,7 +1,6 @@
 import random
 import io
 import time
-import torch
 import numba
 import numpy as np
 from xor import xor  # cython
