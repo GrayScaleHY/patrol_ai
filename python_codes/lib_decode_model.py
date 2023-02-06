@@ -12,7 +12,7 @@ def decode_model(encode_model_name, keys=1, length=5000):
     encode_model_ = f.read()
     f.close()
     random.seed(keys)
-    encode_model_ = np.frombuffer(encode_model_, dtype=np.uint8)
+    encode_model_ = np.frombuffer(bytearray(encode_model_), dtype=np.uint8)
     byteskey = np.uint8(random.randint(0, 255))
 
     time1 = time.time()
@@ -40,13 +40,14 @@ def xor(encode_model_, byteskey):
     return tmp
 """
 
+
 # 加密
 def encode_model(origin_model_name, encode_model_name, keys=1, length=5000):
     f = open(origin_model_name, "rb")
     origin_model = f.read()
     f.close()
     random.seed(keys)
-    origin_model = np.frombuffer(origin_model, dtype=np.uint8)
+    origin_model = np.frombuffer(bytearray(origin_model), dtype=np.uint8)
     byteskey = np.uint8(random.randint(0, 255))
 
     encode_model_ = xor(origin_model, byteskey)
