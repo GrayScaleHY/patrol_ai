@@ -8,7 +8,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create,fft_registratio
 import numpy as np
 import torch
 
-from lib_inference_yolov5 import load_yolov5seg_model, inference_yolov5seg, check_iou
+from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
 from utils.segment.general import scale_image
 
 
@@ -177,7 +177,7 @@ def inspection_daozha_detection(input_data):
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), color_dict[label], thickness=2)
 
         # Mask plotting
-        masks = cfg["mask"]
+        '''masks = cfg["mask"]
         masks = masks.unsqueeze(0)
         masks = torch.as_tensor(masks, dtype=torch.uint8)
         masks = masks.permute(1, 2, 0).contiguous()
@@ -191,7 +191,9 @@ def inspection_daozha_detection(input_data):
         masks = (masks @ colors).clip(0, 255)  # (h,w,n) @ (n,3) = (h,w,3)
         s = masks.sum(2, keepdims=True).clip(0, 1)
         print(masks.shape,img_tag_.shape)
-        img_tag_[:]= masks * alpha + img_tag_ * (1 - s * alpha)
+        img_tag_[:]= masks * alpha + img_tag_ * (1 - s * alpha)'''
+        mask = cfg["mask"]
+        cv2.polylines(img_tag_,[mask],isClosed=True,color=color_dict[label], thickness=2)
 
         s = int((c[2] - c[0]) / 6)  # 根据框子大小决定字号和线条粗细。
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)

@@ -21,6 +21,10 @@ import numpy as np
 from utils.torch_utils import select_device
 from models.experimental import attempt_download, attempt_load  # scoped to avoid circular import
 from lib_rcnn_ops import iou
+from utils.segment.general import masks2segments, process_mask
+from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
+                           increment_path, non_max_suppression, print_args, scale_boxes, scale_segments,
+                           strip_optimizer, xyxy2xywh)
 
 device = select_device("0")  ## 选择gpu: 'cpu' or '0' or '0,1,2,3'
 
@@ -189,6 +193,8 @@ def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres
             masks = process_mask(proto[i], det[:, 6:], det[:, :4], im.shape[2:], upsample=True)  # HWC
 
             det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], img_raw_shape).round()  # rescale boxes to im0 size
+            segments = reversed(masks2segments(masks))
+            segments = [scale_segments(im.shape[2:], x, img_raw_shape, normalize=True) for x in segments]
 
             print('inf', masks.shape)
 
@@ -199,7 +205,11 @@ def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres
             for i in range(len(det.cpu().numpy())):
                 label = labels[int(classes[i])]
                 print('maski',masks[i].shape)
-                tmp = {"label": label, "coor": bbox[i].cpu().numpy().astype(int).tolist(), "score": float(score[i]),"mask":masks[i]}
+                segment = np.array(segments[i])
+                segment[:, 0] = segment[:, 0] * img_raw_shape[1]
+                segment[:, 1] = segment[:, 1] * img_raw_shape[0]
+                segment = segment.astype(int)
+                tmp = {"label": label, "coor": bbox[i].cpu().numpy().astype(int).tolist(), "score": float(score[i]),"mask":segment}
                 if pre_labels is None or label in pre_labels:
                     bbox_cfg.append(tmp)
 
@@ -207,17 +217,25 @@ def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres
 
 if __name__ == '__main__':
     import shutil
-    img_file = "/data/PatrolAi/patrol_ai/python_codes/test/11-28-23-28-46_img_tag.jpg"
-    weight = "/data/PatrolAi/yolov5/xf_yc.pt"
+
+    img_file = "11-06-17-10-35_img_tag.jpg"
+    weight = "best.pt"
     img = cv2.imread(img_file)
-    model_yolov5 = load_yolov5_model(weight)
-    cfgs = inference_yolov5(model_yolov5, img, resize=1280, conf_thres=0.1, iou_thres=0.2)
-    for cfg in cfgs:
-        c = cfg["coor"]; label = cfg["label"]; score = cfg["score"]
-        cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=2)
-        cv2.putText(img, label+": "+str(score), (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=2)
-    cv2.imwrite(img_file[:-4] + "result.jpg", img)
-    print(cfgs)
+    model = load_yolov5seg_model()
+    bbox_cfg = inference_yolov5seg(model, img)
+
+    for i in range(len(bbox_cfg)):
+        tmp = bbox_cfg[i]
+        c = tmp["coor"];
+        label = tmp["label"];
+        score = tmp["score"]
+        mask = tmp['mask']
+        print(mask)
+        cv2.polylines(img, [mask], isClosed=True, color=(0, 0, 255), thickness=1)
+        cv2.rectangle(img, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 255, 0), 2)
+        cv2.putText(img, label + ": " + str(score), (int(c[0]), int(c[1]) + 10), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (255, 0, 255), thickness=2)
+    cv2.imwrite('33.jpg', img)
 
 
                 
