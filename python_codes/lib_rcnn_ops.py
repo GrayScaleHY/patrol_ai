@@ -70,7 +70,7 @@ def nms(dets, thresh):
     NMS, 非极大抑制，消除多余重叠比例较高的目标框。
     https://cloud.tencent.com/developer/article/1614720
     args:
-        dets: 目标框数组，目标框的格式为：[xin,ymin,xmax,ymax,score]
+        dets: 目标框数组，目标框的格式为：[xmin,ymin,xmax,ymax,score]
         thresh: 阈值
     return: 
         keep: 不重复的目标框数组在元目标框数组中的下标数组
@@ -96,6 +96,46 @@ def nms(dets, thresh):
         order = order[inds + 1]
     return keep
 
+
+def filter_cfgs(cfgs, conf_thres=0.25, same_iou_thres=1, diff_iou_thres=1, focus_labels=None):
+    """
+    根据conf_thres、iou_thres和pre_labels过滤推理结果。
+    args:
+        cfgs: 模型推理结果，结构为 [{"label": "", "coor": [x0, y0, x1, y1], "score": float, "mask": mask}, {}, ..]
+        conf_thres: 置信度阈值。
+        same_iou_thres: 同类标签之间的iou阈值。
+        diff_iou_thres: 所有目标物之间的iou阈值。
+        focus_labels: 关注的标签。若focus_labels=None,则不过滤；若focus_labels为list，则过滤focus_labels以外的标签。
+    return:
+        cfgs: 过滤后的模型推理结果,格式和输入的cfgs一样。
+    """
+    ## 根据conf_thres进行过滤
+    cfgs = [cfg for cfg in cfgs if cfg["score"] >= conf_thres]
+
+    ## 根据focus_labels进行过滤
+    cfgs = [cfg for cfg in cfgs if (focus_labels is None or cfg["label"] in focus_labels)]
+
+    ## 根据diff_iou_thres进行过滤
+    box_score = np.array([list(cfg["coor"])+[cfg["score"]] for cfg in cfgs], dtype=float)
+    keep = nms(box_score, diff_iou_thres)
+    cfgs = [cfgs[i] for i in keep]
+
+    ## 根据same_iou_thres进行过滤
+    label_dict = {}  # 根据labels对cfgs进行分类
+    for cfg in cfgs:
+        if cfg["label"] in label_dict:
+            label_dict[cfg["label"]].append(cfg)
+        else:
+            label_dict[cfg["label"]] = [cfg]
+    out_cfgs = []
+    for label, cfgs in label_dict.items():
+        box_score = np.array([list(cfg["coor"])+[cfg["score"]] for cfg in cfgs], dtype=float)
+        keep = nms(box_score, same_iou_thres)
+        out_cfgs = out_cfgs + [cfgs[i] for i in keep]
+    cfgs = out_cfgs
+
+    return cfgs
+    
 
 if __name__ == "__main__":
     candidates = selective_search("images/pointer/test_1.jpg")
