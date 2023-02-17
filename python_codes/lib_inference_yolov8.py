@@ -6,7 +6,6 @@ https://docs.ultralytics.com/python/
 from ultralytics import YOLO
 import numpy as np
 from lib_rcnn_ops import filter_cfgs
-import os
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -16,18 +15,20 @@ def load_yolov8_model(model_file, decode=False):
     """
     # Load a model
     # model = YOLO("yolov8n.yaml")  # build a new model from scratch
-    model = YOLO(model_file)  # load a pretrained model (recommended for training)
+    # load a pretrained model (recommended for training)
+    model = YOLO(model_file)
     # model.to(device)
     return model
 
+
 def inference_yolov8(model,
-                    img, 
-                    resize=640, 
-                    conf_thres=0.25, 
-                    same_iou_thres=0.7,
-                    diff_iou_thres=1, 
-                    focus_labels=None
-                    ):
+                     img,
+                     resize=640,
+                     conf_thres=0.25,
+                     same_iou_thres=0.7,
+                     diff_iou_thres=1,
+                     focus_labels=None
+                     ):
     """
     使用yolov5对图片做推理，返回推理结果。
     args:
@@ -39,11 +40,11 @@ def inference_yolov8(model,
         diff_iou_thres: 所有目标物之间的iou阈值。
         focus_labels: 关注的标签。若focus_labels=None,则不过滤；若focus_labels为list，则过滤focus_labels以外的标签。
     return:
-        bbox_cfg: 预测的bbox信息，json文件格式为格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        cfgs: 预测结果，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float, "mask": numpy}, {}, ..]
     """
-    labels = model.names # 标签名
-    result = model(img)[0] # 推理结果
-    task = model.task # 模型类型, detect, segment, classify
+    labels = model.names  # 标签名
+    result = model(img)[0]  # 推理结果
+    task = model.task  # 模型类型, detect, segment, classify
 
     assert task in ["detect", "segment", "classify"], "is not yolov8 model !"
 
@@ -56,7 +57,7 @@ def inference_yolov8(model,
         if score < conf_thres:
             cfgs = []
         else:
-            cfgs = [{"label": label, "coor":[], "score": score, "mask":[]}]
+            cfgs = [{"label": label, "coor": [], "score": score, "mask":[]}]
         return cfgs
 
     # 检测和分割模型推理结果后处理
@@ -66,20 +67,24 @@ def inference_yolov8(model,
 
     cfgs = []
     for i, lab in enumerate(res_boxes.cls):
-        box = list(res_boxes.xyxy[i]) # 目标框坐标
-        label = labels[lab] # 标签
-        score = res_boxes.conf[i] # 得分
+        box = list(res_boxes.xyxy[i])  # 目标框坐标
+        label = labels[lab]  # 标签
+        score = res_boxes.conf[i]  # 得分
 
         if task == "segment":
-            mask = res_masks.masks[i] # 分割模型的mask
+            mask = res_masks.masks[i]  # 分割模型的mask
         else:
             mask = None
 
-        cfgs.append({"label": label, "coor": box, "score": score, "mask": mask})
-    
+        cfgs.append({"label": label, "coor": box,
+                    "score": score, "mask": mask})
+
     # 根据conf_thres、iou_thres、focus_labels过滤结果
-    cfgs = filter_cfgs(cfgs, conf_thres, same_iou_thres, diff_iou_thres, focus_labels)
+    cfgs = filter_cfgs(cfgs, conf_thres, same_iou_thres,
+                       diff_iou_thres, focus_labels)
+    
     return cfgs
+
 
 if __name__ == '__main__':
     import shutil
@@ -97,19 +102,22 @@ if __name__ == '__main__':
     print("load model spend time:", time.time() - start)
 
     start = time.time()
-    cfgs = inference_yolov8(model_yolov5, img, resize=640, conf_thres=0.6, same_iou_thres=0.5, diff_iou_thres=0.9, focus_labels=None)
+    cfgs = inference_yolov8(model_yolov5, img, resize=640, conf_thres=0.6,
+                            same_iou_thres=0.5, diff_iou_thres=0.9, focus_labels=None)
     print("inference image spend time:", time.time() - start)
-    
+
     for i in range(len(cfgs)):
         tmp = cfgs[i]
         # print(tmp)
-        c = tmp["coor"];
-        label = tmp["label"];
+        c = tmp["coor"]
+        label = tmp["label"]
         score = str(tmp["score"]).zfill(3)
         # mask = tmp['mask']
         # print(mask)
         # cv2.polylines(img, [mask], isClosed=True, color=(0, 0, 255), thickness=1)
-        cv2.rectangle(img_raw, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 255, 0), 2)
-        cv2.putText(img_raw, label + ": " + score, (int(c[0]), int(c[1]) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(0, 255, 0), thickness=1)
+        cv2.rectangle(img_raw, (int(c[0]), int(c[1])),
+                      (int(c[2]), int(c[3])), (0, 255, 0), 2)
+        cv2.putText(img_raw, label + ": " + score, (int(c[0]), int(
+            c[1]) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), thickness=1)
 
     cv2.imwrite('/data/yolov5/weights/bus_result.jpg', img_raw)
