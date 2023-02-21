@@ -9,6 +9,7 @@ from lib_rcnn_ops import filter_cfgs
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
+
 def load_yolov8_model(model_file, decode=False):
     """
     加载yolov8模型。
@@ -45,6 +46,7 @@ def inference_yolov8(model,
     labels = model.names  # 标签名
     result = model(img)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
+    H, W = img.shape[:2]
 
     assert task in ["detect", "segment", "classify"], "is not yolov8 model !"
 
@@ -64,8 +66,10 @@ def inference_yolov8(model,
     res_boxes = result.boxes.cpu().numpy()
     if task == "segment":
         res_masks = result.masks.cpu().numpy()
+        res_segments = result.masks.segments
 
     cfgs = []
+    img_shape = np.array([W, H])
     for i, lab in enumerate(res_boxes.cls):
         box = list(res_boxes.xyxy[i])  # 目标框坐标
         label = labels[lab]  # 标签
@@ -73,16 +77,19 @@ def inference_yolov8(model,
 
         if task == "segment":
             mask = res_masks.masks[i]  # 分割模型的mask
+            segments = res_segments[i] * img_shape
+            segments = segments.astype(int)
         else:
             mask = None
+            segments = None
 
         cfgs.append({"label": label, "coor": box,
-                    "score": score, "mask": mask})
+                    "score": score, "mask": mask, "segments": segments})
 
     # 根据conf_thres、iou_thres、focus_labels过滤结果
     cfgs = filter_cfgs(cfgs, conf_thres, same_iou_thres,
                        diff_iou_thres, focus_labels)
-    
+
     return cfgs
 
 
