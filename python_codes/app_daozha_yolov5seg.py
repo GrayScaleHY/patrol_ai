@@ -8,12 +8,14 @@ from lib_sift_match import sift_match, convert_coor, sift_create,fft_registratio
 import numpy as np
 import torch
 
-from lib_inference_yolov5seg import load_yolov5seg_model, inference_yolov5seg, check_iou
-from utils.segment.general import scale_image
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8,check_iou
+# from lib_inference_yolov5 import check_iou
+# from utils.segment.general import scale_image
 
 
 ## 加载模型
-yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载刀闸yolov5分割模型
+#yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载刀闸yolov5分割模型
+yolov8seg_daozha = load_yolov8_model("/data/PatrolAi/yolov8/daozha_seg.pt") # 加载刀闸yolov8分割模型
 
 def is_include(sub_box, par_box, srate=0.8):
     sb = sub_box;
@@ -151,7 +153,8 @@ def inspection_daozha_detection(input_data):
 
     ## 生成目标检测信息
     labels=['budaowei','fen','he']
-    cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
+    # cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
+    cfgs = inference_yolov8(yolov8seg_daozha, img_tag, resize=640, conf_thres=0.3,same_iou_thres=0.5, diff_iou_thres=0.9, focus_labels=labels)  # inference
     cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
 
     if len(cfgs) == 0:  # 没有检测到目标

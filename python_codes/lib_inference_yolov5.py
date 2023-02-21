@@ -209,7 +209,7 @@ def inference_yolov5seg(model_yolov5, img, resize=640, conf_thres=0.2, iou_thres
                 segment[:, 0] = segment[:, 0] * img_raw_shape[1]
                 segment[:, 1] = segment[:, 1] * img_raw_shape[0]
                 segment = segment.astype(int)
-                tmp = {"label": label, "coor": bbox[i].cpu().numpy().astype(int).tolist(), "score": float(score[i]),"mask":segment}
+                tmp = {"label": label, "coor": bbox[i].cpu().numpy().astype(int).tolist(), "score": float(score[i]),"mask":masks[i],'segment':segment}
                 if pre_labels is None or label in pre_labels:
                     bbox_cfg.append(tmp)
 
