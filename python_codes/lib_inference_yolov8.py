@@ -64,6 +64,9 @@ def inference_yolov8(model,
 
     # 检测和分割模型推理结果后处理
     res_boxes = result.boxes.cpu().numpy()
+    if len(res_boxes.boxes) == 0:
+        return[]
+    
     if task == "segment":
         res_masks = result.masks.cpu().numpy()
         res_segments = result.masks.segments
