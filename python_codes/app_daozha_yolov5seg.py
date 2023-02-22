@@ -8,7 +8,7 @@ from lib_sift_match import sift_match, convert_coor, sift_create,fft_registratio
 import numpy as np
 import torch
 
-from lib_inference_yolov8 import load_yolov8_model, inference_yolov8,check_iou
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 # from lib_inference_yolov5 import check_iou
 # from utils.segment.general import scale_image
 
@@ -155,7 +155,7 @@ def inspection_daozha_detection(input_data):
     labels=['budaowei','fen','he']
     # cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
     cfgs = inference_yolov8(yolov8seg_daozha, img_tag, resize=640, conf_thres=0.3,same_iou_thres=0.5, diff_iou_thres=0.9, focus_labels=labels)  # inference
-    cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
+    # cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
 
     if len(cfgs) == 0:  # 没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find object"
@@ -195,8 +195,8 @@ def inspection_daozha_detection(input_data):
         s = masks.sum(2, keepdims=True).clip(0, 1)
         print(masks.shape,img_tag_.shape)
         img_tag_[:]= masks * alpha + img_tag_ * (1 - s * alpha)'''
-        mask = cfg["mask"]
-        cv2.polylines(img_tag_,[mask],isClosed=True,color=color_dict[label], thickness=2)
+        segment = cfg["segments"]
+        cv2.polylines(img_tag_, [segment], isClosed=True, color=color_dict[label], thickness=2)
 
         s = int((c[2] - c[0]) / 6)  # 根据框子大小决定字号和线条粗细。
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
