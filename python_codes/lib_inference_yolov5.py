@@ -5,7 +5,7 @@ import time
 import os
 import glob
 
-sys.path.append('../yolov5') ## ultralytics/yolov5 存放的路径
+sys.path.insert(0,'../yolov5') ## ultralytics/yolov5 存放的路径
 try:
     from utils.dataloaders import letterbox ## v7.0
 except:
