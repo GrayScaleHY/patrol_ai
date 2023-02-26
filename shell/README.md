@@ -56,7 +56,7 @@ utdnn/inspection  cuda10.1-patrolai-opencv-cuda         86c8a25fae43   4 days ag
 ```
 (2). 执行以下命令进入docker环境
 ```
-nvidia-docker run -it --runtime nvidia --name ut-PatrolAi -v /home/ubuntu/data:/mnt/data utdnn/inspection:cuda10.1-patrolai-opencv-cuda /bin/bash
+nvidia-docker run -it --runtime nvidia --name ut-PatrolAi -v /home/ubuntu/data:/mnt/data -v /data/ref_test_save:/home/data utdnn/inspection:cuda10.1-patrolai-opencv-cuda /bin/bash
 ```
 ##### 5. 运行powersky
 (1). 在docker环境下用命令行在挂载的输出文件夹中创建一个文件，看在10.144.239.59的share/shanghai中有无刚创建的文件。
