@@ -105,7 +105,7 @@ def rankBbox(out_data_list,data_masks,roi,type='iou'):
                 max_mask_idx=i
         return [max_dict]
 
-def inspection_daozha_detection(input_data):
+def inspection_daozha_detection(input_data,debug=False):
     """
     yolov5的目标检测推理。
     """
@@ -125,7 +125,10 @@ def inspection_daozha_detection(input_data):
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + data.type , (10, 10), color=(255, 0, 0), size=60)
+    if debug:
+        img_tag_ = img_chinese(img_tag_, checkpoint + data.type , (10, 10), color=(255, 0, 0), size=60)
+    else:
+        img_tag_ = img_chinese(img_tag_, checkpoint, (10, 10), color=(255, 0, 0), size=30)
 
     if roi is not None:  # 如果配置了感兴趣区域，则画出感兴趣区域
         img_ref_ = img_ref.copy()
@@ -161,7 +164,8 @@ def inspection_daozha_detection(input_data):
         out_data["msg"] = out_data["msg"] + "; Not find object"
         out_data["code"] = 1
         out_data["data"]=[]
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        if debug:
+            img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -199,7 +203,7 @@ def inspection_daozha_detection(input_data):
         cv2.polylines(img_tag_, [segment], isClosed=True, color=color_dict[label], thickness=2)
 
         s = int((c[2] - c[0]) / 6)  # 根据框子大小决定字号和线条粗细。
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
+        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=25)
 
     ## 求出目标图像的感兴趣区域
     if roi is not None:
