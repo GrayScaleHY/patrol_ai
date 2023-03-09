@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import json
-from lib_help_base import get_save_head, save_input_data, save_output_data
+from lib_help_base import get_save_head, save_input_data, save_output_data, rm_result_patrolai
 import os
 from app_pointer import inspection_pointer
 from app_disconnector import inspection_disconnector
@@ -15,6 +15,11 @@ from app_daozha_yolov5seg import inspection_daozha_detection
 # from app_ocr import ocr_digit_detection
 from app_yejingpingshuzishibie import inspection_digital_rec
 import time
+import threading
+
+## 单独开个进程，定时删除result_patrolai文件夹中的文件。
+t = threading.Thread(target=rm_result_patrolai,args=())
+t.start()
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 

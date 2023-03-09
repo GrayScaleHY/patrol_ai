@@ -10,6 +10,7 @@ import json
 import os
 import time
 import shutil
+import threading
 
 class GetInputData:
     """
@@ -422,13 +423,68 @@ def is_include(sub_box, par_box, srate=0.8):
         return True
     else:
         return False
+    
+
+def rm_patrolai(out_json):
+    """
+    将分析结果保存下来的图片删除或转移
+    """
+    file_head = out_json[:-16]
+    rm_list = []
+    rm_list.append(out_json)
+    rm_list.append(file_head + "input_data.json")
+    rm_list.append(file_head + "tag.jpg")
+    rm_list.append(file_head + "tag_cfg.jpg")
+    rm_list.append(file_head + "ref.jpg")
+    rm_list.append(file_head + "ref_cfg.jpg")
+
+    f = open(out_json, "r", encoding='utf-8')
+    out_data = json.load(f)
+    f.close()
+    if out_data["code"] == 1:
+        is_cp = True
+    else:
+        is_cp = False
+
+    file_name = os.path.basename(out_json)
+    day_head = float(file_name[:4])
+
+    for in_file in rm_list:
+        if not os.path.exists(in_file):
+            continue
+        out_file = in_file.replace("result_patrol", "result_wrong")
+        if is_cp and not os.path.exists(out_file):
+            os.makedirs(os.path.dirname(out_file), exist_ok=True)
+            shutil.copy(in_file, out_file)
+        
+        day_now = float(time.strftime("%m%d"))
+        if day_head > day_now or day_head < day_now - 5:
+            os.remove(in_file)
+
+
+def rm_result_patrolai():
+    """
+    将分析异常的图片转移到/data/PatrolAi/result_wrong
+    """
+    in_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    in_dir = os.path.join(in_dir, "result_patrol")
+    out_dir = os.path.join(os.path.dirname(in_dir), "result_wrong")
+    os.makedirs(out_dir, exist_ok=True)
+
+    while True:
+        for root, dirs, files in os.walk(in_dir):
+            for file_name in files:
+                if not file_name.endswith("output_data.json"):
+                    continue
+                out_json = os.path.join(root, file_name)
+
+                try:
+                    rm_patrolai(out_json)
+                except:
+                    print(out_json, "is wrong !!")
+        
+        time.sleep(36000)
+
 
 if __name__ == '__main__':
-    import json
-    json_file = "/data/PatrolAi/result_patrol/12-16-15-34-34_input_data.json"
-    f = open(json_file, "r", encoding='utf-8')
-    in_data = json.load(f)
-    f.close()
-    a = GetInputData(in_data)
-    print(a.pointers)
-    print(a.type)
+    rm_result_patrolai()
