@@ -174,6 +174,8 @@ def inspection_level_gauge(input_data):
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
 # ## 求出目标图像的感兴趣区域
+    if len(roi)==0:
+        M = fft_registration(img_ref, img_tag) #如果没有配置roi
     if len(roi)!=0 and img_ref is not None:
         # if len(osd) == 0:
         #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
@@ -212,7 +214,7 @@ def inspection_level_gauge(input_data):
     if len(out_data["data"]) == 0:
         out_data["code"] = 1
     
-    value = cal_oil_value(pointers,cfgs[0]["coor"],oil_type="updown")
+    value = cal_oil_value(pointers_tag,cfgs[0]["coor"],oil_type="updown")
     if value != None :
         value = round(value, dp)
         out_data["data"]["value"] = value
