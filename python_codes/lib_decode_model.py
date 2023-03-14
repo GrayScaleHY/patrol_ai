@@ -3,23 +3,11 @@ import io
 import time
 import numba
 import numpy as np
-from xor import xor  # cython
+# from xor import xor  # cython
 
 # 解密
-def decode_model(encode_model_name, keys=1, length=5000):
-    f = open(encode_model_name, "rb")
-    encode_model_ = f.read()
-    f.close()
-    random.seed(keys)
-    encode_model_ = np.frombuffer(bytearray(encode_model_), dtype=np.uint8)
-    byteskey = np.uint8(random.randint(0, 255))
-
-    time1 = time.time()
-    decode_model_ = xor(encode_model_, byteskey)
-    time2 = time.time()
-    print(time2 - time1)
-
-    decode_model_ = bytes(decode_model_)
+def decode_model(encode_model_name, keys=1):
+    decode_model_ = xor_model(encode_model_name,keys)
 
     #  写临时文件
     decode_model_name = encode_model_name[:-4] + 'tmp' + encode_model_name[-4:]
@@ -30,28 +18,31 @@ def decode_model(encode_model_name, keys=1, length=5000):
     return decode_model_name, decode_model_
 
 
-"""
-@numba.jit
+# @numba.jit
 def xor(encode_model_, byteskey):
     tmp = np.empty_like(encode_model_)
     for i in range(len(encode_model_)):
         tmp[i] = encode_model_[i] ^ byteskey
     return tmp
-"""
 
 
-# 加密
-def encode_model(origin_model_name, encode_model_name, keys=1, length=5000):
-    f = open(origin_model_name, "rb")
+def xor_model(model_name,keys=1):
+    f = open(model_name, "rb")
     origin_model = f.read()
     f.close()
     random.seed(keys)
     origin_model = np.frombuffer(bytearray(origin_model), dtype=np.uint8)
-    byteskey = np.uint8(random.randint(0, 255))
+    mykey = np.uint8(random.randint(0, 255))
 
-    encode_model_ = xor(origin_model, byteskey)
+    new_model = xor(origin_model, mykey)
+    new_model = bytes(new_model)
 
-    encode_model_ = bytes(encode_model_)
+    return new_model
+
+
+# 加密
+def encode_model(origin_model_name, encode_model_name, keys=1):
+    encode_model_ = xor_model(origin_model_name,keys)
 
     #  写加密文件
     with open(encode_model_name, "wb") as fp:
@@ -62,7 +53,7 @@ def encode_model(origin_model_name, encode_model_name, keys=1, length=5000):
 
 
 if __name__ == '__main__':
-    filename = 'hs_bj_infer_encode.pt'
-    str_4 = decode_model('hs_bj_infer_encode.pt')[1]
+    filename = r'C:\Users\linduaner.UT\Desktop\task_shanxi\training1.zip'
+    str_4 = decode_model(filename)[1]
     print(type(str_4))
     # test = torch.load(str_4)
