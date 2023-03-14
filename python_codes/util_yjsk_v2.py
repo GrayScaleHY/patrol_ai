@@ -291,7 +291,7 @@ def final_state(states_start, states_end, len_window=3):
         s_types = set(states_end[i:i+len_window])
         if s_types == {"分"} or s_types == {"合"}:
             state_end = list(s_types)[0]
-            ys_yc = False
+            is_yc = False
     if is_yc:
         state_end = "异常"
     

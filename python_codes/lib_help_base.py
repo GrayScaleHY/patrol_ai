@@ -29,7 +29,7 @@ class GetInputData:
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
         self.dp = self.get_dp(self.config)
-        self.number, self.length, self.width, self.color = self.get_pointer_cfg(self.config) # 多指针的性质
+        self.number, self.length, self.width, self.color, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
         
@@ -199,7 +199,15 @@ class GetInputData:
         else:
             color = None
         
-        return number, length, width, color
+        if "meter_type" in config and isinstance(config["meter_type"], str) and len(config["meter_type"]) > 1:
+            if config["meter_type"] == "blq_zzscsb":
+                meter_type = "blq_zzscsb"
+            else: 
+                meter_type = "normal"
+        else:
+            meter_type = "normal"
+        
+        return number, length, width, color, meter_type
 
     def get_status_map(self, config):
         if "status_map" in config and isinstance(config["status_map"], dict):
