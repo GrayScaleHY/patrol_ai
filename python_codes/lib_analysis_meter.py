@@ -2,9 +2,6 @@
 import math
 import numpy as np
 import cv2
-import os
-import json
-from lib_image_ops import base642img
 
 def segment2angle(base_coor, tar_coor):
     """
@@ -141,8 +138,6 @@ def intersection_arc(line, arc):
     # """
     # line = [801, 302, 1352, 643] # [x1, y1, x2, y2]
     # arc = [1058, 462, 1327, 375, 1250, 732]# [xc, yc, x1, y1, x2, y2]
-    # line = [837, 351, 731, 332]
-    # arc = [795, 345, 732, 358, 731, 332]
     line = np.array(line, dtype=float) ## int转float
     arc = np.array(arc, dtype=float)
     # 根据线段到圆心的远近，确定坐标的先后
@@ -175,6 +170,12 @@ def intersection_arc(line, arc):
         y1 = math.sqrt(r2 - (x1 - xc) ** 2) - yc
         y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
     else:
+        ## 若直线line经过圆弧arc任意端点，则，返回该端点。
+        if int(lx2 * a + b) == int(ly2):
+            return int(lx2), int(ly2)
+        if int(lx1 * a + b) == int(ly1):
+            return int(lx1), int(ly1)
+        
         ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
         A = 1 + a ** 2
         B = 2 * a * (b - yc) - 2 * xc
@@ -271,6 +272,63 @@ def intersection_segment(line, segment):
     
     return int(x), int(y)
 
+def cfgs2segs(cfgs):
+    """
+    将分割模型输出拟合成线段
+    args:
+        cfgs: 分割模型的推理结果。
+    return:
+        cfgs: 增加"seg"元素，seg是mask拟合成的线段。
+    """
+    segs = []
+    for i in range(len(cfgs)):
+        cfg = cfgs[i]
+        box = list(cfg["coor"])
+
+        ## 查找mask中1元素的位置。
+        mask = cfg["mask"]
+        w = np.where(mask==1)
+        pointers = np.array([[w[1][i], w[0][i]] for i in range(len(w[0]))])
+
+        ## 拟合直线
+        fit_line = cv2.fitLine(pointers, cv2.DIST_L2, 0, 0.01, 0.01)
+        fit_line = np.squeeze(fit_line)  # 去除冗余的维度
+        cos_l = fit_line[0]; sin_l = fit_line[1]
+        x_l = fit_line[2]; y_l = fit_line[3]
+
+        ## 若拟合直线是垂直的，则y为y_l, x为box上下两边界。
+        if cos_l == 0:
+            seg = [int(box[0]), int(y_l), int(box[2]), int(y_l)]
+            segs.append(seg)
+            continue
+        
+        # 若拟合直线是水平的，则x为x_l, y_为box左右两边界。
+        if sin_l == 0:
+            seg = [int(x_l), int(box[1]), int(x_l), int(box[3])]
+            segs.append(seg)
+            continue
+        
+        # 非水平或垂直的情况下
+        tan_l = sin_l / cos_l 
+        det_l = y_l - (tan_l * x_l) # 直线公式改为y = tan_l * x + det_l
+        seg = []
+        for x_p in [box[0], box[2]]: # 求与box上下两边界的交点
+            y_p = tan_l * x_p + det_l
+            if box[1] < y_p < box[3]: # 交点坐标的y值需要再box左右边界之间
+                seg = seg + [int(x_p), int(y_p)]
+        
+        for y_p in [box[1], box[3]]: # 求与box左右两边界的交点
+            x_p = (y_p - det_l) / tan_l
+            if box[0] <= x_p <= box[2]: # 交点左边的x值需要在box上下边界之间
+                seg = seg + [int(x_p), int(y_p)]
+        
+        if len(seg) == 4:
+            cfgs[i]["seg"] = seg
+        else:
+            cfgs[i]["seg"] = [0,0,10,10]
+    
+    return cfgs
+
 def contour2segment(contours, boxes):
     """
     将轮廓拟合成线段。
@@ -324,4 +382,5 @@ def contour2segment(contours, boxes):
     return segments
 
 if __name__ == '__main__':
-    intersection_arc([], [])
+    val = intersection_arc([], [])
+    print("val")

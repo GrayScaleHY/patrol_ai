@@ -6,6 +6,8 @@ https://docs.ultralytics.com/python/
 from ultralytics import YOLO
 import numpy as np
 from lib_rcnn_ops import filter_cfgs
+import cv2
+import time
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -43,7 +45,8 @@ def inference_yolov8(model,
         cfgs: 预测结果，格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float, "mask": numpy}, {}, ..]
     """
     labels = model.names  # 标签名
-    result = model(img)[0]  # 推理结果
+    img_ = img.copy()
+    result = model(img_)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
     H, W = img.shape[:2]
 
@@ -78,9 +81,12 @@ def inference_yolov8(model,
         score = res_boxes.conf[i]  # 得分
 
         if task == "segment":
-            mask = res_masks.masks[i]  # 分割模型的mask
+            mask = res_masks.masks[i].astype(np.uint8)  # 分割模型的mask
+            mask = cv2.resize(mask, (W, H)) # 将mask映射为原始图片大小
             segments = res_segments[i] * img_shape
             segments = segments.astype(int)
+            if np.sum(segments) == 0: # 没有mask的情况
+                continue
         else:
             mask = None
             segments = None
@@ -88,6 +94,9 @@ def inference_yolov8(model,
         cfgs.append({"label": label, "coor": box,
                     "score": score, "mask": mask, "segments": segments})
 
+    if len(cfgs) == 0:
+        return []
+        
     # 根据conf_thres、iou_thres、focus_labels过滤结果
     cfgs = filter_cfgs(cfgs, conf_thres, same_iou_thres,
                        diff_iou_thres, focus_labels)

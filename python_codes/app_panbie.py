@@ -3,10 +3,10 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_sift_match import sift_create
+from lib_sift_match import sift_create, sift_match, correct_offset, detect_diff
 import base64
 import hashlib
-from util_panbie import identify_defect
+
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 def img2base64_(img_file):
@@ -53,18 +53,23 @@ def panbie_main(img_ref, img_tag):
     ## resize, 降低分别率，加快特征提取的速度。
     resize_rate = 2
     H, W = img_ref.shape[:2]  ## resize
-
     img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
     feat_ref = sift_create(img_ref) # 提取sift特征
 
     H, W = img_tag.shape[:2]  ## resize
     img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
-
     feat_tag = sift_create(img_tag) # 提取sift特征
-    tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
-    tag_diff = [int(d * resize_rate) for d in tag_diff] ## 将tag_diff还原回原始大小
-    return tag_diff
 
+    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
+    img_ref, cut = correct_offset(img_ref, M, b=True)
+    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
+    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
+    diff_area = detect_diff(img_ref, img_tag)
+    if len(diff_area) != 0:  
+        diff_area = [diff_area[0] + cut[0], diff_area[1] + cut[1], diff_area[2] + cut[0], diff_area[3] + cut[1]]
+    # tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
+    diff_area = [int(d * resize_rate) for d in diff_area] ## 将tag_diff还原回原始大小
+    return diff_area
 
 def get_input_data(input_data):
     """

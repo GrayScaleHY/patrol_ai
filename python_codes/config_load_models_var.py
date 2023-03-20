@@ -2,10 +2,6 @@
 加载深度学习模型
 """
 
-## 加载maskrcnn模型
-from lib_inference_mrcnn import load_maskrcnn_model
-maskrcnn_pointer = load_maskrcnn_model("/data/PatrolAi/maskrcnn/pointer.pth", num_classes=1, score_thresh=0.3) # 指针的maskrcnn模型
-
 ## 加载yolov5模型
 from lib_inference_yolov5 import load_yolov5_model
 yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘

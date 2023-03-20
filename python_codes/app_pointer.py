@@ -4,18 +4,15 @@ import time
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
-from lib_inference_yolov5 import inference_yolov5
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, contour2segment
-from lib_inference_mrcnn import inference_maskrcnn
+from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs
 from lib_sift_match import sift_match, convert_coor, sift_create, fft_registration
 from lib_help_base import color_area, GetInputData
 import math
-import numpy.matlib
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-# 指针模型， 表计
-from config_load_models_var import yolov5_meter, maskrcnn_pointer
-
+yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表记检测
+yolov8_pointer = load_yolov8_model("/data/PatrolAi/yolov8/pointer.pt") # 指针分割
 
 def is_include(sub_box, par_box, srate=0.8):
 
@@ -99,7 +96,6 @@ def cal_base_angle(coordinates, segment):
     val = angle2sclae(out_cfg, seg_ang)
     return val
 
-
 def cal_base_scale(coordinates, segment):
     """
     使用刻度计算指针读数。
@@ -140,7 +136,6 @@ def cal_base_scale(coordinates, segment):
     seg_ang = segment2angle((seg[0], seg[1]), (seg[2], seg[3]))
     val = angle2sclae(out_cfg, seg_ang)
     return val
-
 
 def add_head_end_ps(pointers):
     """
@@ -284,16 +279,15 @@ def pointer_detect(img_tag, number):
     seg_cfgs_part = []  # 将表记部分抠出来检测的指针信息
     for j, c in enumerate(bboxes):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
-        contours, boxes, (masks, classes, scores) = inference_maskrcnn(
-            maskrcnn_pointer, img)
-        segments = contour2segment(contours, boxes)
 
-        for i in range(len(segments)):
-            mask = np.zeros([h, w], dtype=np.uint8)
-            mask[c[1]:c[3], c[0]:c[2]] = masks[i]
-            s = segments[i]
-            score = scores[i]
-            b = boxes[i]
+        cfgs = inference_yolov8(yolov8_pointer,img) # 指针分割推理
+        cfgs = cfgs2segs(cfgs) 
+
+        for i in range(len(cfgs)):
+            mask = cfgs[i]["mask"]
+            s = cfgs[i]["seg"]
+            score = cfgs[i]["score"]
+            b = cfgs[i]["coor"]
             box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
             seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
             cfg = {"seg": seg, "box": box, "score": score, "mask": mask}
@@ -532,21 +526,15 @@ def inspection_pointer(input_data):
 if __name__ == '__main__':
     import glob
     from lib_help_base import save_input_data, save_output_data, get_save_head
-    # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
-    img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/2号主变10kV侧C相避雷器动作次数 2022-10-21 20-54-17.jpg"
-    img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/2号主变10kV侧C相避雷器动作次数 2020-12-11 14-33-01.jpg"
-    # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/pointer/2号主变110kV侧A相CTSF6表 2021-05-30 13-22-18.jpg"
-    pointers = {"center": [771, 403],
-                "0": [778, 302],
-                "1": [853, 320],
-                "2": [898, 372],
-                "3": [904, 447],
-                "4": [857, 523],
-                "5": [780, 557],
-                "6": [695, 540],
-                "7": [645, 463],
-                "8": [656, 393],
-                "9": [701, 329]}
+    # # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
+    img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
+    img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
+    pointers = {"center": [1483, 410],
+                "0": [1271, 610],
+                "20": [1203, 381],
+                "40": [1351, 155],
+                "80": [1713, 381],
+                "100": [1639, 523]}
     # bboxes = {"roi": [805, 256, 1217, 556]}
     img_ref = cv2.imread(img_ref_file)
     W = img_ref.shape[1]
@@ -560,17 +548,14 @@ if __name__ == '__main__':
     img_ref = img2base64(cv2.imread(img_ref_file))
     config = {
         "img_ref": img_ref,
-        "number": 1,
+        "number": 2,
         "pointers": pointers,
-        # "length": 0,
-        # "width": 0,
-        # "color": 0,
-        # "bboxes": bboxes
-        "meter_type": "blq_zzscsb"
+        "color": 2
     }
     input_data = {"image": img_tag, "config": config, "type": "pointer"}
-
-    # f = open("/data/PatrolAi/result_patrol/pointer/input_data.json","r", encoding='utf-8')
+    # json_file = ""
+    # print(json_file)
+    # f = open(json_file,"r", encoding='utf-8')
     # input_data = json.load(f)
     # f.close()
     out_data = inspection_pointer(input_data)
