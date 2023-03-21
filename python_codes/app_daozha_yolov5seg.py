@@ -70,19 +70,33 @@ def rank_bbox(out_data_list, data_masks, roi, type='iou'):
             return (intersect * 1.0 / (sum_area - intersect)) * 1.0
 
     if len(out_data_list) <= 1:
+        if len(out_data_list)==0:
+            return out_data_list
+        out_data_list[0]["bbox"] = [int(out_data_list[0]["bbox"][0]), int(out_data_list[0]["bbox"][1]), int(out_data_list[0]["bbox"][2]),
+                            int(out_data_list[0]["bbox"][3])]
+        out_data_list[0]["score"] = float(out_data_list[0]["score"])
         return out_data_list
+
     if type == 'score':
         max_dict = out_data_list[0]
         for i in range(len(out_data_list)):
             if out_data_list[i]['score'] > max_dict['score']:
                 max_dict = out_data_list[i]
+        max_dict["bbox"] = [int(max_dict["bbox"][0]), int(max_dict["bbox"][1]), int(max_dict["bbox"][2]),
+                            int(max_dict["bbox"][3])]
+        max_dict["score"] = float(max_dict["score"])
         return [max_dict]
+
     elif type == 'bbox_size':
         max_dict = out_data_list[0]
         for i in range(len(out_data_list)):
             if cal_bbox_size(out_data_list[i]['bbox']) > cal_bbox_size(max_dict['bbox']):
                 max_dict = out_data_list[i]
+        max_dict["bbox"] = [int(max_dict["bbox"][0]), int(max_dict["bbox"][1]), int(max_dict["bbox"][2]),
+                            int(max_dict["bbox"][3])]
+        max_dict["score"] = float(max_dict["score"])
         return [max_dict]
+
     elif type == 'score&mask_size':
         max_dict = out_data_list[0]
         max_mask_idx = 0
@@ -90,15 +104,25 @@ def rank_bbox(out_data_list, data_masks, roi, type='iou'):
             if (data_masks[i].sum()) * out_data_list[i]['score'] > (data_masks[max_mask_idx].sum()) * max_dict['score']:
                 max_dict = out_data_list[i]
                 max_mask_idx = i
+        max_dict["bbox"] = [int(max_dict["bbox"][0]), int(max_dict["bbox"][1]), int(max_dict["bbox"][2]),
+                            int(max_dict["bbox"][3])]
+        max_dict["score"] = float(max_dict["score"])
         return [max_dict]
+
     elif type == 'iou':
         max_dict = out_data_list[0]
         for i in range(len(out_data_list)):
             if cal_bbox_iou(out_data_list[i]['bbox'], roi) > cal_bbox_iou(max_dict['bbox'], roi):
                 max_dict = out_data_list[i]
+        max_dict["bbox"] = [int(max_dict["bbox"][0]), int(max_dict["bbox"][1]), int(max_dict["bbox"][2]),
+                            int(max_dict["bbox"][3])]
+        max_dict["score"] = float(max_dict["score"])
         return [max_dict]
+
     else:
         max_dict = out_data_list[0]
+        max_dict["bbox"] = [int(max_dict["bbox"][0]),int(max_dict["bbox"][1]),int(max_dict["bbox"][2]),int(max_dict["bbox"][3])]
+        max_dict["score"] = float(max_dict["score"])
         max_mask_idx = 0
         for i in range(len(out_data_list)):
             if data_masks[i].sum() > data_masks[max_mask_idx].sum():
