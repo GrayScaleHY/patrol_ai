@@ -136,8 +136,8 @@ def intersection_arc(line, arc):
     return:
         (x1, y1): 交点坐标。也可能是None，表示直线与弧线无交点。
     # """
-    # line = [801, 302, 1352, 643] # [x1, y1, x2, y2]
-    # arc = [1058, 462, 1327, 375, 1250, 732]# [xc, yc, x1, y1, x2, y2]
+    # line = [1604, 576, 1486, 424] # [x1, y1, x2, y2]
+    # arc = [1574, 529, 1478, 432, 1555, 421]# [xc, yc, x1, y1, x2, y2]
     line = np.array(line, dtype=float) ## int转float
     arc = np.array(arc, dtype=float)
     # 根据线段到圆心的远近，确定坐标的先后
@@ -171,10 +171,10 @@ def intersection_arc(line, arc):
         y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
     else:
         ## 若直线line经过圆弧arc任意端点，则，返回该端点。
-        if int(lx2 * a + b) == int(ly2):
-            return int(lx2), int(ly2)
-        if int(lx1 * a + b) == int(ly1):
-            return int(lx1), int(ly1)
+        if int(ax1 * a + b) == int(ay1):
+            return int(ax1), int(ay1)
+        if int(ax2 * a + b) == int(ay2):
+            return int(ax2), int(ay2)
         
         ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
         A = 1 + a ** 2
