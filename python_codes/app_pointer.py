@@ -280,17 +280,24 @@ def pointer_detect(img_tag, number):
     for j, c in enumerate(bboxes):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
 
-        cfgs = inference_yolov8(yolov8_pointer,img) # 指针分割推理
+        cfgs = inference_yolov8(yolov8_pointer,img, same_iou_thres=0.85) # 指针分割推理
         cfgs = cfgs2segs(cfgs) 
 
         for i in range(len(cfgs)):
+            ## 将mask复原
+            mask_raw = np.zeros(img_tag.shape, dtype=np.uint8)
             mask = cfgs[i]["mask"]
+            if mask_raw.shape == 3:
+                mask_raw[c[1]:c[3], c[0]:c[2], :] = mask
+            else:
+                mask_raw[c[1]:c[3], c[0]:c[2]] = mask
+                
             s = cfgs[i]["seg"]
             score = cfgs[i]["score"]
             b = cfgs[i]["coor"]
             box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
             seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
-            cfg = {"seg": seg, "box": box, "score": score, "mask": mask}
+            cfg = {"seg": seg, "box": box, "score": score, "mask": mask_raw}
             if j == 0:
                 seg_cfgs_all.append(cfg)
             else:
@@ -527,37 +534,37 @@ if __name__ == '__main__':
     import glob
     from lib_help_base import save_input_data, save_output_data, get_save_head
     # # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
-    img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
-    img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
-    pointers = {"center": [1483, 410],
-                "0": [1271, 610],
-                "20": [1203, 381],
-                "40": [1351, 155],
-                "80": [1713, 381],
-                "100": [1639, 523]}
-    # bboxes = {"roi": [805, 256, 1217, 556]}
-    img_ref = cv2.imread(img_ref_file)
-    W = img_ref.shape[1]
-    H = img_ref.shape[0]
-    for t in pointers:
-        pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
-    # for b in bboxes:
-    #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
+    # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
+    # img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
+    # pointers = {"center": [1483, 410],
+    #             "0": [1271, 610],
+    #             "20": [1203, 381],
+    #             "40": [1351, 155],
+    #             "80": [1713, 381],
+    #             "100": [1639, 523]}
+    # # bboxes = {"roi": [805, 256, 1217, 556]}
+    # img_ref = cv2.imread(img_ref_file)
+    # W = img_ref.shape[1]
+    # H = img_ref.shape[0]
+    # for t in pointers:
+    #     pointers[t] = [pointers[t][0]/W, pointers[t][1]/H]
+    # # for b in bboxes:
+    # #     bboxes[b] = [bboxes[b][0]/W, bboxes[b][1]/H, bboxes[b][2]/W, bboxes[b][3]/H]
 
-    img_tag = img2base64(cv2.imread(img_tag_file))
-    img_ref = img2base64(cv2.imread(img_ref_file))
-    config = {
-        "img_ref": img_ref,
-        "number": 2,
-        "pointers": pointers,
-        "color": 2
-    }
-    input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    # json_file = ""
-    # print(json_file)
-    # f = open(json_file,"r", encoding='utf-8')
-    # input_data = json.load(f)
-    # f.close()
+    # img_tag = img2base64(cv2.imread(img_tag_file))
+    # img_ref = img2base64(cv2.imread(img_ref_file))
+    # config = {
+    #     "img_ref": img_ref,
+    #     "number": 2,
+    #     "pointers": pointers,
+    #     "color": 2
+    # }
+    # input_data = {"image": img_tag, "config": config, "type": "pointer"}
+    json_file = "/data/PatrolAi/result_patrol/0321134826__input_data.json"
+    print(json_file)
+    f = open(json_file,"r", encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
     out_data = inspection_pointer(input_data)
     save_dir, name_head = get_save_head(input_data)
     save_input_data(input_data, save_dir, name_head, draw_img=True)

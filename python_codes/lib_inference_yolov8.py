@@ -46,7 +46,7 @@ def inference_yolov8(model,
     """
     labels = model.names  # 标签名
     img_ = img.copy()
-    result = model(img_)[0]  # 推理结果
+    result = model(img_, iou=same_iou_thres)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
     H, W = img.shape[:2]
 
@@ -109,8 +109,8 @@ if __name__ == '__main__':
     import cv2
     import time
 
-    img_file = "/data/yolov5/weights/bus.jpg"
-    weight = "/data/yolov5/weights/yolov8l-seg.pt"
+    img_file = "/data/PatrolAi/result_patrol/pointer/0321152010__tag.jpg"
+    weight = "/data/PatrolAi/yolov8/pointer.pt"
     img = cv2.imread(img_file)
     img_raw = img.copy()
     print("input image shape:", img.shape)
@@ -120,8 +120,8 @@ if __name__ == '__main__':
     print("load model spend time:", time.time() - start)
 
     start = time.time()
-    cfgs = inference_yolov8(model_yolov5, img, resize=640, conf_thres=0.6,
-                            same_iou_thres=0.5, diff_iou_thres=0.9, focus_labels=None)
+    cfgs = inference_yolov8(model_yolov5, img, resize=640, conf_thres=0.25,
+                            same_iou_thres=0.9, diff_iou_thres=1, focus_labels=None)
     print("inference image spend time:", time.time() - start)
 
     for i in range(len(cfgs)):
