@@ -113,11 +113,13 @@ def inspection_level_gauge(input_data):
     status_map = DATA.status_map
 
     ## 初始化输出结果
-    out_data = {"code":0, "data":{}, "img_result": DATA.img_tag, "msg": "Request " + an_type + ";"}
+    out_data = {"code":0, "data":{}, "img_result": DATA.img_tag,"msg":""}
 
     ## 画上点位名称和osd区域
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=60)
+    #_size  = int(img_ref.shape[:2][1]/20)
+    _size = 30
+    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=_size)
     
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
@@ -134,7 +136,7 @@ def inspection_level_gauge(input_data):
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "level_gauge"
 
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=_size)
         out_data["img_result"] = img2base64(img_tag_)
         
     ## 用yolov5检测油位
@@ -145,7 +147,7 @@ def inspection_level_gauge(input_data):
     if len(cfgs) == 0: #没有检测到目标
         out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "; Not find object"
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=_size)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -170,13 +172,12 @@ def inspection_level_gauge(input_data):
     for cfg in cfgs:
         c = cfg["coor"]; label = cfg["label"]
         cv2.line(img_tag_,(int(c[0]),int(c[1])),(int(c[2]),int(c[1])), color_dict[label], thickness=2) #(x0,y0),(x1,y0)
-        s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
+        # img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=_size)
 
-# ## 求出目标图像的感兴趣区域
     if len(roi)==0:
         M = fft_registration(img_ref, img_tag) #如果没有配置roi
-    if len(roi)!=0 and img_ref is not None:
+# ## 求出目标图像的感兴趣区域
+    elif len(roi)!=0 and img_ref is not None:
         # if len(osd) == 0:
         #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
         # feat_ref = sift_create(img_ref, rm_regs=osd)
@@ -224,8 +225,8 @@ def inspection_level_gauge(input_data):
         return out_data
 
     ## 可视化最终计算结果
-    s = (c[2] - c[0]) / 30 # 根据框子大小决定字号和线条粗细。
-    cv2.putText(img_tag_, str(value), (int(c[2]),int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s))
+
+    cv2.putText(img_tag_, str(value), (int(c[2]),int(c[1])),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), thickness=2)
     out_data["img_result"] = img2base64(img_tag_)
     
     return out_data
@@ -233,22 +234,28 @@ def inspection_level_gauge(input_data):
 if __name__ == '__main__':
 
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    img_tag_file = "/data/home/zgl/datasets/ywj_partitioned/test/20230106165229_5.jpg"
-    img_tag = img2base64(cv2.imread(img_tag_file))
-    input_data = {"image": img_tag, 
-    "config": {
-        "img_ref": img_tag, 
-        # "pointers":{"-30": [0.56, 0.67],"0":[0.56, 0.59],
-        # "70":[0.53, 0.37],"80":[0.54, 0.34],"90":[0.57, 0.313]},
-        # "bboxes":{"roi":[0.5,0.7,0.56,0.25]},
-        "pointers":{"20": [0.54, 0.66],"100":[0.54, 0.565],
-        "160":[0.54, 0.495]},
-        "bboxes":{"roi":[0.47,0.21,0.57,0.75]},
-    },
-        "type": "level_gauge"}
+## 图片方式
+    # img_tag_file = "/data/home/zgl/datasets/ywj_partitioned/test/20230106165229_5.jpg"
+    # img_tag = img2base64(cv2.imread(img_tag_file))
+    # input_data = {"image": img_tag, 
+    # "config": {
+    #     "img_ref": img_tag, 
+    #     # "pointers":{"-30": [0.56, 0.67],"0":[0.56, 0.59],
+    #     # "70":[0.53, 0.37],"80":[0.54, 0.34],"90":[0.57, 0.313]},
+    #     # "bboxes":{"roi":[0.5,0.7,0.56,0.25]},
+    #     "pointers":{"20": [0.54, 0.66],"100":[0.54, 0.565],
+    #     "160":[0.54, 0.495]},
+    #     # "bboxes":{"roi":[0.47,0.21,0.57,0.75]},
+    # },
+    #     "type": "level_gauge"}
+## JSON方式
+    f = open("/data/PatrolAi/result_patrol/level_gauge/0309174853_1号主变220kV侧28A电流互感器CT C相油位表_input_data.json","r", encoding='utf-8')
+    input_data = json.load(f)
+
     out_data = inspection_level_gauge(input_data)
     save_dir, name_head = get_save_head(input_data)
     save_input_data(input_data, save_dir, name_head, draw_img=True)
+    print(save_dir)
     save_output_data(out_data, save_dir, name_head)
 
     print("-----------------------------------------------")
