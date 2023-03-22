@@ -284,13 +284,11 @@ def pointer_detect(img_tag, number):
         cfgs = cfgs2segs(cfgs) 
 
         for i in range(len(cfgs)):
-            ## 将mask复原
-            mask_raw = np.zeros(img_tag.shape, dtype=np.uint8)
+
+            ## 指针的mask
             mask = cfgs[i]["mask"]
-            if mask_raw.shape == 3:
-                mask_raw[c[1]:c[3], c[0]:c[2], :] = mask
-            else:
-                mask_raw[c[1]:c[3], c[0]:c[2]] = mask
+            mask_raw = np.zeros(img_tag.shape, dtype=np.uint8)
+            mask_raw[c[1]:c[3], c[0]:c[2]] = mask
                 
             s = cfgs[i]["seg"]
             score = cfgs[i]["score"]
