@@ -7,7 +7,7 @@ import numpy as np
 
 
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
-
+from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 # from lib_inference_yolov5 import check_iou
 # from utils.segment.general import scale_image
 
@@ -15,6 +15,7 @@ from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 ## 加载模型
 # yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载刀闸yolov5分割模型
 yolov8seg_daozha = load_yolov8_model("/data/PatrolAi/yolov8/daozha_seg.pt")  # 加载刀闸yolov8分割模型
+yolov5daozha = inference_yolov5("/data/PatrolAi/yolov8/daozha_v5detect.pt")  # 加载刀闸yolov8分割模型
 
 
 def is_include(sub_box, par_box, srate=0.8):
@@ -186,8 +187,9 @@ def inspection_daozha_detection(input_data, debug=False):
     ## 生成目标检测信息
     labels = ['budaowei', 'fen', 'he']
     # cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
-    cfgs = inference_yolov8(yolov8seg_daozha, img_tag, resize=640, conf_thres=0.3, same_iou_thres=0.5,
-                            diff_iou_thres=0.9, focus_labels=labels)  # inference
+    # cfgs = inference_yolov8(yolov8seg_daozha, img_tag, resize=640, conf_thres=0.3, same_iou_thres=0.5,
+    #                         diff_iou_thres=0.9, focus_labels=labels)  # inference
+    cfgs = inference_yolov5(yolov5daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)
     # cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
 
     if len(cfgs) == 0:  # 没有检测到目标
@@ -229,8 +231,9 @@ def inspection_daozha_detection(input_data, debug=False):
         s = masks.sum(2, keepdims=True).clip(0, 1)
         print(masks.shape,img_tag_.shape)
         img_tag_[:]= masks * alpha + img_tag_ * (1 - s * alpha)'''
-        segment = cfg["segments"]
-        cv2.polylines(img_tag_, [segment], isClosed=True, color=color_dict[label], thickness=2)
+
+        # segment = cfg["segments"]
+        # cv2.polylines(img_tag_, [segment], isClosed=True, color=color_dict[label], thickness=2)
 
         s = int((c[2] - c[0]) / 6)  # 根据框子大小决定字号和线条粗细。
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=25)
@@ -301,7 +304,7 @@ def inspection_daozha_detection(input_data, debug=False):
         for cfg in cfgs:
             cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
             out_data_data.append(cfg_out)
-            data_masks.append(cfg["mask"])
+            # data_masks.append(cfg["mask"])
             bboxes.append(cfg["coor"])
         out_data["data"] = rank_bbox(out_data_data, data_masks, roi)
         cv2.putText(img_tag_, "-selected", (
@@ -316,7 +319,7 @@ def inspection_daozha_detection(input_data, debug=False):
                 if is_include(cfg["coor"], roi_tag, srate=0.5):
                     cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
                     out_data_data.append(cfg_out)
-                    data_masks.append(cfg["mask"])
+                    # data_masks.append(cfg["mask"])
                     bboxes.append(cfg["coor"])
             out_data["data"] = rank_bbox(out_data_data, data_masks, roi)
             cv2.putText(img_tag_, "-selected", (
@@ -332,7 +335,7 @@ def inspection_daozha_detection(input_data, debug=False):
                     if is_include(cfg["coor"], roi_tag[i], srate=0.5):
                         cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
                         out_data_data.append(cfg_out)
-                        data_masks.append(cfg["mask"])
+                        # data_masks.append(cfg["mask"])
                         bboxes.append(cfg["coor"])
                 print(out_data_data)
                 tmp_data = rank_bbox(out_data_data, data_masks, roi[i])
