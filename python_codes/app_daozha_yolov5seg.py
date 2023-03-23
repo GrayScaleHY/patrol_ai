@@ -15,7 +15,7 @@ from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 ## 加载模型
 # yolov5seg_daozha = load_yolov5seg_model("/data/PatrolAi/yolov5/daozha_seg.pt") # 加载刀闸yolov5分割模型
 # yolov8seg_daozha = load_yolov8_model("/data/PatrolAi/yolov8/daozha_seg.pt")  # 加载刀闸yolov8分割模型
-yolov5daozha = load_yolov5_model("/data/PatrolAi/yolov8/daozha_v5detect.pt")  # 加载刀闸yolov8分割模型
+yolov5daozha = load_yolov5_model("/data/PatrolAi/yolov5/daozha_v5detect.pt")  # 加载刀闸yolov8分割模型
 
 
 def is_include(sub_box, par_box, srate=0.8):
