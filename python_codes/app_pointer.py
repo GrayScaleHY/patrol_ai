@@ -287,7 +287,7 @@ def pointer_detect(img_tag, number):
 
             ## 指针的mask
             mask = cfgs[i]["mask"]
-            mask_raw = np.zeros(img_tag.shape, dtype=np.uint8)
+            mask_raw = np.zeros(img_tag.shape[:2], dtype=np.uint8)
             mask_raw[c[1]:c[3], c[0]:c[2]] = mask
                 
             s = cfgs[i]["seg"]
@@ -558,7 +558,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/0321134826__input_data.json"
+    json_file = "/data/PatrolAi/patrol_ai/python_codes/test/0322132755_1号主变A相东侧油温_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
