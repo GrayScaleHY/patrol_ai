@@ -185,7 +185,9 @@ def inspection_daozha_detection(input_data, debug=False):
                 img_tag = np.uint8(np.clip((augm[0] * img_tag + augm[1]), 0, 255))
 
     ## 生成目标检测信息
-    labels = ['budaowei', 'fen', 'he']
+    #labels = ['budaowei', 'fen', 'he']
+    #detect
+    labels = ['hedaowei', 'fendaowei', 'zhongjiantai']
     # cfgs = inference_yolov5seg(yolov5seg_daozha, img_tag, resize=640, pre_labels=labels, conf_thres=0.3)  # inference
     # cfgs = inference_yolov8(yolov8seg_daozha, img_tag, resize=640, conf_thres=0.3, same_iou_thres=0.5,
     #                         diff_iou_thres=0.9, focus_labels=labels)  # inference
@@ -202,12 +204,14 @@ def inspection_daozha_detection(input_data, debug=False):
         return out_data
 
     ## labels 列表 和 color 列表
-    colors = [(0, 255, 255), (0, 255, 0), (0, 0, 255)]  # color_list(len(labels))
+    #colors = [(0, 255, 255), (0, 255, 0), (0, 0, 255)]  # color_list(len(labels))
+    colors = [(0, 0, 255), (0, 255, 0), (0, 255, 255)]
     color_dict = {}
     name_dict = {}
     for i, label in enumerate(labels):
         color_dict[label] = colors[i]
-    name_dict = {'budaowei': '分合异常', 'fen': '分闸正常', 'he': '合闸正常'}
+    #name_dict = {'budaowei': '分合异常', 'fen': '分闸正常', 'he': '合闸正常'}
+    name_dict = {'zhongjiantai': '分合异常', 'fendaowei': '分闸正常', 'hedaowei': '合闸正常'}
 
     ## 画出boxes
     for cfg in cfgs:
