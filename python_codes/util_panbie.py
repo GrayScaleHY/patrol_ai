@@ -4,7 +4,8 @@
 import time
 start_pre = time.time()
 from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
-from lib_sift_match import detect_diff, sift_match, correct_offset, sift_create
+from lib_sift_match import detect_diff, sift_match, sift_create
+from lib_img_registration import convert_coor, correct_offset
 from lib_inference_mrcnn import load_maskrcnn_model, inference_maskrcnn
 from lib_analysis_meter import segment2angle, contour2segment
 import glob

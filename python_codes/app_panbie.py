@@ -3,7 +3,8 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_sift_match import sift_create, sift_match, correct_offset, detect_diff
+from lib_sift_match import sift_create, sift_match, detect_diff
+from lib_img_registration import convert_coor, correct_offset
 import base64
 import hashlib
 
