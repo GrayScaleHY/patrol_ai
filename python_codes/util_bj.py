@@ -3,7 +3,8 @@ import time
 import os
 import json
 from app_pointer import pointer_detect, select_pointer, conv_coor, cal_base_scale, add_head_end_ps, is_include
-from lib_sift_match import sift_match, convert_coor, sift_create
+from lib_sift_match import sift_match, sift_create
+from lib_img_registration import convert_coor, correct_offset
 from lib_image_ops import base642img, img2base64
 import numpy as np
 from lib_image_ops import img_chinese

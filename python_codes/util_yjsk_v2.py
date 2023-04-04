@@ -1,4 +1,5 @@
-from lib_sift_match import my_ssim, sift_create, sift_match, correct_offset, convert_coor, cw_ssim_index
+from lib_sift_match import my_ssim, sift_create, sift_match, cw_ssim_index
+from lib_img_registration import convert_coor, correct_offset
 import cv2
 import json
 import numpy as np
