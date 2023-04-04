@@ -7,7 +7,7 @@ import numpy as np
 from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs
-from lib_sift_match import sift_match, convert_coor, sift_create, fft_registration
+from lib_img_registration import registration, convert_coor
 from lib_help_base import color_area, GetInputData
 import math
 
@@ -409,12 +409,8 @@ def inspection_pointer(input_data):
                  (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     # 求偏移矩阵
-    # if len(osd) == 0:
-    #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
-    # feat_ref = sift_create(img_ref, rm_regs=osd)
-    # feat_tag = sift_create(img_tag)
-    # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-    M = fft_registration(img_ref, img_tag)
+    M = registration(img_ref, img_tag)
+    
     # 求出测试图的感兴趣区域
     if len(roi) > 0 and M is not None:
         roi = roi[0]
@@ -558,7 +554,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/patrol_ai/python_codes/test/0322132755_1号主变A相东侧油温_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/pointer/0322140730_1号主变A相东侧油温_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)

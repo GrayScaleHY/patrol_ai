@@ -5,7 +5,7 @@ import json
 import math
 from lib_image_ops import img2base64, img_chinese
 import numpy as np
-from lib_sift_match import convert_coor, fft_registration
+from lib_img_registration import registration, convert_coor
 from lib_help_base import GetInputData,color_list,is_include,save_output_data,get_save_head,save_output_data
 from lib_inference_yolov5 import inference_yolov5,check_iou
 import config_object_name
@@ -175,15 +175,12 @@ def inspection_level_gauge(input_data):
         # img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=_size)
 
     if len(roi)==0:
-        M = fft_registration(img_ref, img_tag) #如果没有配置roi
+        # 求偏移矩阵
+        M = registration(img_ref, img_tag)
 # ## 求出目标图像的感兴趣区域
     elif len(roi)!=0 and img_ref is not None:
-        # if len(osd) == 0:
-        #     osd = [[0,0,1,0.1],[0,0.9,1,1]]
-        # feat_ref = sift_create(img_ref, rm_regs=osd)
-        # feat_tag = sift_create(img_tag)
-        # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-        M = fft_registration(img_ref, img_tag)
+        # 求偏移矩阵
+        M = registration(img_ref, img_tag)
         if M is None:
             out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
             roi_tag = roi[0]

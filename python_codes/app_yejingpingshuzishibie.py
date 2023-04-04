@@ -8,7 +8,7 @@ from lib_help_base import oil_high
 import numpy as np
 
 from lib_inference_yolov5 import inference_yolov5,check_iou
-from lib_sift_match import sift_match, convert_coor, sift_create,fft_registration
+from lib_img_registration import registration, convert_coor
 from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie
 from lib_help_base import GetInputData
 
@@ -111,10 +111,8 @@ def inspection_digital_rec(input_data):
     if len(roi)==0:
         M = None
     else:
-        # feat_ref = sift_create(img_ref, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        # feat_tag = sift_create(img_tag, rm_regs=[[0, 0, 1, 0.1], [0, 0.9, 1, 1]])
-        # M = sift_match(feat_ref, feat_tag, ratio=0.5, ops="Perspective")
-        M=fft_registration(img_ref,img_tag)
+        # 求偏移矩阵
+        M = registration(img_ref, img_tag)
     roi_tag_list = []
     if M is None:
         roi_tag = [0, 0, img_tag.shape[1], img_tag.shape[0]]
