@@ -9,7 +9,7 @@ import numpy as np
 
 from lib_inference_yolov5 import inference_yolov5,check_iou
 from lib_img_registration import registration, convert_coor
-from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie
+from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie,yolov5_jishukuang,yolov5_jishushibie
 from lib_help_base import GetInputData
 
 # def get_input_data(input_data):
@@ -88,13 +88,17 @@ def inspection_digital_rec(input_data):
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"], (10, 10), color=(255, 0, 0), size=60)
 
-    if input_data["type"] != "digital":
-        out_data["msg"] = out_data["msg"] + "type isn't digital; "
+    if input_data["type"] != "digital" and input_data["type"] != "counter":
+        out_data["msg"] = out_data["msg"] + "type isn't digital or counter; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
+
+    yolo_crop,yolo_rec=yolov5_mubiaokuang,yolov5_shuzishibie
+    if input_data["type"] != "digital":
+        yolo_crop,yolo_rec=yolov5_jishukuang,yolov5_jishushibie
 
     # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
 
@@ -146,7 +150,7 @@ def inspection_digital_rec(input_data):
     bboxes_list = []  # 位置列表
 
     # 第一阶段区域识别，截取图像
-    bbox_cfg = inference_yolov5(yolov5_mubiaokuang, img_tag_)
+    bbox_cfg = inference_yolov5(yolo_crop, img_tag_)
     # 未检测到目标
     if len(bbox_cfg) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find digital; "
@@ -182,7 +186,7 @@ def inspection_digital_rec(input_data):
         img_empty[200:200 + y_crop, 200:200 + x_crop] += img_tag_[coor[1]:coor[3],coor[0]:coor[2]]
 
         # 二次识别
-        bbox_cfg_result = inference_yolov5(yolov5_shuzishibie, img_empty)
+        bbox_cfg_result = inference_yolov5(yolo_rec, img_empty)
         bbox_cfg_result =check_iou(bbox_cfg_result,0.2)
         # print("bbox_cfg_result:",bbox_cfg_result)
         # 按横坐标排序组合结果
