@@ -28,6 +28,7 @@ draw_img = True
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
 
+@app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_digital/', methods=['POST'])
 def inspection_digital_server():
     if request.method != 'POST':
@@ -154,7 +155,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 # @app.route('/inspection_digital/', methods=['POST'])
-@app.route('/inspection_counter/', methods=['POST'])
+# @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_person/', methods=['POST'])
 @app.route('/inspection_disconnector_texie/', methods=['POST'])
 def inspection_object():
