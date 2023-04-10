@@ -17,7 +17,8 @@ from config_load_models_var import yolov5_meter, \
                                    yolov5_rec_defect_x6, \
                                    yolov5_coco, \
                                    yolov5_ShuZiBiaoJi, \
-                                   yolov5_dztx
+                                   yolov5_dztx, \
+                                   yolov5_led_color
                                 #    yolov5_action, \
                                 #    yolov5_jmjs, \
                                 #    yolov5_helmet, \
@@ -80,11 +81,11 @@ def inspection_object_detection(input_data):
     #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
     #     labels = [labels_dict[id] for id in labels_dict]
     #     model_type = "helmet"
-    # elif input_data["type"] == "led_color":
-    #     yolov5_model = yolov5_led_color
-    #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-    #     labels = [labels_dict[id] for id in labels_dict]
-    #     model_type = "led"
+    elif input_data["type"] == "led_color":
+        yolov5_model = yolov5_led_color
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+        model_type = "led"
     elif input_data["type"] == "digital":
         yolov5_model = yolov5_ShuZiBiaoJi
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
