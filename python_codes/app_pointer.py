@@ -489,7 +489,7 @@ def inspection_pointer(input_data):
                 val = round(val1) * 10 + round(val1)
                 seg = seg1
             else:
-                val = round(val1) * 10 + round(val2)
+                val = round(val2) * 10 + round(val1)
                 seg = seg2
     else:
         seg, val = segs2val(img_tag, pointers_tag, M,
