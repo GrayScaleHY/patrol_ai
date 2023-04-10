@@ -171,9 +171,9 @@ def intersection_arc(line, arc):
         y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
     else:
         ## 若直线line经过圆弧arc任意端点，则，返回该端点。
-        if int(ax1 * a + b) == int(ay1):
+        if int(ax1 * a + b) == int(ay1) and (lx1-ax1)**2+(ly1-ay1)**2 > (lx2-ax1)**2+(ly2-ay1)**2:
             return int(ax1), int(ay1)
-        if int(ax2 * a + b) == int(ay2):
+        if int(ax2 * a + b) == int(ay2) and (lx1-ax2)**2+(ly1-ay2)**2 > (lx2-ax2)**2+(ly2-ay2)**2:
             return int(ax2), int(ay2)
         
         ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
