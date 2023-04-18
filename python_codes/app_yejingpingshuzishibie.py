@@ -63,17 +63,20 @@ from lib_help_base import GetInputData
 # def contrast_control():
 #     pass
 
+def img_fill(img,x1, y1, x2, y2, size):
+    x_crop = x2 - x1
+    y_crop = y2 - y1
+    img_empty = np.zeros((size, size, 3), np.uint8)
+    img_empty[size // 3:size // 3 + y_crop, size // 3:size // 3 + x_crop] += img[y1:y2, x1:x2]
+    return img_empty
+
 
 def inspection_digital_rec(input_data):
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
         TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    # save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    # save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    # os.makedirs(save_path, exist_ok=True)
-    # with open(os.path.join(save_path, TIME_START + "input_data.json"), "w") as f:
-    #     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
+
 
     out_data = {"code": 0, "data": {}, "msg": "Success"}  # 初始化输出信息
 
@@ -157,19 +160,16 @@ def inspection_digital_rec(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
         # 检测出的位置按y坐标排序，做640*640填充，二次识别
     coor_list = [item['coor'] for item in bbox_cfg]
     bboxes_list_sort = sorted(coor_list, key=lambda x: x[-1], reverse=False)
-    # print("bboxes_list:",bboxes_list)
 
     for coor in bboxes_list_sort:
         #去除roi框外，不做识别
         x_middle = (coor[0] + coor[2]) / 2
         y_middle = (coor[1] + coor[3]) / 2
-        # print("x_middle:",x_middle,"y_middle:",y_middle)
         mark=False
         for roi_tag in roi_tag_list:
             if (x_middle>roi_tag[2] or x_middle<roi_tag[0]) or (y_middle>roi_tag[3] or y_middle<roi_tag[1]) :
@@ -179,16 +179,12 @@ def inspection_digital_rec(input_data):
             continue
         bboxes_list.append(coor)
         #640*640填充
-        x_crop = coor[2] - coor[0]
-        y_crop = coor[3] - coor[1]
-        # print("x_crop:",x_crop,"y_crop:",y_crop)
-        img_empty = np.zeros((640, 640, 3), np.uint8)
-        img_empty[200:200 + y_crop, 200:200 + x_crop] += img_tag_[coor[1]:coor[3],coor[0]:coor[2]]
+        img_empty = img_fill(img_tag_,coor[0],coor[0],coor[0],coor[0],640)
+
 
         # 二次识别
         bbox_cfg_result = inference_yolov5(yolo_rec, img_empty)
         bbox_cfg_result =check_iou(bbox_cfg_result,0.2)
-        # print("bbox_cfg_result:",bbox_cfg_result)
         # 按横坐标排序组合结果
         label_list = [[item['label'], item['coor']] for item in bbox_cfg_result]
         label_list = sorted(label_list, key=lambda x: x[1][0], reverse=False)
@@ -199,7 +195,7 @@ def inspection_digital_rec(input_data):
             else:
                 label+=str(item[0])
         value_list.append(label)
-        s = (x_crop) / 50  # 根据框子大小决定字号和线条粗细。
+        s = (coor[2]-coor[0]) / 50  # 根据框子大小决定字号和线条粗细。
         cv2.putText(img_tag_, str(label), (coor[2], coor[3]), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0),
                     thickness=round(s * 2))
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])), (int(coor[2]), int(coor[3])), (255, 0, 255), thickness=1)
