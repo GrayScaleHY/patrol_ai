@@ -115,6 +115,9 @@ def filter_cfgs(cfgs, conf_thres=0.25, same_iou_thres=1, diff_iou_thres=1, focus
     ## 根据focus_labels进行过滤
     cfgs = [cfg for cfg in cfgs if (focus_labels is None or cfg["label"] in focus_labels)]
 
+    if len(cfgs) == 0:
+        return []
+
     ## 根据diff_iou_thres进行过滤
     box_score = np.array([list(cfg["coor"])+[cfg["score"]] for cfg in cfgs], dtype=float)
     keep = nms(box_score, diff_iou_thres)
