@@ -1,11 +1,22 @@
 import cv2
-import kornia as K # pip install kornia
-import kornia.feature as KF
+
 import numpy as np
 import torch
 import math
-import cupy as cp ## pip install cupy-cuda114
 from imreg import similarity
+
+try:
+    import cupy as cp ## pip install cupy-cuda114
+    is_cupy = True
+except:
+    is_cupy = False
+    print("warning: no cupy pkg !")
+
+try:
+    import kornia as K # pip install kornia
+    import kornia.feature as KF
+except:
+    print("warning: no kornia pkg !")
 
 try:
     matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
@@ -50,13 +61,17 @@ def fft_registration(img_ref, img_tag, retained_angle=45):
         ref_resize = img_ref
     M_scale = np.diag(np.array(resize_scale)) 
 
-    ## 使用cupy打包array
-    img_tag = cp.array(img_tag)
-    ref_resize = cp.array(ref_resize)
+    # ## 使用cupy打包array
+    if is_cupy:
+        img_tag = cp.array(img_tag)
+        ref_resize = cp.array(ref_resize)
 
     ## 计算偏移矩阵
     im_warped, scale, angle, (t0, t1) = similarity(img_tag, ref_resize, retained_angle) 
-    scale, angle, t0, t1 = 1 / float(scale), float(angle.get()), t0.get(), t1.get()
+    if is_cupy:
+        scale, angle, t0, t1 = 1 / float(scale), float(angle.get()), t0.get(), t1.get()
+    else:
+        scale, angle, t0, t1 = 1 / float(scale), float(angle), t0, t1
     tx, ty = -t1, -t0
     center = img_tag.shape[1] // 2, img_ref.shape[0] // 2
     M = getAffine(center, angle, scale, (tx, ty))
