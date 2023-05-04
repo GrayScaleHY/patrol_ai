@@ -515,9 +515,6 @@ def inspection_pointer(input_data):
             cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
                     (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
-            import pdb
-            pdb.set_trace()
-
         else:
             cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),
                     (int(seg2[2]), int(seg2[3])), (0, 255, 0), 2)
