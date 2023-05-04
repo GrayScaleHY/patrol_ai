@@ -105,13 +105,15 @@ def cal_base_scale(coordinates, segment, meter_type="normal"):
     """
     ## 如果是逆时针读数，则先将coordinates中的刻度值取反。
     if meter_type == "nszb":
+        scale_list = [scale for scale in coordinates if scale != "center"]
         coordinates_ = {}
         for scale in coordinates:
             if scale == "center":
                 scale_ = scale
             else:
                 scale_ = -scale
-            coordinates_[scale_] = coordinates[scale]
+            if scale != max(scale_list) and scale != min(scale_list):
+                coordinates_[scale_] = coordinates[scale]
         coordinates = coordinates_
 
     # 根据与表盘中心的距离更正segment的头尾
@@ -495,18 +497,26 @@ def inspection_pointer(input_data):
                               seg_cfgs, number, length, width, color, meter_type)
         
         if val_size is not None:
-            if val_size == 0:
-                if val1 > val2:
-                    val = val2; seg = seg2
-                else:
-                    val = val1; seg = seg1
+            if val1 == None:
+                val = val2; seg = seg2
+            elif val2 == None:
+                val = val2; seg = seg1
             else:
-                if val1 < val2:
-                    val = val2; seg = seg2
+                if val_size == 0:
+                    if val1 > val2:
+                        val = val2; seg = seg2
+                    else:
+                        val = val1; seg = seg1
                 else:
-                    val = val1; seg = seg1
+                    if val1 < val2:
+                        val = val2; seg = seg2
+                    else:
+                        val = val1; seg = seg1
             cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
                     (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+
+            import pdb
+            pdb.set_trace()
 
         else:
             cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),

@@ -200,7 +200,7 @@ class GetInputData:
             color = None
         
         if "val_size" in config and isinstance(config["val_size"], int) and config["val_size"] != -1:
-            val_size = int(config["color"])
+            val_size = int(config["val_size"])
         else:
             val_size = None
         
