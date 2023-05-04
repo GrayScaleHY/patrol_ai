@@ -96,13 +96,23 @@ def cal_base_angle(coordinates, segment):
     val = angle2sclae(out_cfg, seg_ang)
     return val
 
-def cal_base_scale(coordinates, segment):
+def cal_base_scale(coordinates, segment, meter_type="normal"):
     """
     使用刻度计算指针读数。
     args:
         coordinates: 刻度的坐标点，格式如 {"center": [398, 417], -0.1: [229, 646], 0.9: [641, 593]}
         segment: 线段，格式为 [x1, y1, x2, y2]
     """
+    ## 如果是逆时针读数，则先将coordinates中的刻度值取反。
+    if meter_type == "nszb":
+        coordinates_ = {}
+        for scale in coordinates:
+            if scale == "center":
+                scale_ = scale
+            else:
+                scale_ = -scale
+            coordinates_[scale_] = coordinates[scale]
+        coordinates = coordinates_
 
     # 根据与表盘中心的距离更正segment的头尾
     xo = coordinates["center"][0]
@@ -135,6 +145,11 @@ def cal_base_scale(coordinates, segment):
     out_cfg = angle_scale(config)[0]
     seg_ang = segment2angle((seg[0], seg[1]), (seg[2], seg[3]))
     val = angle2sclae(out_cfg, seg_ang)
+
+    # 如果是逆时针表计，则读数取反。
+    if meter_type == "nszb":
+        val = -val
+
     return val
 
 def add_head_end_ps(pointers):
@@ -323,7 +338,7 @@ def pointer_detect(img_tag, number):
     return seg_cfgs, roi_tag
 
 
-def segs2val(img_tag, pointers_tag, M, seg_cfgs, number, length, width, color):
+def segs2val(img_tag, pointers_tag, M, seg_cfgs, number, length, width, color, meter_type):
     """
     根据seg_cfgs求指针读数
     """
@@ -332,7 +347,7 @@ def segs2val(img_tag, pointers_tag, M, seg_cfgs, number, length, width, color):
 
     # 求指针读数
     if M is not None:
-        val = cal_base_scale(pointers_tag, seg)
+        val = cal_base_scale(pointers_tag, seg, meter_type)
     else:
         xo = pointers_tag["center"][0]
         yo = pointers_tag["center"][1]
@@ -341,10 +356,10 @@ def segs2val(img_tag, pointers_tag, M, seg_cfgs, number, length, width, color):
         dx_ = seg[2] - seg[0]
         dy_ = seg[3] - seg[1]
         seg_ = [xo, yo, xo + dx_, yo + dy_]
-        val = cal_base_scale(pointers_tag, seg_)
+        val = cal_base_scale(pointers_tag, seg_, meter_type)
         if val == None:
             seg_ = [xo, yo, xo - dx_, yo - dy_]
-            val = cal_base_scale(pointers_tag, seg_)
+            val = cal_base_scale(pointers_tag, seg_, meter_type)
     return seg, val
 
 
@@ -364,6 +379,7 @@ def inspection_pointer(input_data):
     length = DATA.length
     width = DATA.width
     color = DATA.color
+    val_size = DATA.val_size
     meter_type = DATA.meter_type
 
     # 刻度点左右添加两个点。
@@ -464,36 +480,53 @@ def inspection_pointer(input_data):
     seg_cfgs = [seg_cfgs[i_sort[i]] for i in range(len(i_sort))]  # 排序
 
     # 根据seg_cfgs求val
-    if meter_type == "blq_zzscsb":
+    if meter_type == "blq_zzscsb" or val_size is not None:
         number = 2
         dp = 0
         length = 2
         seg1, val1 = segs2val(img_tag, pointers_tag, M,
-                              seg_cfgs, number, length, width, color)
+                              seg_cfgs, number, length, width, color, meter_type)
         cv2.line(img_tag_, (int(seg1[0]), int(seg1[1])),
                  (int(seg1[2]), int(seg1[3])), (0, 255, 0), 2)
         number = 2
         dp = 0
         length = 0
         seg2, val2 = segs2val(img_tag, pointers_tag, M,
-                              seg_cfgs, number, length, width, color)
-        cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),
-                 (int(seg2[2]), int(seg2[3])), (0, 255, 0), 2)
-        if val1 and val2 == None:
-            val = None
-        else:
-            if val1 == None:
-                val = round(val2) * 10 + round(val2)
-                seg = seg_cfgs[0]
-            elif val2 == None:
-                val = round(val1) * 10 + round(val1)
-                seg = seg1
+                              seg_cfgs, number, length, width, color, meter_type)
+        
+        if val_size is not None:
+            if val_size == 0:
+                if val1 > val2:
+                    val = val2; seg = seg2
+                else:
+                    val = val1; seg = seg1
             else:
-                val = round(val2) * 10 + round(val1)
-                seg = seg2
+                if val1 < val2:
+                    val = val2; seg = seg2
+                else:
+                    val = val1; seg = seg1
+            cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
+                    (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+
+        else:
+            cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),
+                    (int(seg2[2]), int(seg2[3])), (0, 255, 0), 2)
+            if val1 and val2 == None:
+                val = None
+            else:
+                if val1 == None:
+                    val = round(val2) * 10 + round(val2)
+                    seg = seg_cfgs[0]
+                elif val2 == None:
+                    val = round(val1) * 10 + round(val1)
+                    seg = seg1
+                else:
+                    val = round(val2) * 10 + round(val1)
+                    seg = seg2
+
     else:
         seg, val = segs2val(img_tag, pointers_tag, M,
-                            seg_cfgs, number, length, width, color)
+                            seg_cfgs, number, length, width, color, meter_type)
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
                  (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
