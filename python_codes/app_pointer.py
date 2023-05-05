@@ -488,8 +488,7 @@ def inspection_pointer(input_data):
         length = 2
         seg1, val1 = segs2val(img_tag, pointers_tag, M,
                               seg_cfgs, number, length, width, color, meter_type)
-        cv2.line(img_tag_, (int(seg1[0]), int(seg1[1])),
-                 (int(seg1[2]), int(seg1[3])), (0, 255, 0), 2)
+        
         number = 2
         dp = 0
         length = 0
@@ -516,6 +515,8 @@ def inspection_pointer(input_data):
                     (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
         else:
+            cv2.line(img_tag_, (int(seg1[0]), int(seg1[1])),
+                 (int(seg1[2]), int(seg1[3])), (0, 255, 0), 2)
             cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),
                     (int(seg2[2]), int(seg2[3])), (0, 255, 0), 2)
             if val1 and val2 == None:
