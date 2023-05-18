@@ -27,6 +27,7 @@ class GetInputData:
         self.img_ref = self.get_img_ref(self.config) # 模板图
         self.roi = self.get_roi(self.config, self.img_ref)  # roi框
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
+        self.bboxes = self.get_bboxes(self.config, self.img_ref) # 目标框坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
         self.dp = self.get_dp(self.config)
         self.number, self.length, self.width, self.color, self.val_size, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
@@ -164,6 +165,26 @@ class GetInputData:
             pointers[scale] = [int(point[0] * W), int(point[1] * H)]
         
         return pointers
+    
+    def get_bboxes(self, config, img_ref):
+        """
+        获取目标框的位置坐标。
+        """
+        if img_ref is None:
+            return {}
+
+        if "bboxes" in config and isinstance(config["bboxes"], dict):
+            raw_bboxes = config["bboxes"]
+        else:
+            raw_bboxes = {}
+
+        H, W = img_ref.shape[:2]
+        bboxes = {}
+        for label in raw_bboxes:
+            bbox = raw_bboxes[label]
+            bboxes[label] = [int(bbox[0] * W), int(bbox[1] * H), int(bbox[2] * W), int(bbox[3] * H)]
+        
+        return bboxes
     
     def get_dp(self, config):
         """
