@@ -1,6 +1,8 @@
 from lib_help_base import GetInputData
 from lib_img_registration import registration, convert_coor
 import numpy as np
+import cv2
+from lib_image_ops import img2base64
 
 def patrol_match(input_data):
     ## 提取输入请求信息
@@ -27,6 +29,17 @@ def patrol_match(input_data):
         box_ = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
         out_bboxes[label] = box_
     
-    out_data = {"code":0, "data": {"pointers": out_pointers, "bboxes": out_bboxes}, "msg": "Success!"}
+    img_tag_ = img_tag.copy()
+    for scale in out_pointers:  # 将坐标点标注在图片上
+        coor = out_pointers[scale]
+        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
+        cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+    
+    for label in out_bboxes:
+        o_ = out_bboxes[label]
+        cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, label, (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+
+    out_data = {"code":0, "data": {"pointers": out_pointers, "bboxes": out_bboxes}, "img_result":img2base64(img_tag_), "msg": "Success!"}
     return out_data
     

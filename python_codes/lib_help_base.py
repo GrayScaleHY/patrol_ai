@@ -400,6 +400,7 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     pointers_ref = DATA.pointers
     roi = DATA.roi; osd = DATA.osd
     video_path = DATA.video_path
+    bboxes_ref = DATA.bboxes
     
     if img_tag is not None:
         cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
@@ -418,7 +419,10 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-
+    for label in bboxes_ref:
+        o_ = bboxes_ref[label]
+        cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, label, (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     cv2.imwrite(os.path.join(save_dir, name_head + "ref_cfg.jpg"), img_ref)
 
 def save_output_data(output_data, save_dir, name_head):
