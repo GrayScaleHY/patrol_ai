@@ -186,6 +186,9 @@ class GetInputData:
         bboxes = {}
         for label in raw_bboxes:
             bbox = raw_bboxes[label]
+            dim = np.array(bbox).ndim
+            if dim == 2:
+                bbox = bbox[0]
             bboxes[label] = [int(bbox[0] * W), int(bbox[1] * H), int(bbox[2] * W), int(bbox[3] * H)]
         
         return bboxes
