@@ -174,7 +174,11 @@ class GetInputData:
             return {}
 
         if "bboxes" in config and isinstance(config["bboxes"], dict):
-            raw_bboxes = config["bboxes"]
+            bboxes_ = config["bboxes"]
+            raw_bboxes = {}
+            for name in bboxes_:
+                if isinstance(bboxes_[name], list):
+                    raw_bboxes[name] = bboxes_[name]
         else:
             raw_bboxes = {}
 
