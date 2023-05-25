@@ -17,7 +17,7 @@ for img_name in os.listdir(img_dir):
     c = roi_tag
     cv2.rectangle(img, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
 
-    cv2.imwrite(img_file[:-4] + ".jpg", img)
+    cv2.imwrite(img_file[:-4] + "_result.jpg", img)
 
 
 
