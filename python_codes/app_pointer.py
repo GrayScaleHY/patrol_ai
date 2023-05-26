@@ -484,13 +484,11 @@ def inspection_pointer(input_data):
     # 根据seg_cfgs求val
     if meter_type == "blq_zzscsb" or val_size is not None:
         number = 2
-        dp = 0
         length = 2
         seg1, val1 = segs2val(img_tag, pointers_tag, M,
                               seg_cfgs, number, length, width, color, meter_type)
         
         number = 2
-        dp = 0
         length = 0
         seg2, val2 = segs2val(img_tag, pointers_tag, M,
                               seg_cfgs, number, length, width, color, meter_type)
@@ -546,6 +544,8 @@ def inspection_pointer(input_data):
             img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         return out_data
 
+    if meter_type == "blq_zzscsb":
+        dp = 0
     val = round(val, dp)
     seg = [float(seg[0]), float(seg[1]), float(seg[2]), float(seg[3])]
     roi_tag = [float(roi_tag[0]), float(roi_tag[1]),
