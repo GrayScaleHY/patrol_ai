@@ -546,7 +546,10 @@ def inspection_pointer(input_data):
 
     if meter_type == "blq_zzscsb":
         dp = 0
-    val = round(val, dp)
+    if dp == 0:
+        val = int(round(val, dp))
+    else:
+        val = round(val, dp)
     seg = [float(seg[0]), float(seg[1]), float(seg[2]), float(seg[3])]
     roi_tag = [float(roi_tag[0]), float(roi_tag[1]),
                float(roi_tag[2]), float(roi_tag[3])]
