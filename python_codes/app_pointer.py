@@ -6,7 +6,7 @@ from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
 from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs
+from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, intersection_pointers
 from lib_img_registration import registration, convert_coor
 from lib_help_base import color_area, GetInputData
 import math
@@ -133,11 +133,13 @@ def cal_base_scale(coordinates, segment, meter_type="normal"):
     for i in range(len(scales)-1):
         arc = coordinates["center"] + \
             coordinates[scales[i]] + coordinates[scales[i+1]]
-        coor = intersection_arc(segment, arc)
+        coor = intersection_pointers(segment, arc)
+        # coor = intersection_arc(segment, arc)
         if coor is not None:
             break
     if coor is None:
         return None
+    
     seg = coordinates["center"] + list(coor)
     scale_1 = scales[i]
     scale_2 = scales[i+1]
@@ -306,7 +308,6 @@ def pointer_detect(img_tag, number):
             mask = cfgs[i]["mask"]
             mask_raw = np.zeros(img_tag.shape[:2], dtype=np.uint8)
             mask_raw[c[1]:c[3], c[0]:c[2]] = mask
-                
             s = cfgs[i]["seg"]
             score = cfgs[i]["score"]
             b = cfgs[i]["coor"]
@@ -598,7 +599,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/pointer/0322140730_1号主变A相东侧油温_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/0610112311_220kV镜湖变镜大1A01开关气室SF6表计读数-视频_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
