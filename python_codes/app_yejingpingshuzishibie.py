@@ -7,62 +7,14 @@ from lib_image_ops import base642img, img2base64, img_chinese
 from lib_help_base import oil_high
 import numpy as np
 
-from lib_inference_yolov5 import inference_yolov5,check_iou
+from lib_inference_yolov5 import load_yolov5_model, inference_yolov5,check_iou
 from lib_img_registration import registration, convert_coor
-from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie,yolov5_jishukuang,yolov5_jishushibie
 from lib_help_base import GetInputData
 
-# def get_input_data(input_data):
-#     """
-#     提取input_data中的信息。
-#     return:
-#         img_tag: 目标图片数据
-#         img_ref: 模板图片数据
-#         roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
-#
-#     """
-#     img_tag = base642img(input_data["image"])
-#
-#     ## 是否有模板图
-#     img_ref = None
-#     if "img_ref" in input_data["config"]:
-#         if isinstance(input_data["config"]["img_ref"], str):
-#             img_ref = base642img(input_data["config"]["img_ref"])
-#
-#             ## 感兴趣区域
-#     roi = None  # 初始假设
-#     if "bboxes" in input_data["config"]:
-#         if isinstance(input_data["config"]["bboxes"], dict):
-#             if "roi" in input_data["config"]["bboxes"]:
-#                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-#                     if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
-#                         roi = input_data["config"]["bboxes"]["roi"][0]
-#                     else:
-#                         roi = input_data["config"]["bboxes"]["roi"]
-#                     W = img_ref.shape[1];
-#                     H = img_ref.shape[0]
-#                     roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
-#
-#     contrast_config = 1
-#     brightness_config = 0
-#     if "augm" in input_data['config']:
-#         if isinstance(input_data['config']['augm'], list):
-#             if len(input_data['config']['augm']) == 2:
-#                 contrast_config = input_data['config']['augm'][0]
-#                 brightness_config = input_data['config']['augm'][1]
-#
-#     return img_tag, img_ref, roi, contrast_config, brightness_config
-#
-#
-# # 改变亮度
-# def brightness_control():
-#     pass
-#
-#
-# # 改变对比度
-# def contrast_control():
-#     pass
-
+yolov5_mubiaokuang = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_crop.pt")  # 数字表记寻框模型
+yolov5_shuzishibie = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_rec.pt")  # 数字表记数字识别模型
+yolov5_jishukuang = load_yolov5_model("/data/PatrolAi/yolov5/jishu_crop.pt")  # 计数表寻框模型
+yolov5_jishushibie = load_yolov5_model("/data/PatrolAi/yolov5/jishu_rec.pt")  # 计数表数字识别模型
 
 def inspection_digital_rec(input_data):
     ## 初始化输入输出信息。

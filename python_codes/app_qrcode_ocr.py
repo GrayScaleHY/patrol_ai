@@ -8,8 +8,7 @@ from lib_img_registration import registration, convert_coor
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import load_ppocr, inference_ppocr
 from lib_help_base import GetInputData, is_include
-## 加载padpad模型
-from config_load_models_var import text_sys
+
 
 def decoder_qrcode(img, roi):
     img_roi = img[int(roi[1]): int(roi[3]), int(roi[0]): int(roi[2])]
@@ -80,7 +79,7 @@ def inspection_qrcode(input_data):
     if an_type == "qrcode":
         boxes = decoder_qrcode(img_tag, roi_tag)
     elif "ocr" in an_type: # 文本检测
-        boxes = inference_ppocr(img_roi, text_sys)
+        boxes = inference_ppocr(img_roi)
         for i in range(len(boxes)):
             c = boxes[i]["bbox"]; r = roi_tag
             boxes[i]["bbox"] = [int(c[0]+r[0]), int(c[1]+r[1]), int(c[2]+r[0]), int(c[3]+r[1])]
