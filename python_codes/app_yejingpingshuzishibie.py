@@ -66,8 +66,19 @@ from lib_help_base import GetInputData
 def img_fill(img,x1, y1, x2, y2, size):
     x_crop = x2 - x1
     y_crop = y2 - y1
+    img = img[y1:y2, x1:x2]
+    if x_crop > 450:
+        img = cv2.resize(img, (450, int(y_crop * 450 / x_crop)))
+        y_crop = int(y_crop * 450 / x_crop)
+        x_crop = 450
+    if y_crop > 450:
+        img = cv2.resize(img, (int(x_crop * 450 / y_crop), 450))
+        x_crop = int(x_crop * 450 / y_crop)
+        y_crop = 450
+        # print(x_crop)
+
     img_empty = np.zeros((size, size, 3), np.uint8)
-    img_empty[size // 3:size // 3 + y_crop, size // 3:size // 3 + x_crop] += img[y1:y2, x1:x2]
+    img_empty[size // 5:size // 5 + y_crop, size // 5:size // 5 + x_crop] += img
     return img_empty
 
 
