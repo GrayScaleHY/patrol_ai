@@ -318,12 +318,13 @@ def pointer_detect(img_tag, number):
                 seg_cfgs_all.append(cfg)
             else:
                 seg_cfgs_part.append(cfg)
+    
 
     # 挑选最接近数量的指针为最终结果
-    if len(seg_cfgs_all) < number and len(seg_cfgs_part) >= number:
-        true_type = "part"
-    elif len(seg_cfgs_part) < number and len(seg_cfgs_all) >= number:
+    if len(seg_cfgs_all) >= number:
         true_type = "all"
+    elif len(seg_cfgs_all) < number and len(seg_cfgs_part) >= number:
+        true_type = "part"
     else:
         if abs(len(seg_cfgs_part) - number) < abs(len(seg_cfgs_all) - number):
             true_type = "part"
