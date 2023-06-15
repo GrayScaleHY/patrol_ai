@@ -76,10 +76,7 @@ def inference_yolov8(model,
     
     if task == "segment":
         res_masks = result.masks.cpu().numpy()
-        if str(ultralytics.__version__) == "8.0.51":
-            res_segments = result.masks.segments
-        else:
-            res_segments = result.masks.xyn
+        res_segments = result.masks.segments
 
     cfgs = []
     img_shape = np.array([W, H])
