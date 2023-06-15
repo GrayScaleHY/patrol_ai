@@ -321,12 +321,12 @@ def cfgs2segs(cfgs):
         x_l = fit_line[2]; y_l = fit_line[3]
 
         ## 若拟合直线是垂直的，则y为y_l, x为box上下两边界。
-        if cos_l == 0:
-            seg = [int(box[0]), int(y_l), int(box[2]), int(y_l)]
+        if sin_l == 0:
+            seg = [int(box[0]), int((box[1]+box[3])/2), int(box[2]), int((box[1]+box[3])/2)]
         
         # 若拟合直线是水平的，则x为x_l, y_为box左右两边界。
-        elif sin_l == 0:
-            seg = [int(x_l), int(box[1]), int(x_l), int(box[3])]
+        elif cos_l == 0:
+            seg = [int((box[0]+box[2])/2), int(box[1]), int((box[0]+box[2])/2), int(box[3])]
         
         else:
             # 非水平或垂直的情况下
