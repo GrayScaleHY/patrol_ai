@@ -395,7 +395,7 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
         draw_img： 是否画图，if False: 只保存input_data; if True: 将信息画在图上
     """
 
-    f = open(os.path.join(save_dir, name_head + "input_data.json"), "w")
+    f = open(os.path.join(save_dir, name_head + "input_data.json"), "w", encoding='utf-8')
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -440,7 +440,7 @@ def save_output_data(output_data, save_dir, name_head):
         save_dir: 保存的文件夹路径
         name_head: 文件名的开头
     """
-    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w")
+    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w", encoding='utf-8')
     json.dump(output_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
     img_tag_cfg = base642img(output_data["img_result"])
