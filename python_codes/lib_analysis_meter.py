@@ -313,6 +313,9 @@ def cfgs2segs(cfgs):
         mask = cfg["mask"]
         w = np.where(mask==1)
         pointers = np.array([[w[1][i], w[0][i]] for i in range(len(w[0]))])
+        if len(pointers) == 0:
+            cfgs[i]["seg"] = [0,0,10,10]
+            continue
 
         ## 拟合直线
         fit_line = cv2.fitLine(pointers, cv2.DIST_L2, 0, 0.01, 0.01)
@@ -321,11 +324,11 @@ def cfgs2segs(cfgs):
         x_l = fit_line[2]; y_l = fit_line[3]
 
         ## 若拟合直线是垂直的，则y为y_l, x为box上下两边界。
-        if sin_l == 0:
+        if -0.01 < sin_l < 0.01:
             seg = [int(box[0]), int((box[1]+box[3])/2), int(box[2]), int((box[1]+box[3])/2)]
         
         # 若拟合直线是水平的，则x为x_l, y_为box左右两边界。
-        elif cos_l == 0:
+        elif -0.01 < cos_l < 0.01:
             seg = [int((box[0]+box[2])/2), int(box[1]), int((box[0]+box[2])/2), int(box[3])]
         
         else:
