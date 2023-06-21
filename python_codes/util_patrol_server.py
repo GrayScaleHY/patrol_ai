@@ -52,6 +52,7 @@ def inspection_digital_server():
     return jsonify(res)
 
 @app.route('/inspection_track/', methods=['POST'])
+@app.route('/inspection_track_batch/', methods=['POST'])
 def inspection_track_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
