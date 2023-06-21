@@ -61,9 +61,9 @@ def inspection_track_server():
     
     start_time = time.time()
     save_dir, name_head = get_save_head(data)
-    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    save_input_data(data, save_dir, name_head, draw_img=False)
     res = patrol_match(data)
-    save_output_data(res, save_dir, name_head)
+    # save_output_data(res, save_dir, name_head)
 
     print("-----------------------------------------------")
     for s in res:
