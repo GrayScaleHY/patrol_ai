@@ -2,14 +2,16 @@ import os
 import cv2
 import time
 import json
-import math
-from lib_image_ops import base642img, img2base64, img_chinese
-from lib_help_base import oil_high
+# import math
+# from lib_image_ops import base642img
+from lib_image_ops import img2base64, img_chinese
+# from lib_help_base import oil_high
 import numpy as np
 
 from lib_inference_yolov5 import inference_yolov5,check_iou
 from lib_img_registration import registration, convert_coor
-from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie,yolov5_jishukuang,yolov5_jishushibie
+# from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie
+from config_load_models_var import yolov5_jishukuang,yolov5_jishushibie
 from lib_help_base import GetInputData
 
 # def get_input_data(input_data):
@@ -54,14 +56,16 @@ from lib_help_base import GetInputData
 #     return img_tag, img_ref, roi, contrast_config, brightness_config
 #
 #
-# # 改变亮度
-# def brightness_control():
-#     pass
-#
-#
-# # 改变对比度
-# def contrast_control():
-#     pass
+
+def get_dp(config):
+    """
+    获取数值小数点位数
+    """
+    if "dp" in config and isinstance(config["dp"], int) and config["dp"] != -1:
+        dp = int(config["dp"])
+    else:
+        dp = 0
+    return dp
 
 def img_fill(img,x1, y1, x2, y2, size):
     x_crop = x2 - x1
@@ -82,12 +86,25 @@ def img_fill(img,x1, y1, x2, y2, size):
     return img_empty
 
 
+def dp_append(label, dp):
+    if dp>=len(label):
+        label.insert(0,"0.")
+    else:
+        label.insert(len(label)-dp,".")
+    return label
+
+
+
 def inspection_digital_rec(input_data):
     ## 初始化输入输出信息。
     TIME_START = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
         TIME_START = TIME_START + input_data["checkpoint"] + "_"
-
+    # save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # save_path = os.path.join(save_path, "result_patrol", input_data["type"])
+    # os.makedirs(save_path, exist_ok=True)
+    # with open(os.path.join(save_path, TIME_START + "input_data.json"), "w") as f:
+    #     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
 
     out_data = {"code": 0, "data": {}, "msg": "Success"}  # 初始化输出信息
 
@@ -96,6 +113,8 @@ def inspection_digital_rec(input_data):
     roi=input_msg.roi
     img_ref=input_msg.img_ref
     img_tag=input_msg.img_tag
+    dp=get_dp(input_msg.config)
+
     # img_tag, img_ref, roi, cc, bc = get_input_data(input_data)
 
     ## 将输入请求信息可视化
@@ -110,9 +129,7 @@ def inspection_digital_rec(input_data):
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    yolo_crop,yolo_rec=yolov5_mubiaokuang,yolov5_shuzishibie
-    if input_data["type"] != "digital":
-        yolo_crop,yolo_rec=yolov5_jishukuang,yolov5_jishushibie
+    yolo_crop,yolo_rec=yolov5_jishukuang,yolov5_jishushibie
 
     # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
 
@@ -171,6 +188,7 @@ def inspection_digital_rec(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
+        out_data['data']['values'] = None
         return out_data
 
         # 检测出的位置按y坐标排序，做640*640填充，二次识别
@@ -190,7 +208,7 @@ def inspection_digital_rec(input_data):
             continue
         bboxes_list.append(coor)
         #640*640填充
-        img_empty = img_fill(img_tag_,coor[0],coor[0],coor[0],coor[0],640)
+        img_empty = img_fill(img_tag_,coor[0],coor[1],coor[2],coor[3],640)
 
 
         # 二次识别
@@ -199,12 +217,15 @@ def inspection_digital_rec(input_data):
         # 按横坐标排序组合结果
         label_list = [[item['label'], item['coor']] for item in bbox_cfg_result]
         label_list = sorted(label_list, key=lambda x: x[1][0], reverse=False)
-        label=""
+        #按设置的dp位数添加小数点
+        # if label_list!=0:
+        #     label_list=dp_append(label_list,dp)
+        label=[]
         for item in label_list:
-            if str(item[0]).endswith('.0'):
-                label+=str(item[0])[:-1]
-            else:
-                label+=str(item[0])
+            label.append(str(item[0]))
+        if dp!=0:
+            label=dp_append(label,dp)
+        label="".join(label)
         value_list.append(label)
         s = (coor[2]-coor[0]) / 50  # 根据框子大小决定字号和线条粗细。
         cv2.putText(img_tag_, str(label), (coor[2], coor[3]), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0),
