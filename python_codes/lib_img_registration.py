@@ -1,19 +1,77 @@
 import cv2
-import kornia as K # pip install kornia
-import kornia.feature as KF
+
 import numpy as np
 import torch
 import math
-import cupy as cp ## pip install cupy-cuda114
 from imreg import similarity
+
+try:
+    import cupy as cp ## pip install cupy-cuda114
+    is_cupy = True
+except:
+    is_cupy = False
+    print("warning: no cupy pkg !")
+
+try:
+    import kornia as K # pip install kornia
+    import kornia.feature as KF
+except:
+    print("warning: no kornia pkg !")
 
 try:
     matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
     registration_opt = "loftr"
 except:
-    print("Warning: Not gpu memory enough to load LoFTR module !")
-    registration_opt = "fft"
+    try:
+        import sys
+        sys.path.insert(0,'../SuperGluePretrainedNetwork')
+        from models.matching import Matching
+        from models.utils import frame2tensor
+        torch.set_grad_enabled(False)
+        device='cuda'
+        config = {'superpoint': {'nms_radius': 4,'keypoint_threshold': 0.005,'max_keypoints': -1},
+                    'superglue': {'weights': "indoor",'sinkhorn_iterations': 20,'match_threshold': 0.6}}
+        matching = Matching(config).eval().to(device) # 初始化模型
+        registration_opt = "superglue"
+    except:
+        print("Warning: Not gpu memory enough to load LoFTR module !")
+        registration_opt = "fft"
 
+def superglue_registration(img_ref, img_tag):
+    """
+    基于superpoint+superglue的图像配准算法
+    https://github.com/magicleap/SuperGluePretrainedNetwork/tree/master
+    """
+
+    if len(img_ref.shape) == 3:
+        img_ref = cv2.cvtColor(img_ref, cv2.COLOR_RGB2GRAY)
+    if len(img_tag.shape) == 3:
+        img_tag = cv2.cvtColor(img_tag, cv2.COLOR_RGB2GRAY)
+
+    keys = ['keypoints', 'scores', 'descriptors']
+    frame_tensor = frame2tensor(img_ref, device)
+    last_data = matching.superpoint({'image': frame_tensor})
+    last_data = {k+'0': last_data[k] for k in keys}
+    last_data['image0'] = frame_tensor
+
+    frame_tensor = frame2tensor(img_tag, device)
+    pred = matching({**last_data, 'image1': frame_tensor})
+    kpts0 = last_data['keypoints0'][0].cpu().numpy()
+    kpts1 = pred['keypoints1'][0].cpu().numpy()
+    matches = pred['matches0'][0].cpu().numpy()
+    # confidence = pred['matching_scores0'][0].cpu().numpy()
+    valid = matches > -1
+    mkpts0 = kpts0[valid]
+    mkpts1 = kpts1[matches[valid]]
+    # confidence = confidence[valid]
+
+    if len(mkpts0) < 10:
+        return None
+
+    M, mask = cv2.estimateAffinePartial2D(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
+    # M, _ = cv2.findHomography(mkpts0, mkpts1, cv2.RANSAC, 8)
+    # M, mask = cv2.estimateAffine2D(mkpts0, mkpts1)
+    return M
 
 def getAffine(center, angle, scale, trans):             
     R = cv2.getRotationMatrix2D(center, angle, scale)
@@ -50,13 +108,17 @@ def fft_registration(img_ref, img_tag, retained_angle=45):
         ref_resize = img_ref
     M_scale = np.diag(np.array(resize_scale)) 
 
-    ## 使用cupy打包array
-    img_tag = cp.array(img_tag)
-    ref_resize = cp.array(ref_resize)
+    # ## 使用cupy打包array
+    if is_cupy:
+        img_tag = cp.array(img_tag)
+        ref_resize = cp.array(ref_resize)
 
     ## 计算偏移矩阵
     im_warped, scale, angle, (t0, t1) = similarity(img_tag, ref_resize, retained_angle) 
-    scale, angle, t0, t1 = 1 / float(scale), float(angle.get()), t0.get(), t1.get()
+    if is_cupy:
+        scale, angle, t0, t1 = 1 / float(scale), float(angle.get()), t0.get(), t1.get()
+    else:
+        scale, angle, t0, t1 = 1 / float(scale), float(angle), t0, t1
     tx, ty = -t1, -t0
     center = img_tag.shape[1] // 2, img_ref.shape[0] // 2
     M = getAffine(center, angle, scale, (tx, ty))
@@ -122,6 +184,10 @@ def registration(img_ref, img_tag):
     if registration_opt == "fft":
         print("registration with fft !")
         return fft_registration(img_ref, img_tag)
+
+    if registration_opt == "superglue":
+        print("registration with SuperGlue !")
+        return superglue_registration(img_ref, img_tag) # 优先使用superglue纠偏算法
     
     try:
         print("registration with LoFTR !")

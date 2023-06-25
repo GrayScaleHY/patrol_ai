@@ -12,18 +12,18 @@ import numpy as np
 from lib_help_base import GetInputData
 from lib_help_base import is_include
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
-from config_load_models_var import yolov5_meter, \
-                                   yolov5_ErCiSheBei, \
-                                   yolov5_rec_defect_x6, \
-                                   yolov5_coco, \
-                                   yolov5_ShuZiBiaoJi, \
-                                   yolov5_dztx
-                                #    yolov5_action, \
-                                #    yolov5_jmjs, \
-                                #    yolov5_helmet, \
-                                #    yolov5_fire_smoke, \
-                                #    yolov5_led_color, \
-                                
+
+yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘
+yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
+yolov5_rec_defect_x6 = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect_x6.pt") # 送检18类缺陷,x6模型
+yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
+yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
+yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
+# yolov5_action = load_yolov5_model("/data/PatrolAi/yolov5/action.pt") # 送检18类缺陷,x6模型
+# yolov5_fire_smoke = load_yolov5_model("/data/PatrolAi/yolov5/fire_smoke.pt") # 烟火模型
+# yolov5_helmet = load_yolov5_model("/data/PatrolAi/yolov5/helmet.pt") # 安全帽模型
+# yolov5_jmjs = load_yolov5_model("/data/PatrolAi/yolov5/jmjs.pt")  # 静默监视三个设备类模型
+# yolov5_action=load_yolov5_model("/data/PatrolAi/yolov5/action.pt")  # 动作识别，倒地
 
 
 def rank_digital(obj_data, obj_type="counter"):
@@ -80,11 +80,11 @@ def inspection_object_detection(input_data):
     #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
     #     labels = [labels_dict[id] for id in labels_dict]
     #     model_type = "helmet"
-    # elif input_data["type"] == "led_color":
-    #     yolov5_model = yolov5_led_color
-    #     labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-    #     labels = [labels_dict[id] for id in labels_dict]
-    #     model_type = "led"
+    elif input_data["type"] == "led_color":
+        yolov5_model = yolov5_led_color
+        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+        model_type = "led"
     elif input_data["type"] == "digital":
         yolov5_model = yolov5_ShuZiBiaoJi
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names

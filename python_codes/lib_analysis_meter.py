@@ -127,6 +127,30 @@ def point_distance_line(point, segment):
 
     return distance
 
+def disp(p0, p1):
+    return ((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2) ** 0.5
+
+def intersection_pointers(line, arc):
+    # line = [834, 830, 769, 694]
+    # arc = [893, 828, 710, 735, 780, 702]
+    line = np.array(line, dtype=float) ## int转float
+    arc = np.array(arc, dtype=float)
+    # 根据线段到圆心的远近，确定坐标的先后
+    if ((line[0]-arc[0])**2 + (line[1]-arc[1])**2) > ((line[2]-arc[0])**2 + (line[3]-arc[1])**2):
+        line = [line[2], line[3], line[0], line[1]]
+
+    segment = arc[2:]
+    coor = intersection_segment(line, segment)
+    if coor is None:
+        return None
+    
+    p_start = line[:2]; p_end = line[2:]
+    if disp(coor, p_start) < disp(coor, p_end):
+        if disp(coor, p_end) > disp(p_start, p_end):
+            return None
+    return coor
+
+
 def intersection_arc(line, arc):
     """
     计算射线line与圆弧arc的交点坐标，最多返回一个坐标值。
@@ -136,8 +160,8 @@ def intersection_arc(line, arc):
     return:
         (x1, y1): 交点坐标。也可能是None，表示直线与弧线无交点。
     # """
-    # line = [1604, 576, 1486, 424] # [x1, y1, x2, y2]
-    # arc = [1574, 529, 1478, 432, 1555, 421]# [xc, yc, x1, y1, x2, y2]
+    line = [834, 830, 769, 694] # [x1, y1, x2, y2]
+    arc = [1574, 529, 1478, 432, 1555, 421]# [xc, yc, x1, y1, x2, y2]
     line = np.array(line, dtype=float) ## int转float
     arc = np.array(arc, dtype=float)
     # 根据线段到圆心的远近，确定坐标的先后
@@ -171,9 +195,9 @@ def intersection_arc(line, arc):
         y2 = -math.sqrt(r2 - (x1 - xc) ** 2) - yc
     else:
         ## 若直线line经过圆弧arc任意端点，则，返回该端点。
-        if int(ax1 * a + b) == int(ay1):
+        if int(ax1 * a + b) == int(ay1) and (lx1-ax1)**2+(ly1-ay1)**2 > (lx2-ax1)**2+(ly2-ay1)**2:
             return int(ax1), int(ay1)
-        if int(ax2 * a + b) == int(ay2):
+        if int(ax2 * a + b) == int(ay2) and (lx1-ax2)**2+(ly1-ay2)**2 > (lx2-ax2)**2+(ly2-ay2)**2:
             return int(ax2), int(ay2)
         
         ## 有斜率的情况下，联立直线和圆形方程组得: Ax^2 + Bx + C = 0
@@ -289,6 +313,9 @@ def cfgs2segs(cfgs):
         mask = cfg["mask"]
         w = np.where(mask==1)
         pointers = np.array([[w[1][i], w[0][i]] for i in range(len(w[0]))])
+        if len(pointers) == 0:
+            cfgs[i]["seg"] = [0,0,10,10]
+            continue
 
         ## 拟合直线
         fit_line = cv2.fitLine(pointers, cv2.DIST_L2, 0, 0.01, 0.01)
@@ -297,30 +324,27 @@ def cfgs2segs(cfgs):
         x_l = fit_line[2]; y_l = fit_line[3]
 
         ## 若拟合直线是垂直的，则y为y_l, x为box上下两边界。
-        if cos_l == 0:
-            seg = [int(box[0]), int(y_l), int(box[2]), int(y_l)]
-            segs.append(seg)
-            continue
+        if -0.01 < sin_l < 0.01:
+            seg = [int(box[0]), int((box[1]+box[3])/2), int(box[2]), int((box[1]+box[3])/2)]
         
         # 若拟合直线是水平的，则x为x_l, y_为box左右两边界。
-        if sin_l == 0:
-            seg = [int(x_l), int(box[1]), int(x_l), int(box[3])]
-            segs.append(seg)
-            continue
+        elif -0.01 < cos_l < 0.01:
+            seg = [int((box[0]+box[2])/2), int(box[1]), int((box[0]+box[2])/2), int(box[3])]
         
-        # 非水平或垂直的情况下
-        tan_l = sin_l / cos_l 
-        det_l = y_l - (tan_l * x_l) # 直线公式改为y = tan_l * x + det_l
-        seg = []
-        for x_p in [box[0], box[2]]: # 求与box上下两边界的交点
-            y_p = tan_l * x_p + det_l
-            if box[1] < y_p < box[3]: # 交点坐标的y值需要再box左右边界之间
-                seg = seg + [int(x_p), int(y_p)]
-        
-        for y_p in [box[1], box[3]]: # 求与box左右两边界的交点
-            x_p = (y_p - det_l) / tan_l
-            if box[0] <= x_p <= box[2]: # 交点左边的x值需要在box上下边界之间
-                seg = seg + [int(x_p), int(y_p)]
+        else:
+            # 非水平或垂直的情况下
+            tan_l = sin_l / cos_l 
+            det_l = y_l - (tan_l * x_l) # 直线公式改为y = tan_l * x + det_l
+            seg = []
+            for x_p in [box[0], box[2]]: # 求与box上下两边界的交点
+                y_p = tan_l * x_p + det_l
+                if box[1] < y_p < box[3]: # 交点坐标的y值需要再box左右边界之间
+                    seg = seg + [int(x_p), int(y_p)]
+            
+            for y_p in [box[1], box[3]]: # 求与box左右两边界的交点
+                x_p = (y_p - det_l) / tan_l
+                if box[0] <= x_p <= box[2]: # 交点左边的x值需要在box上下边界之间
+                    seg = seg + [int(x_p), int(y_p)]
         
         if len(seg) == 4:
             cfgs[i]["seg"] = seg
@@ -382,5 +406,5 @@ def contour2segment(contours, boxes):
     return segments
 
 if __name__ == '__main__':
-    val = intersection_arc([], [])
+    coor = intersection_pointers(1, 2)
     print("val")

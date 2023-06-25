@@ -14,6 +14,7 @@ from app_yeweiji import inspection_level_gauge
 from app_daozha_yolov5seg import inspection_daozha_detection
 # from app_ocr import ocr_digit_detection
 from app_yejingpingshuzishibie import inspection_digital_rec
+from app_match import patrol_match
 import time
 import threading
 
@@ -28,6 +29,7 @@ draw_img = True
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
 
+@app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_digital/', methods=['POST'])
 def inspection_digital_server():
     if request.method != 'POST':
@@ -40,6 +42,28 @@ def inspection_digital_server():
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_digital_rec(data)
     save_output_data(res, save_dir, name_head)
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+@app.route('/inspection_track/', methods=['POST'])
+@app.route('/inspection_track_batch/', methods=['POST'])
+def inspection_track_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=False)
+    res = patrol_match(data)
+    # save_output_data(res, save_dir, name_head)
 
     print("-----------------------------------------------")
     for s in res:
@@ -154,7 +178,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 # @app.route('/inspection_digital/', methods=['POST'])
-@app.route('/inspection_counter/', methods=['POST'])
+# @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_person/', methods=['POST'])
 @app.route('/inspection_disconnector_texie/', methods=['POST'])
 def inspection_object():
@@ -243,4 +267,4 @@ def inspection_version():
     return jsonify(res)
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=False)

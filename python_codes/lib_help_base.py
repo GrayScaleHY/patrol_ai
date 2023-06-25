@@ -27,9 +27,10 @@ class GetInputData:
         self.img_ref = self.get_img_ref(self.config) # 模板图
         self.roi = self.get_roi(self.config, self.img_ref)  # roi框
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
+        self.bboxes = self.get_bboxes(self.config, self.img_ref) # 目标框坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
         self.dp = self.get_dp(self.config)
-        self.number, self.length, self.width, self.color, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
+        self.number, self.length, self.width, self.color, self.val_size, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
         
@@ -81,6 +82,8 @@ class GetInputData:
         """
         if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
             img_ref = base642img(config["img_ref"])
+        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
+            img_ref = cv2.imread(config["img_ref_path"])
         else:
             img_ref = None
         return img_ref
@@ -165,6 +168,33 @@ class GetInputData:
         
         return pointers
     
+    def get_bboxes(self, config, img_ref):
+        """
+        获取目标框的位置坐标。
+        """
+        if img_ref is None:
+            return {}
+
+        if "bboxes" in config and isinstance(config["bboxes"], dict):
+            bboxes_ = config["bboxes"]
+            raw_bboxes = {}
+            for name in bboxes_:
+                if isinstance(bboxes_[name], list):
+                    raw_bboxes[name] = bboxes_[name]
+        else:
+            raw_bboxes = {}
+
+        H, W = img_ref.shape[:2]
+        bboxes = {}
+        for label in raw_bboxes:
+            bbox = raw_bboxes[label]
+            dim = np.array(bbox).ndim
+            if dim == 2:
+                bbox = bbox[0]
+            bboxes[label] = [int(bbox[0] * W), int(bbox[1] * H), int(bbox[2] * W), int(bbox[3] * H)]
+        
+        return bboxes
+    
     def get_dp(self, config):
         """
         获取数值小数点位数
@@ -199,15 +229,22 @@ class GetInputData:
         else:
             color = None
         
+        if "val_size" in config and isinstance(config["val_size"], int) and config["val_size"] != -1:
+            val_size = int(config["val_size"])
+        else:
+            val_size = None
+        
         if "meter_type" in config and isinstance(config["meter_type"], str) and len(config["meter_type"]) > 1:
             if config["meter_type"] == "blq_zzscsb":
                 meter_type = "blq_zzscsb"
+            elif config["meter_type"] == "nszb":
+                meter_type = "nszb"
             else: 
                 meter_type = "normal"
         else:
             meter_type = "normal"
         
-        return number, length, width, color, meter_type
+        return number, length, width, color, val_size, meter_type
 
     def get_status_map(self, config):
         if "status_map" in config and isinstance(config["status_map"], dict):
@@ -360,7 +397,7 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
         draw_img： 是否画图，if False: 只保存input_data; if True: 将信息画在图上
     """
 
-    f = open(os.path.join(save_dir, name_head + "input_data.json"), "w")
+    f = open(os.path.join(save_dir, name_head + "input_data.json"), "w", encoding='utf-8')
     json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
@@ -372,6 +409,7 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     pointers_ref = DATA.pointers
     roi = DATA.roi; osd = DATA.osd
     video_path = DATA.video_path
+    bboxes_ref = DATA.bboxes
     
     if img_tag is not None:
         cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
@@ -390,7 +428,10 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-
+    for label in bboxes_ref:
+        o_ = bboxes_ref[label]
+        cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, label, (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     cv2.imwrite(os.path.join(save_dir, name_head + "ref_cfg.jpg"), img_ref)
 
 def save_output_data(output_data, save_dir, name_head):
@@ -401,7 +442,7 @@ def save_output_data(output_data, save_dir, name_head):
         save_dir: 保存的文件夹路径
         name_head: 文件名的开头
     """
-    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w")
+    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w", encoding='utf-8')
     json.dump(output_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
     img_tag_cfg = base642img(output_data["img_result"])

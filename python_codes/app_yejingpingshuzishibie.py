@@ -2,98 +2,19 @@ import os
 import cv2
 import time
 import json
-# import math
-# from lib_image_ops import base642img
-from lib_image_ops import img2base64, img_chinese
-# from lib_help_base import oil_high
+import math
+from lib_image_ops import base642img, img2base64, img_chinese
+from lib_help_base import oil_high
 import numpy as np
 
-from lib_inference_yolov5 import inference_yolov5,check_iou
+from lib_inference_yolov5 import load_yolov5_model, inference_yolov5,check_iou
 from lib_img_registration import registration, convert_coor
-# from config_load_models_var import yolov5_ShuZiBiaoJi,yolov5_mubiaokuang,yolov5_shuzishibie
-from config_load_models_var import yolov5_jishukuang,yolov5_jishushibie
 from lib_help_base import GetInputData
 
-# def get_input_data(input_data):
-#     """
-#     提取input_data中的信息。
-#     return:
-#         img_tag: 目标图片数据
-#         img_ref: 模板图片数据
-#         roi: 感兴趣区域, 结构为[xmin, ymin, xmax, ymax]
-#
-#     """
-#     img_tag = base642img(input_data["image"])
-#
-#     ## 是否有模板图
-#     img_ref = None
-#     if "img_ref" in input_data["config"]:
-#         if isinstance(input_data["config"]["img_ref"], str):
-#             img_ref = base642img(input_data["config"]["img_ref"])
-#
-#             ## 感兴趣区域
-#     roi = None  # 初始假设
-#     if "bboxes" in input_data["config"]:
-#         if isinstance(input_data["config"]["bboxes"], dict):
-#             if "roi" in input_data["config"]["bboxes"]:
-#                 if isinstance(input_data["config"]["bboxes"]["roi"], list):
-#                     if isinstance(input_data["config"]["bboxes"]["roi"][0], list):
-#                         roi = input_data["config"]["bboxes"]["roi"][0]
-#                     else:
-#                         roi = input_data["config"]["bboxes"]["roi"]
-#                     W = img_ref.shape[1];
-#                     H = img_ref.shape[0]
-#                     roi = [int(roi[0] * W), int(roi[1] * H), int(roi[2] * W), int(roi[3] * H)]
-#
-#     contrast_config = 1
-#     brightness_config = 0
-#     if "augm" in input_data['config']:
-#         if isinstance(input_data['config']['augm'], list):
-#             if len(input_data['config']['augm']) == 2:
-#                 contrast_config = input_data['config']['augm'][0]
-#                 brightness_config = input_data['config']['augm'][1]
-#
-#     return img_tag, img_ref, roi, contrast_config, brightness_config
-#
-#
-
-def get_dp(config):
-    """
-    获取数值小数点位数
-    """
-    if "dp" in config and isinstance(config["dp"], int) and config["dp"] != -1:
-        dp = int(config["dp"])
-    else:
-        dp = 0
-    return dp
-
-def img_fill(img,x1, y1, x2, y2, size):
-    x_crop = x2 - x1
-    y_crop = y2 - y1
-    img = img[y1:y2, x1:x2]
-    if x_crop > 450:
-        img = cv2.resize(img, (450, int(y_crop * 450 / x_crop)))
-        y_crop = int(y_crop * 450 / x_crop)
-        x_crop = 450
-    if y_crop > 450:
-        img = cv2.resize(img, (int(x_crop * 450 / y_crop), 450))
-        x_crop = int(x_crop * 450 / y_crop)
-        y_crop = 450
-        # print(x_crop)
-
-    img_empty = np.zeros((size, size, 3), np.uint8)
-    img_empty[size // 5:size // 5 + y_crop, size // 5:size // 5 + x_crop] += img
-    return img_empty
-
-
-def dp_append(label, dp):
-    if dp>=len(label):
-        label.insert(0,"0.")
-    else:
-        label.insert(len(label)-dp,".")
-    return label
-
-
+yolov5_mubiaokuang = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_crop.pt")  # 数字表记寻框模型
+yolov5_shuzishibie = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_rec.pt")  # 数字表记数字识别模型
+yolov5_jishukuang = load_yolov5_model("/data/PatrolAi/yolov5/jishu_crop.pt")  # 计数表寻框模型
+yolov5_jishushibie = load_yolov5_model("/data/PatrolAi/yolov5/jishu_rec.pt")  # 计数表数字识别模型
 
 def inspection_digital_rec(input_data):
     ## 初始化输入输出信息。
@@ -113,8 +34,6 @@ def inspection_digital_rec(input_data):
     roi=input_msg.roi
     img_ref=input_msg.img_ref
     img_tag=input_msg.img_tag
-    dp=get_dp(input_msg.config)
-
     # img_tag, img_ref, roi, cc, bc = get_input_data(input_data)
 
     ## 将输入请求信息可视化
@@ -129,7 +48,9 @@ def inspection_digital_rec(input_data):
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
-    yolo_crop,yolo_rec=yolov5_jishukuang,yolov5_jishushibie
+    yolo_crop,yolo_rec=yolov5_mubiaokuang,yolov5_shuzishibie
+    if input_data["type"] != "digital":
+        yolo_crop,yolo_rec=yolov5_jishukuang,yolov5_jishushibie
 
     # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
 
@@ -188,17 +109,19 @@ def inspection_digital_rec(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
-        out_data['data']['values'] = None
+        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
         # 检测出的位置按y坐标排序，做640*640填充，二次识别
     coor_list = [item['coor'] for item in bbox_cfg]
     bboxes_list_sort = sorted(coor_list, key=lambda x: x[-1], reverse=False)
+    # print("bboxes_list:",bboxes_list)
 
     for coor in bboxes_list_sort:
         #去除roi框外，不做识别
         x_middle = (coor[0] + coor[2]) / 2
         y_middle = (coor[1] + coor[3]) / 2
+        # print("x_middle:",x_middle,"y_middle:",y_middle)
         mark=False
         for roi_tag in roi_tag_list:
             if (x_middle>roi_tag[2] or x_middle<roi_tag[0]) or (y_middle>roi_tag[3] or y_middle<roi_tag[1]) :
@@ -208,26 +131,27 @@ def inspection_digital_rec(input_data):
             continue
         bboxes_list.append(coor)
         #640*640填充
-        img_empty = img_fill(img_tag_,coor[0],coor[1],coor[2],coor[3],640)
-
+        x_crop = coor[2] - coor[0]
+        y_crop = coor[3] - coor[1]
+        # print("x_crop:",x_crop,"y_crop:",y_crop)
+        img_empty = np.zeros((640, 640, 3), np.uint8)
+        img_empty[200:200 + y_crop, 200:200 + x_crop] += img_tag_[coor[1]:coor[3],coor[0]:coor[2]]
 
         # 二次识别
         bbox_cfg_result = inference_yolov5(yolo_rec, img_empty)
         bbox_cfg_result =check_iou(bbox_cfg_result,0.2)
+        # print("bbox_cfg_result:",bbox_cfg_result)
         # 按横坐标排序组合结果
         label_list = [[item['label'], item['coor']] for item in bbox_cfg_result]
         label_list = sorted(label_list, key=lambda x: x[1][0], reverse=False)
-        #按设置的dp位数添加小数点
-        # if label_list!=0:
-        #     label_list=dp_append(label_list,dp)
-        label=[]
+        label=""
         for item in label_list:
-            label.append(str(item[0]))
-        if dp!=0:
-            label=dp_append(label,dp)
-        label="".join(label)
+            if str(item[0]).endswith('.0'):
+                label+=str(item[0])[:-1]
+            else:
+                label+=str(item[0])
         value_list.append(label)
-        s = (coor[2]-coor[0]) / 50  # 根据框子大小决定字号和线条粗细。
+        s = (x_crop) / 50  # 根据框子大小决定字号和线条粗细。
         cv2.putText(img_tag_, str(label), (coor[2], coor[3]), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0),
                     thickness=round(s * 2))
         cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])), (int(coor[2]), int(coor[3])), (255, 0, 255), thickness=1)
