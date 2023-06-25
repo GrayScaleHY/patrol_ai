@@ -82,6 +82,8 @@ class GetInputData:
         """
         if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
             img_ref = base642img(config["img_ref"])
+        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
+            img_ref = cv2.imread(config["img_ref_path"])
         else:
             img_ref = None
         return img_ref
