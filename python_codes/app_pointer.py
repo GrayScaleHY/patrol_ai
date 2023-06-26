@@ -203,7 +203,7 @@ def add_head_end_ps(pointers):
     return pointers
 
 
-def select_pointer(img, seg_cfgs, number, length, width, color):
+def select_pointer(img, seg_cfgs, length, width, color):
     """
     根据指针长短，粗细，颜色来筛选指针
     返回index
@@ -211,10 +211,7 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
     if len(seg_cfgs) == 0:
         return 0
 
-    if number is None or number == 1:
-        return 0
-
-    seg_cfgs = seg_cfgs[:int(number)]
+    # seg_cfgs = seg_cfgs[:int(number)]
     segs = []
     for cfg in seg_cfgs:
         s = cfg["seg"]
@@ -249,7 +246,6 @@ def select_pointer(img, seg_cfgs, number, length, width, color):
         i_max = 0
         for i in range(len(seg_cfgs)):
             _img = img.copy()
-            c = seg_cfgs[i]["box"]
             mask = seg_cfgs[i]["mask"]
 
             # 将mask外的区域填充为蓝色
@@ -342,30 +338,63 @@ def pointer_detect(img_tag, number):
     return seg_cfgs, roi_tag
 
 
-def segs2val(img_tag, pointers_tag, M, seg_cfgs, number, length, width, color, meter_type):
+def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, meter_type):
     """
     根据seg_cfgs求指针读数
     """
-    i = select_pointer(img_tag, seg_cfgs, number, length, width, color)
-    seg = seg_cfgs[i]["seg"]
+    if len(seg_cfgs) == 0:
+        return [], None
+    
+    ## 通过val_size读数大小来筛选指针。
+    if val_size is not None and len(seg_cfgs) > 1:
+        vals = []
+        seg_cfgs_real = []
+        for seg_cfg in seg_cfgs:
+            seg = seg_cfg["seg"]
+            val = cal_base_scale(pointers_tag, seg, meter_type)
+            if val != None:
+                vals.append(val)
+                seg_cfgs_real.append(seg_cfg)
+    
+        i_min = vals.index(min(vals))
+        i_max = vals.index(max(vals))
+        if len(seg_cfgs_real) < 3:
+            i_mid = i_min
+        else:
+            i_mid = [i for i in range(len(seg_cfgs_real)) if i != i_min and i != i_max][0]
 
-    # 求指针读数
-    if M is not None:
-        val = cal_base_scale(pointers_tag, seg, meter_type)
-    else:
-        xo = pointers_tag["center"][0]
-        yo = pointers_tag["center"][1]
-        if (seg[0]-xo)**2+(seg[1]-yo)**2 > (seg[2]-xo)**2+(seg[3]-yo)**2:
-            seg = [seg[2], seg[3], seg[0], seg[1]]
-        dx_ = seg[2] - seg[0]
-        dy_ = seg[3] - seg[1]
-        seg_ = [xo, yo, xo + dx_, yo + dy_]
-        val = cal_base_scale(pointers_tag, seg_, meter_type)
-        if val == None:
-            seg_ = [xo, yo, xo - dx_, yo - dy_]
-            val = cal_base_scale(pointers_tag, seg_, meter_type)
-    return seg, val
+        if val_size == 0:
+            seg = seg_cfgs_real[i_min]["seg"]; val = vals[i_min]
+        elif val_size == 2:
+            seg = seg_cfgs_real[i_max]["seg"]; val = vals[i_max]
+        else:
+            seg = seg_cfgs_real[i_mid]["seg"]; val = vals[i_mid]
+        return [seg], val
+    
+    ## 双指针动作次数表
+    if meter_type == "blq_zzscsb" and len(seg_cfgs) > 0:
+        i = select_pointer(img_tag, seg_cfgs, 2, width, color)
+        seg1 = seg_cfgs[i]["seg"]
+        val1 = cal_base_scale(pointers_tag, seg1, meter_type)
+        i = select_pointer(img_tag, seg_cfgs, 0, width, color)
+        seg2 = seg_cfgs[i]["seg"]
+        val2 = cal_base_scale(pointers_tag, seg2, meter_type)
+        if val1 == None and val2 == None:
+            return [], None
+        if val1 == None:
+            val1 = val2
+        if val2 == None:
+            val2 = val1
+        val = round(val2) * 10 + round(val1)
+        return [seg1, seg2], val
 
+    i = select_pointer(img_tag, seg_cfgs, length, width, color)
+    segs = [seg_cfgs[i]["seg"]]
+
+    ## 求指针读数
+    val = cal_base_scale(pointers_tag, segs[0], meter_type)
+
+    return segs, val
 
 def inspection_pointer(input_data):
 
@@ -484,59 +513,9 @@ def inspection_pointer(input_data):
     seg_cfgs = [seg_cfgs[i_sort[i]] for i in range(len(i_sort))]  # 排序
 
     # 根据seg_cfgs求val
-    if meter_type == "blq_zzscsb" or val_size is not None:
-        number = 2
-        length = 2
-        seg1, val1 = segs2val(img_tag, pointers_tag, M,
-                              seg_cfgs, number, length, width, color, meter_type)
-        
-        number = 2
-        length = 0
-        seg2, val2 = segs2val(img_tag, pointers_tag, M,
-                              seg_cfgs, number, length, width, color, meter_type)
-        
-        if val_size is not None:
-            if val1 == None:
-                val = val2; seg = seg2
-            elif val2 == None:
-                val = val2; seg = seg1
-            else:
-                if val_size == 0:
-                    if val1 > val2:
-                        val = val2; seg = seg2
-                    else:
-                        val = val1; seg = seg1
-                else:
-                    if val1 < val2:
-                        val = val2; seg = seg2
-                    else:
-                        val = val1; seg = seg1
-            cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
-                    (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
-
-        else:
-            cv2.line(img_tag_, (int(seg1[0]), int(seg1[1])),
-                 (int(seg1[2]), int(seg1[3])), (0, 255, 0), 2)
-            cv2.line(img_tag_, (int(seg2[0]), int(seg2[1])),
-                    (int(seg2[2]), int(seg2[3])), (0, 255, 0), 2)
-            if val1 and val2 == None:
-                val = None
-            else:
-                if val1 == None:
-                    val = round(val2) * 10 + round(val2)
-                    seg = seg_cfgs[0]
-                elif val2 == None:
-                    val = round(val1) * 10 + round(val1)
-                    seg = seg1
-                else:
-                    val = round(val2) * 10 + round(val1)
-                    seg = seg2
-
-    else:
-        seg, val = segs2val(img_tag, pointers_tag, M,
-                            seg_cfgs, number, length, width, color, meter_type)
-        cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
-                 (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+    segs, val = segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, meter_type)
+    for seg in segs:
+        cv2.line(img_tag_, (int(seg[0]), int(seg[1])),(int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
@@ -600,7 +579,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/0610112311_220kV镜湖变镜大1A01开关气室SF6表计读数-视频_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/0626101535_1号主变3号低抗线温表-视频_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
