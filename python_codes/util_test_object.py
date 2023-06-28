@@ -8,7 +8,7 @@ img_file = "/data/PatrolAi/result_patrol/20221115_nc1.bmp"
 
 for img_file in glob.glob("/data/PatrolAi/result_patrol/*.bmp"):
     img = cv2.imread(img_file)
-    cfgs = inference_yolov5(model, img, resize=1280, conf_thres=0.2, iou_thres=0.2, pre_labels=None)
+    cfgs = inference_yolov5(model, img, resize=1280, conf_thres=0.2, same_iou_thres=0.2, pre_labels=None)
     print(cfgs)
     for cfg in cfgs:
         c = cfg["coor"]
