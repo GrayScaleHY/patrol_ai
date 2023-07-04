@@ -85,7 +85,7 @@ sudo docker load --input ut_patrol_ai.tar.gz
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
 ```
 REPOSITORY           TAG                                   IMAGE ID       CREATED        SIZE
- utdnn/patrol_ai     cuda11.4-conda-cuml                   86c8a25fae43   11 days ago     37.1GB
+ utdnn/patrol_ai     cuda11.6                86c8a25fae43   11 days ago     16GB
 ```
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
@@ -95,6 +95,6 @@ sudo docker run --gpus all -d --cpus="16." -e LANG=C.UTF-8 --shm-size 16g --name
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
- * Running on http://127.0.0.1:5000
- * Running on http://172.17.0.2:5000 (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:29528
+ * Running on http://172.17.0.2:28528 (Press CTRL+C to quit)
 ```
