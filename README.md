@@ -12,23 +12,15 @@
     PatrolAi.zip
     ut_patrol_ai.tar.gz
 ```
-##### 2. 安装显卡驱动 (若已安装，跳过)
-若可以使用外网，使用下面命令行进行显卡驱动安装
+##### 2. 检查是否安装了显卡硬件和显卡驱动
+终端输入```lspci | grep -i nvidia```命令查看服务器上是否正确具备硬件显卡，若出现如下类似打印，则表示已具备硬件显卡。
 ```
-sudo apt-get update
-sudo apt-get install nvidia-driver-510
+02:00.0 VGA compatible controller: NVIDIA Corporation GV102 (rev a1)
+02:00.1 Audio device: NVIDIA Corporation Device 10f7 (rev a1)
+02:00.2 USB controller: NVIDIA Corporation Device 1ad6 (rev a1)
+02:00.3 Serial bus controller [0c80]: NVIDIA Corporation Device 1ad7 (rev a1)
 ```
-若无法使用外网，则快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
-```
-## 关闭lightdm
-sudo service gdm stop  
-
-## 安装显卡驱动
-cd /data/PatrolAi/install
-sudo chmod +x NVIDIA-Linux-x86_64-510.60.02.run
-sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
-```
-安装完成后，重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下打印时表示显卡驱动安装完成。
+终端输入```nvidia-smi```命令查看服务器是否正确安装了显卡驱动，若出现如下类似打印，表示显卡驱动安装完成。
 ```
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 470.103.01   Driver Version: 470.103.01   CUDA Version: 11.4     |
@@ -42,6 +34,7 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 ```
+注：若未安装显卡硬件或显卡驱动，请联系相关人员安装好再执行下面步骤。
 ##### 3. 安装docker (若已安装，跳过)
 若可以使用外网，则使用下面命令完成docker安装
 ```
