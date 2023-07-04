@@ -2,7 +2,7 @@
 该项目存放巡检图像算法所需的代码
 
 ### 巡检算法服务的部署（ubuntu 18.04）
-该部署教程以ubuntu 18.04以上版本为例，注意，部署服务器必须配备英伟达显卡。凝思系统上部署请参考教程[凝思操作系统部署巡检算法服务](https://git.utapp.cn/aiteam/patrol_ai/-/wikis/巡视算法部署文档-凝思)。
+该部署教程以ubuntu 18.04以上版本为例，注意，部署服务器必须配备英伟达显卡。凝思系统上部署请参考教程[凝思操作系统部署巡检算法服务](https://git.utapp.cn/yuanhui/patrol_ai/-/wikis/巡视算法部署文档(凝思))。
 ##### 1. 准备部署文件
 (1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。内网下载链接为[ \\\192.168.105.36\Outgoing\巡检算法部署 ]，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。  
 (2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
@@ -12,23 +12,15 @@
     PatrolAi.zip
     ut_patrol_ai.tar.gz
 ```
-##### 2. 安装显卡驱动 (若已安装，跳过)
-若可以使用外网，使用下面命令行进行显卡驱动安装
+##### 2. 检查是否安装了显卡硬件和显卡驱动
+终端输入```lspci | grep -i nvidia```命令查看服务器上是否正确具备硬件显卡，若出现如下类似打印，则表示已具备硬件显卡。
 ```
-sudo apt-get update
-sudo apt-get install nvidia-driver-510
+02:00.0 VGA compatible controller: NVIDIA Corporation GV102 (rev a1)
+02:00.1 Audio device: NVIDIA Corporation Device 10f7 (rev a1)
+02:00.2 USB controller: NVIDIA Corporation Device 1ad6 (rev a1)
+02:00.3 Serial bus controller [0c80]: NVIDIA Corporation Device 1ad7 (rev a1)
 ```
-若无法使用外网，则快捷键ctrl+alt+f3进入命令行模式，依次进行如下操作完成显卡驱动安装。
-```
-## 关闭lightdm
-sudo service gdm stop  
-
-## 安装显卡驱动
-cd /data/PatrolAi/install
-sudo chmod +x NVIDIA-Linux-x86_64-510.60.02.run
-sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
-```
-安装完成后，重启服务器，终端输入```nvidia-smi```命令，屏幕出现以下打印时表示显卡驱动安装完成。
+终端输入```nvidia-smi```命令查看服务器是否正确安装了显卡驱动，若出现如下类似打印，表示显卡驱动安装完成。
 ```
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 470.103.01   Driver Version: 470.103.01   CUDA Version: 11.4     |
@@ -42,6 +34,7 @@ sudo ./NVIDIA-Linux-x86_64-510.60.02.run -no-opengl-files
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 ```
+注：若未安装显卡硬件或显卡驱动，请联系相关人员安装好再执行下面步骤。
 ##### 3. 安装docker (若已安装，跳过)
 若可以使用外网，则使用下面命令完成docker安装
 ```
@@ -85,16 +78,16 @@ sudo docker load --input ut_patrol_ai.tar.gz
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
 ```
 REPOSITORY           TAG                                   IMAGE ID       CREATED        SIZE
- utdnn/patrol_ai     cuda11.4-conda-cuml                   86c8a25fae43   11 days ago     37.1GB
+ utdnn/patrol_ai     cuda11.6                86c8a25fae43   11 days ago     16GB
 ```
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
 sudo chmod +x /data/PatrolAi/run_PatrolAi.sh
-sudo docker run --gpus all -d --cpus="16." -e LANG=C.UTF-8 --shm-size 16g --name ut-PatrolAi --restart=always -p 5000:5000 --ipc=host -v /export:/export -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.6
+sudo docker run --gpus all -d --cpus="16." -e LANG=C.UTF-8 --shm-size 16g --name ut-PatrolAi --restart=always -p 29528:29528 --ipc=host -v /export:/export -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.6
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
- * Running on http://127.0.0.1:5000
- * Running on http://172.17.0.2:5000 (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:29528
+ * Running on http://172.17.0.2:28528 (Press CTRL+C to quit)
 ```
