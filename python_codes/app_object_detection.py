@@ -168,6 +168,7 @@ def inspection_object_detection(input_data):
 
     ## 判断bbox是否在roi中
     for roi in roi_tag:
+        cfg_out = {}
         for cfg in cfgs:
             if is_include(cfg["coor"], roi, srate=0.5):
                 cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
@@ -193,7 +194,7 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/0627082120__input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/0704081105_6104input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
