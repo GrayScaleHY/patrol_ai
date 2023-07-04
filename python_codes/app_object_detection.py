@@ -64,7 +64,7 @@ def inspection_object_detection(input_data):
 
     ## 画上点位名称
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
 
     if an_type == "fire_smoke":
         yolov5_model = yolov5_fire_smoke
@@ -91,12 +91,12 @@ def inspection_object_detection(input_data):
     elif an_type == "disconnector_notemp":
         yolov5_model = yolov5_daozha
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
+        labels = ["he","fen","budaowei"]
         model_type = "disconnector_texie"
     elif an_type == "disconnector_texie":
         yolov5_model = yolov5_dztx
         labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
+        labels = ["he","fen","budaowei"]
         model_type = "disconnector_texie"
     elif an_type == "person":
         yolov5_model = yolov5_coco
@@ -133,7 +133,7 @@ def inspection_object_detection(input_data):
     else:
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -186,7 +186,7 @@ def inspection_object_detection(input_data):
             if len(_cfg) == 0:
                 out_data["code"] = 1
     
-    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
     
     return out_data

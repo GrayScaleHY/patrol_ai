@@ -244,4 +244,4 @@ def inspection_version():
     return jsonify(res)
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=False)
+    app.run(debug=False, host='0.0.0.0', port=29528, threaded=False)

@@ -424,8 +424,7 @@ def inspection_pointer(input_data):
 
     # 画上点位名称和osd区域
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + an_type,
-                           (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint, (10, 100), color=(255, 0, 0), size=30)
     for o_ in osd:  # 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])), (int(
             o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
@@ -436,7 +435,7 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + "type isn't pointer; "
         out_data["code"] = 1
         img_tag_ = img_chinese(
-            img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -447,7 +446,7 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
         out_data["code"] = 1
         img_tag_ = img_chinese(
-            img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -486,7 +485,7 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + "Can not find pointer in roi; "
         out_data["code"] = 1
         img_tag_ = img_chinese(
-            img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -504,7 +503,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(
-            img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         return out_data
 
     # 将指针按score从大到小排列，筛选指针
@@ -522,7 +521,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(
-            img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         return out_data
 
     if meter_type == "blq_zzscsb":
@@ -543,7 +542,7 @@ def inspection_pointer(input_data):
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(
         seg[3])-5), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
     img_tag_ = img_chinese(
-        img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
@@ -579,7 +578,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/0626101535_1号主变3号低抗线温表-视频_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/pointer/0626103829_1号主变3号低抗线温表-视频_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)

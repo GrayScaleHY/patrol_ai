@@ -45,7 +45,7 @@ def inspection_qrcode(input_data):
 
     ## 画上点位名称和osd区域
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, checkpoint + an_type , (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
@@ -86,14 +86,14 @@ def inspection_qrcode(input_data):
     else:
         out_data["msg"] = out_data["msg"] + "; Type is wrong !"
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
     if len(boxes) == 0: #没有检测到目标
         out_data["msg"] = out_data["msg"] + "; Not find qrcode"
         out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
@@ -116,7 +116,7 @@ def inspection_qrcode(input_data):
         img_tag_ = img_chinese(img_tag_, label, (coor[0], coor[1]-round(s)), color=(0, 225, 0), size=round(s))
     
     ## 输出可视化结果的图片。
-    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+    img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
