@@ -187,6 +187,9 @@ def inspection_object_detection(input_data):
             if len(_cfg) == 0:
                 out_data["code"] = 1
     
+    if out_data["data"] == [{}]:
+        out_data["data"] = []
+    
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
     
