@@ -208,7 +208,7 @@ def select_pointer(img, seg_cfgs, length, width, color):
     根据指针长短，粗细，颜色来筛选指针
     返回index
     """
-    if len(seg_cfgs) == 0:
+    if len(seg_cfgs) == 1:
         return 0
 
     # seg_cfgs = seg_cfgs[:int(number)]
@@ -578,7 +578,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/pointer/0626103829_1号主变3号低抗线温表-视频_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/0710062140_优特低压配电房5楼间隔设备1SF6-3_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
