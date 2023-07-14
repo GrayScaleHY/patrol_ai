@@ -355,7 +355,10 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
             if val != None:
                 vals.append(val)
                 seg_cfgs_real.append(seg_cfg)
-    
+                
+        if len(vals) < 1:
+            return [], None
+        
         i_min = vals.index(min(vals))
         i_max = vals.index(max(vals))
         if len(seg_cfgs_real) < 3:
@@ -578,7 +581,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/0710062140_优特低压配电房5楼间隔设备1SF6-3_input_data.json"
+    json_file = "/data/PatrolAi/patrol_ai/python_codes/images/0714014521__input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
