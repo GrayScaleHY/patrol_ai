@@ -83,8 +83,6 @@ class GetInputData:
         """
         if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
             img_ref = base642img(config["img_ref"])
-        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
-            img_ref = cv2.imread(config["img_ref_path"])
         else:
             img_ref = None
         return img_ref
@@ -265,20 +263,24 @@ class GetInputData:
         """
         获取测试视频路径
         """
-        assert "video_path" in data and isinstance(data["video_path"], str), "video_path is not str!"
+        if "video_path" in data and isinstance(data["video_path"], str):
 
-        if  os.path.exists(data["video_path"]): #  and 
-            if not data["video_path"].endswith(".mp4"):
-                print("Warning: video_path is not .mp4!")
-            video_path = data["video_path"]
+            if  os.path.exists(data["video_path"]): #  and 
+                if not data["video_path"].endswith(".mp4"):
+                    print("Warning: video_path is not .mp4!")
+                video_path = data["video_path"]
+            else:
+                
+                assert data["video_path"].startswith("http"), data["video_path"] + "is not http url !"
+
+                video_path = "/export" + data["video_path"].split(":9000")[1]
+                video_dir = os.path.dirname(video_path)
+                os.makedirs(video_dir, exist_ok=True)
+                wget.download(data["video_path"], video_path)
+                
         else:
-            
-            assert data["video_path"].startswith("http"), data["video_path"] + "is not http url !"
+            video_path = ""
 
-            video_path = "/export" + data["video_path"].split(":9000")[1]
-            video_dir = os.path.dirname(video_path)
-            os.makedirs(video_dir, exist_ok=True)
-            wget.download(data["video_path"], video_path)
 
         return video_path
 

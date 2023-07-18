@@ -2,6 +2,8 @@ from lib_help_base import GetInputData
 from lib_img_registration import registration, convert_coor
 import numpy as np
 import cv2
+import os
+import wget
 
 def lib_match(img_ref, img_tag, pointers, bboxes):
     H, W = img_tag.shape[:2]
@@ -24,6 +26,35 @@ def lib_match(img_ref, img_tag, pointers, bboxes):
     
     return out_pointers, out_bboxes
 
+def get_img_ref(config):
+
+    if "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
+        img_ref_path = config["img_ref_path"]
+        if os.path.exists(img_ref_path):
+            return cv2.imread(img_ref_path)
+        elif img_ref_path.startswith("http"):
+            img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
+            wget.download(img_ref_path, img_ref_path_)
+            return cv2.imread(img_ref_path_)
+        else:
+            return None
+    else:
+        return None
+
+def get_img_paths(input_data):
+    img_paths = []
+    for tag_ in input_data["images_path"]:
+        if os.path.exists(tag_):
+            img_paths.append(tag_)
+        elif tag_.startswith("http"):
+            tag_tmp = "/export" + tag_.split(":9000")[1]
+            wget.download(tag_, tag_tmp)
+            img_paths.append(tag_tmp)
+        else:
+            continue
+    return img_paths
+
+
 def patrol_match(input_data):
     """
     目标追踪接口
@@ -42,9 +73,9 @@ def patrol_match(input_data):
         out_data = {"code":0, "data": {"pointers": out_pointers, "bboxes": out_bboxes}, "msg": "Success!"}
         return out_data
 
-    img_ref = cv2.imread(input_data['config']['img_ref_path'])
+    img_ref = get_img_ref(input_data["config"])
     out_data = {"code":0, "data": [], "msg": "Success!"}
-    for tag_ in input_data["images_path"]:
+    for tag_ in get_img_paths(input_data):
         img_tag = cv2.imread(tag_)
         out_pointers, out_bboxes = lib_match(img_ref, img_tag, pointers, bboxes)
         out_data["data"].append({"pointers": out_pointers, "bboxes": out_bboxes})
