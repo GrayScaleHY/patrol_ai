@@ -34,6 +34,8 @@ def get_img_ref(config):
             return cv2.imread(img_ref_path)
         elif img_ref_path.startswith("http"):
             img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
+            img_ref_dir = os.path.dirname(img_ref_path_)
+            os.makedirs(img_ref_dir, exist_ok=True)
             wget.download(img_ref_path, img_ref_path_)
             return cv2.imread(img_ref_path_)
         else:
@@ -48,6 +50,8 @@ def get_img_paths(input_data):
             img_paths.append(tag_)
         elif tag_.startswith("http"):
             tag_tmp = "/export" + tag_.split(":9000")[1]
+            tag_dir = os.path.dirname(tag_tmp)
+            os.makedirs(tag_tmp, exist_ok=True)
             wget.download(tag_, tag_tmp)
             img_paths.append(tag_tmp)
         else:
