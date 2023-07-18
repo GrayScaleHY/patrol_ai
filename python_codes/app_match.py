@@ -51,7 +51,7 @@ def get_img_paths(input_data):
         elif tag_.startswith("http"):
             tag_tmp = "/export" + tag_.split(":9000")[1]
             tag_dir = os.path.dirname(tag_tmp)
-            os.makedirs(tag_tmp, exist_ok=True)
+            os.makedirs(tag_dir, exist_ok=True)
             wget.download(tag_, tag_tmp)
             img_paths.append(tag_tmp)
         else:
