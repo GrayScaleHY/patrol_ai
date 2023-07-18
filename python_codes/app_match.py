@@ -26,23 +26,6 @@ def lib_match(img_ref, img_tag, pointers, bboxes):
     
     return out_pointers, out_bboxes
 
-def get_img_ref(config):
-
-    if "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
-        img_ref_path = config["img_ref_path"]
-        if os.path.exists(img_ref_path):
-            return cv2.imread(img_ref_path)
-        elif img_ref_path.startswith("http"):
-            img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
-            img_ref_dir = os.path.dirname(img_ref_path_)
-            os.makedirs(img_ref_dir, exist_ok=True)
-            wget.download(img_ref_path, img_ref_path_)
-            return cv2.imread(img_ref_path_)
-        else:
-            return None
-    else:
-        return None
-
 def get_img_paths(input_data):
     img_paths = []
     for tag_ in input_data["images_path"]:
@@ -77,7 +60,6 @@ def patrol_match(input_data):
         out_data = {"code":0, "data": {"pointers": out_pointers, "bboxes": out_bboxes}, "msg": "Success!"}
         return out_data
 
-    img_ref = get_img_ref(input_data["config"])
     out_data = {"code":0, "data": [], "msg": "Success!"}
     for tag_ in get_img_paths(input_data):
         img_tag = cv2.imread(tag_)
@@ -85,4 +67,20 @@ def patrol_match(input_data):
         out_data["data"].append({"pointers": out_pointers, "bboxes": out_bboxes})
 
     return out_data
+
+
+if __name__ == '__main__':
+    import json
+    json_file = "/data/PatrolAi/result_patrol/0718085932_input_data.json"
+    print(json_file)
+    f = open(json_file,"r", encoding='utf-8')
+    input_data = json.load(f)
+    f.close()
+    out_data = patrol_match(input_data)
+
+    print("------------------------------")
+    for s in out_data:
+        if s != "img_result":
+            print(s, ":", out_data[s])
+    print("------------------------------")
     
