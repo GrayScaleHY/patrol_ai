@@ -83,6 +83,18 @@ class GetInputData:
         """
         if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
             img_ref = base642img(config["img_ref"])
+        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
+            img_ref_path = config["img_ref_path"]
+            if os.path.exists(img_ref_path):
+                return cv2.imread(img_ref_path)
+            elif img_ref_path.startswith("http"):
+                img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
+                img_ref_dir = os.path.dirname(img_ref_path_)
+                os.makedirs(img_ref_dir, exist_ok=True)
+                wget.download(img_ref_path, img_ref_path_)
+                return cv2.imread(img_ref_path_)
+            else:
+                return None
         else:
             img_ref = None
         return img_ref
