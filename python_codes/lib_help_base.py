@@ -10,6 +10,7 @@ import json
 import os
 import time
 import shutil
+import wget
 import threading
 
 class GetInputData:
@@ -264,10 +265,21 @@ class GetInputData:
         """
         获取测试视频路径
         """
-        if "video_path" in data and isinstance(data["video_path"], str) and data["video_path"].endswith(".mp4"):
+        assert "video_path" in data and isinstance(data["video_path"], str), "video_path is not str!"
+
+        if  os.path.exists(data["video_path"]): #  and 
+            if not data["video_path"].endswith(".mp4"):
+                print("Warning: video_path is not .mp4!")
             video_path = data["video_path"]
         else:
-            video_path = ""
+            
+            assert data["video_path"].startswith("http"), data["video_path"] + "is not http url !"
+
+            video_path = "/export" + data["video_path"].split(":9000")[1]
+            video_dir = os.path.dirname(video_path)
+            os.makedirs(video_dir, exist_ok=True)
+            wget.download(data["video_path"], video_path)
+
         return video_path
 
 class Logger(object):
