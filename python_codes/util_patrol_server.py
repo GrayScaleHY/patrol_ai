@@ -16,6 +16,7 @@ from app_yejingpingshuzishibie import inspection_digital_rec
 from app_match import patrol_match
 import time
 import threading
+from config_object_name import AI_FUNCTION
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
@@ -27,6 +28,11 @@ draw_img = True
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
+
+## ai能力列表
+@app.route('/AI_function/', methods=['GET'])
+def inspection_ai_function():
+    return jsonify(AI_FUNCTION)
 
 @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_digital/', methods=['POST'])
