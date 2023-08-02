@@ -245,6 +245,37 @@ AI_FUNCTION = {
     },
 }
 
+def convert_ai_function(AI_FUNCTION):
+    data = []
+    count_1 = 0
+    count_2 = len(AI_FUNCTION)
+    count_3 = count_2
+    for label_1 in AI_FUNCTION:
+        count_3 += len(AI_FUNCTION[label_1])
+    for label_1 in AI_FUNCTION:
+        count_1 += 1
+        data_1 = {}
+        data_1["id"] = count_1
+        data_1["label"] = label_1
+        data_1["children"] = []
+        for label_2 in AI_FUNCTION[label_1]:
+            count_2 += 1
+            data_2 = {}
+            data_2["id"] = count_2
+            data_2["label"] = label_2
+            data_2["children"] = []
+            for label_3 in AI_FUNCTION[label_1][label_2]:
+                count_3 += 1
+                data_3 = {}
+                data_3["id"] = count_3
+                data_3["label"] = label_3
+                data_2["children"].append(data_3)
+            data_1["children"].append(data_2)
+        data.append(data_1)
+    ai_function = {"data": data}
+    return ai_function
+
+
 
 ## 不同颜色对应的hsv范围
 ## https://blog.csdn.net/qq_41895190/article/details/82791426

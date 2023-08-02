@@ -346,7 +346,7 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
         return [], None
     
     ## 通过val_size读数大小来筛选指针。
-    if val_size is not None and len(seg_cfgs) > 1:
+    if val_size is not None:
         vals = []
         seg_cfgs_real = []
         for seg_cfg in seg_cfgs:
@@ -375,7 +375,10 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
         return [seg], val
     
     ## 双指针动作次数表
-    if meter_type == "blq_zzscsb" and len(seg_cfgs) > 0:
+    if meter_type == "blq_zzscsb" or meter_type == "nszb_zzscsb":
+        if meter_type == "nszb_zzscsb":
+            meter_type = "nszb"
+
         i = select_pointer(img_tag, seg_cfgs, 2, width, color)
         seg1 = seg_cfgs[i]["seg"]
         val1 = cal_base_scale(pointers_tag, seg1, meter_type)
@@ -527,7 +530,7 @@ def inspection_pointer(input_data):
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         return out_data
 
-    if meter_type == "blq_zzscsb":
+    if meter_type == "blq_zzscsb" or "nszb_zzscsb":
         dp = 0
     if dp == 0:
         val = int(round(val, dp))
