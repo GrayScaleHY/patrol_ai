@@ -250,6 +250,8 @@ class GetInputData:
                 meter_type = "blq_zzscsb"
             elif config["meter_type"] == "nszb":
                 meter_type = "nszb"
+            elif config["meter_type"] == "nszb_zzscsb":
+                meter_type = "nszb_zzscsb"
             else: 
                 meter_type = "normal"
         else:
