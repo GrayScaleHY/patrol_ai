@@ -482,15 +482,12 @@ def is_include(sub_box, par_box, srate=0.8):
     sb = [min(sb[0],sb[2]), min(sb[1],sb[3]), max(sb[0],sb[2]), max(sb[1],sb[3])]
     pb = [min(pb[0],pb[2]), min(pb[1],pb[3]), max(pb[0],pb[2]), max(pb[1],pb[3])]
 
-    ## 至少一个点在par_box里面
-    points = [[sb[0],sb[1]], [sb[2],sb[1]], [sb[0],sb[3]], [sb[2],sb[3]]]
-    is_in = False
-    for p in points:
-        if p[0] >= pb[0] and p[0] <= pb[2] and p[1] >= pb[1] and p[1] <= pb[3]:
-            is_in = True
-    if not is_in:
+    ## 至少两个框需要有交集
+    minx = max(sb[0], pb[0]); maxx = min(sb[2], pb[2])
+    miny = max(sb[1], pb[1]); maxy = min(sb[3], pb[3])
+    if minx > maxx or miny > maxy:
         return False
-    
+ 
     ## 判断交集占多少
     xmin = max(pb[0], sb[0]); ymin = max(pb[1], sb[1])
     xmax = min(pb[2], sb[2]); ymax = min(pb[3], sb[3])
