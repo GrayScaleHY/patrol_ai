@@ -240,13 +240,15 @@ def inspection_state():
         res = {"code": 0}
     return jsonify(res)
 
-@app.route('/inspection_version/', methods=['POST'])
+@app.route('/historyVersion/', methods=['POST'])
 def inspection_version():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     else:
-        res = {"data":code_version, "code": 0}
+        # 返回的数据count、
+        res = {'count': 4, 'data': {'algorithmManufacturer': 'UT', 'Version': "1.1.040715_release", 'RecordTime':
+            code_version, 'ModelDesc': 'AAA'}, 'message': 'AAA', 'code': '200 OK'}
     return jsonify(res)
 
 if __name__ == '__main__':
