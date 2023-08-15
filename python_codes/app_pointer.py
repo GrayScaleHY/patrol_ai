@@ -530,7 +530,7 @@ def inspection_pointer(input_data):
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         return out_data
 
-    if meter_type == "blq_zzscsb" or "nszb_zzscsb":
+    if meter_type == "blq_zzscsb" or meter_type == "nszb_zzscsb":
         dp = 0
     if dp == 0:
         val = int(round(val, dp))
@@ -584,7 +584,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/patrol_ai/python_codes/images/0714014521__input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/0815020214__input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)
