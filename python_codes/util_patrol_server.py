@@ -241,8 +241,8 @@ def inspection_state():
     return jsonify(res)
 
 #算法版本获取接口
-@app.route('/historyVersion/', methods=['POST'])
-def historyVersion():
+@app.route('/Version/', methods=['POST'])
+def Version():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
@@ -255,6 +255,7 @@ def historyVersion():
                 }
     return jsonify(res)
 
+#模型更新接口
 @app.route('/updateModel/', methods=['POST'])
 def updateModel():
     if request.method != 'POST':
