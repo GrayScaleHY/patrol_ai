@@ -241,65 +241,29 @@ def inspection_state():
     return jsonify(res)
 
 #算法版本获取接口
-@app.route('/historyVersion/', methods=['POST'])
-def historyVersion():
+@app.route('/Version/', methods=['POST'])
+def Version():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     else:
         # 返回的数据
-        res = {'count': 1,  #返回结果条数
-               'data': {'algorithmManufacturer': 'UT', #算法厂商
-                        'Version': "1.1.040715_release", #版本ID
-                        'RecordTime':"2023.08.15", #该版本记录时间
-                        'ModelDesc': 'AAA'}, #模型应用场景、评价指标等描述
-               'message': 'AAA', #一般配合code使用，对异常/错误进行详细描述。
-               'code': '200 OK'} #状态码，200 OK：成功;400 Bad Request：表示客户端请求有语法错误，不能被服务器所理解;401 Unauthonzed：表示请求未经授权;500：服务端异常。
+        res = {
+                'Version': "1.1.040715_release", #版本ID
+                'lastVersion':"1.1.040715_release", #z最新版本
+                'midVersion': 0, #中间版本数
+                }
     return jsonify(res)
 
-#算法参数获取接口
-@app.route('/recogParams/', methods=['POST'])
-def recogParams():
+#模型更新接口
+@app.route('/updateModel/', methods=['POST'])
+def updateModel():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     else:
-        res = {'count': 1, #返回结果条数
-               'data': {'sectionId': '666666', #区域编码
-                        'sectionName': 'zhuhai', #区域名称
-                        'stationId': '777777', #变电站编码
-                        'stationName': 'zhuhaibiandianzhan', #变电站名称
-                        'algorithmManufacturer': 'UT', #算法厂商
-                        'version': '1.1.0', #当前算法版本
-                        'lastVersion': '1.1.1', #最新算法版本
-                        'midVersion': 1, #中间版本数
-                        'runState': 1 }, #运行状态，1：运行，2：停止
-               'message': 'AAA', #一般配合code使用，对异常/错误进行详细描述。
-               'code': '200 OK'}  #状态码，200 OK：成功;400 Bad Request：表示客户端请求有 语法错误，不能被服务器所理解;401 Unauthonzed：表示请求未经授权;500：服务端异常。
-    return jsonify(res)
-
-#算法版模型文件请求接口
-@app.route('/updateAlgorithmVersion/', methods=['POST'])
-def updateAlgorithmVersion():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    else:
-        res = { "message":"ABC", #一般配合code使用，对异常/错误进行详细描述。
-                "code": "200 OK"}#状态码，200 OK：成功;400 Bad Request：表示客户端请求有 语法错误，不能被服务器所理解;401 Unauthonzed：表示请求未经 授权;500：服务端异常。}
-    return jsonify(res)
-
-#算法切换进度与结果请求接口
-@app.route('/updateProgress/', methods=['POST'])
-def updateProgress():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    else:
-        res = { "message":"ABC", #一般配合code使用，对异常/错误进行详细描述。
-                "code": "200 OK",#状态码，200 OK：成功;400 Bad Request：表示客户端请求有 语法错误，不能被服务器所理解;401 Unauthonzed：表示请求未经 授权;500：服务端异常。
-                "progress": "100%", # 更新进度，带%
-                "result": 1} # 算法更新结果：1：等待更新，2：正在更新，3：更新完成
+        res = {
+                "result": 3} # 算法更新结果：1：等待更新，2：正在更新，3：更新完成
     return jsonify(res)
 
 if __name__ == '__main__':
