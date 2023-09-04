@@ -160,8 +160,8 @@ def intersection_arc(line, arc):
     return:
         (x1, y1): 交点坐标。也可能是None，表示直线与弧线无交点。
     # """
-    line = [834, 830, 769, 694] # [x1, y1, x2, y2]
-    arc = [1574, 529, 1478, 432, 1555, 421]# [xc, yc, x1, y1, x2, y2]
+    # line = [834, 830, 769, 694] # [x1, y1, x2, y2]
+    # arc = [1574, 529, 1478, 432, 1555, 421]# [xc, yc, x1, y1, x2, y2]
     line = np.array(line, dtype=float) ## int转float
     arc = np.array(arc, dtype=float)
     # 根据线段到圆心的远近，确定坐标的先后
