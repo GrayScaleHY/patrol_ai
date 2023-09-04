@@ -177,6 +177,18 @@ def inspection_object_detection(input_data):
                 cfg_out = {}
         out_data["data"].append(cfg_out)
     
+    ## 指示灯若没有识别到状态默认为指示灯灭
+    if an_type == "led":
+        for i in range(len(out_data["data"])):
+            if len(out_data["data"][i]) == 0:
+                c = roi_tag[i]; label = "指示灯灭"
+                c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
+                _cfg = {"label": "指示灯灭", "bbox": c, "score": 1.0}
+                cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
+                s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+                img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
+                out_data["data"][i] = _cfg
+    
     ## 判断是否异常
     if an_type == "rec_defect" or an_type == "fire_smoke":
         for _cfg in out_data["data"]:
