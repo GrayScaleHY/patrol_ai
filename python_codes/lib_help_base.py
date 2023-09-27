@@ -554,7 +554,7 @@ def rm_patrolai(out_json, save_dict, out_dir):
             shutil.copy(in_file, out_file)
         
         day_now = float(time.strftime("%m%d"))
-        if day_head > day_now or day_head < day_now - 2:
+        if day_head > day_now or day_head < day_now - 3:
             os.remove(in_file)
     
     return save_dict
