@@ -568,50 +568,50 @@ def rm_result_patrolai():
     in_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     in_dir = os.path.join(in_dir, "result_patrol")
 
-    # while True:
+    while True:
 
-    month = time.strftime("%Y%m")
-    out_dir = os.path.join(os.path.dirname(in_dir), "result_saved", month)
-    os.makedirs(out_dir, exist_ok=True)
+        month = time.strftime("%Y%m")
+        out_dir = os.path.join(os.path.dirname(in_dir), "result_saved", month)
+        os.makedirs(out_dir, exist_ok=True)
 
-    ## 初始化save_dict
-    save_file = os.path.join(out_dir, "save_dict.json")
-    if os.path.exists(save_file):
-        f = open(save_file, "r", encoding='utf-8')
-        save_dict = json.load(f)
-        f.close()
-    else:
-        json_list = glob.glob(os.path.join(os.path.dirname(in_dir), "result_saved/*/save_dict.json"))
-        json_list.sort()
-        if len(json_list) < 1:
-            save_dict = {}
-        else:
-            json_file = json_list[-1]
-            f = open(json_file, "r", encoding='utf-8')
+        ## 初始化save_dict
+        save_file = os.path.join(out_dir, "save_dict.json")
+        if os.path.exists(save_file):
+            f = open(save_file, "r", encoding='utf-8')
             save_dict = json.load(f)
             f.close()
-            for type_ in save_dict:
-                for checkpoint in save_dict[type_]:
-                    if len(save_dict[type_][checkpoint]["labels"]) > 1:
-                        labels = save_dict[type_][checkpoint]["labels"][-1]
-                        save_dict[type_][checkpoint]["labels"] = [labels]
-    
-    for root, dirs, files in os.walk(in_dir):
-        for file_name in files:
-            if not file_name.endswith("output_data.json"):
-                continue
-            out_json = os.path.join(root, file_name)
+        else:
+            json_list = glob.glob(os.path.join(os.path.dirname(in_dir), "result_saved/*/save_dict.json"))
+            json_list.sort()
+            if len(json_list) < 1:
+                save_dict = {}
+            else:
+                json_file = json_list[-1]
+                f = open(json_file, "r", encoding='utf-8')
+                save_dict = json.load(f)
+                f.close()
+                for type_ in save_dict:
+                    for checkpoint in save_dict[type_]:
+                        if len(save_dict[type_][checkpoint]["labels"]) > 1:
+                            labels = save_dict[type_][checkpoint]["labels"][-1]
+                            save_dict[type_][checkpoint]["labels"] = [labels]
+        
+        for root, dirs, files in os.walk(in_dir):
+            for file_name in files:
+                if not file_name.endswith("output_data.json"):
+                    continue
+                out_json = os.path.join(root, file_name)
 
-            try:
-                save_dict = rm_patrolai(out_json, save_dict, out_dir)
-            except:
-                print(out_json, "is wrong !!")
-    
-    f = open(save_file, "w", encoding='utf-8')
-    json.dump(save_dict, f, ensure_ascii=False, indent=2)
-    f.close()
+                try:
+                    save_dict = rm_patrolai(out_json, save_dict, out_dir)
+                except:
+                    print(out_json, "is wrong !!")
+        
+        f = open(save_file, "w", encoding='utf-8')
+        json.dump(save_dict, f, ensure_ascii=False, indent=2)
+        f.close()
 
-        # time.sleep(36000)
+        time.sleep(36000)
         
 if __name__ == '__main__':
     rm_result_patrolai()
