@@ -47,7 +47,7 @@ def inference_yolov8(model,
     """
     labels = model.names  # 标签名
     img_ = img.copy()
-    result = model(img_, iou=same_iou_thres)[0]  # 推理结果
+    result = model(img_, iou=same_iou_thres, conf=conf_thres)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
     H, W = img.shape[:2]
 
@@ -55,7 +55,7 @@ def inference_yolov8(model,
 
     # 分类模型推理结果后处理
     if task == "classify":
-        res = result.probs.cpu().numpy()
+        res = result.probs.data.cpu().numpy()
         index = np.argmax(res)
         score = float(res[index])
         label = str(labels[index])
@@ -81,7 +81,8 @@ def inference_yolov8(model,
     cfgs = []
     img_shape = np.array([W, H])
     for i, lab in enumerate(res_boxes.cls):
-        box = list(res_boxes.xyxy[i])  # 目标框坐标
+        b = list(res_boxes.xyxy[i])  # 目标框坐标
+        box = [int(b[0]), int(b[1]), int(b[2]), int(b[3])]
         label = labels[lab]  # 标签
         score = res_boxes.conf[i]  # 得分
 

@@ -3,13 +3,13 @@ import json
 from lib_help_base import get_save_head, save_input_data, save_output_data, rm_result_patrolai
 import os
 from app_pointer import inspection_pointer
-from app_disconnector import inspection_disconnector
+# from app_disconnector import inspection_disconnector
 # from app_counter import inspection_counter
 from app_object_detection import inspection_object_detection
 from app_qrcode_ocr import inspection_qrcode
 from app_panbie import inspection_identify_defect
 from config_version import code_version
-from app_disconnector_video import inspection_disconnector_video
+# from app_disconnector_video import inspection_disconnector_video
 from app_yeweiji import inspection_level_gauge
 # from app_ocr import ocr_digit_detection
 from app_yejingpingshuzishibie import inspection_digital_rec
@@ -218,37 +218,37 @@ def inspection_identify_defect_server():
     print("----------------------------------------------")
     return jsonify(res)
 
-## 刀闸分合识别
-@app.route('/inspection_disconnector/', methods=['POST'])
-def inspection_disconnector_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_disconnector(data)
-    print("inspection_pointer result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# ## 刀闸分合识别
+# @app.route('/inspection_disconnector/', methods=['POST'])
+# def inspection_disconnector_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_disconnector(data)
+#     print("inspection_pointer result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
-## 视频分析刀闸分合状态
-@app.route('/inspection_disconnector_video/', methods=['POST'])
-def inspection_disconnector_video_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    res = inspection_disconnector_video(data)
-    print("inspection_pointer result:")
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
-    return jsonify(res)
+# ## 视频分析刀闸分合状态
+# @app.route('/inspection_disconnector_video/', methods=['POST'])
+# def inspection_disconnector_video_server():
+#     if request.method != 'POST':
+#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+#         return jsonify(res)
+#     data = json.loads(request.get_data(as_text=True))
+#     res = inspection_disconnector_video(data)
+#     print("inspection_pointer result:")
+#     print("-----------------------------------------------")
+#     for s in res:
+#         if s != "img_result":
+#             print(s,":",res[s])
+#     print("----------------------------------------------")
+#     return jsonify(res)
 
 @app.route('/inspection_state/', methods=['POST'])
 def inspection_state():

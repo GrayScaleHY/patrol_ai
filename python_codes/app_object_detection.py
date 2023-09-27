@@ -4,17 +4,18 @@ import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_help_base import color_list
 from lib_img_registration import registration, convert_coor
 import config_object_name
-from config_object_name import convert_label
+from config_object_name import convert_label, defect_LIST
 import numpy as np
 from lib_help_base import GetInputData
 from lib_help_base import is_include
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 
 yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
-yolov5_rec_defect_x6 = load_yolov5_model("/data/PatrolAi/yolov5/18cls_rec_defect_x6.pt") # 送检18类缺陷,x6模型
+yolov8_rec_defect = load_yolov8_model("/data/PatrolAi/yolov8/rec_defect.pt") # 送检18类缺陷,x6模型
 yolov5_daozha = load_yolov5_model("/data/PatrolAi/yolov5/daozha_v5detect.pt")  # 加载刀闸模型
 yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
 # yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
@@ -82,9 +83,8 @@ def inspection_object_detection(input_data):
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "led"
     elif an_type == "rec_defect":
-        yolov5_model = yolov5_rec_defect_x6
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
-        labels = [labels_dict[id] for id in labels_dict]
+        yolov5_model = yolov8_rec_defect
+        labels = defect_LIST
         if len(label_list) > 0:
             labels = [convert_label(l, "rec_defect") for l in label_list]
         model_type = "rec_defect"
@@ -145,7 +145,7 @@ def inspection_object_detection(input_data):
 
     ## 模型推理
     if an_type == "rec_defect":
-        cfgs = inference_yolov5(yolov5_model, img_tag, resize=1280, pre_labels=labels, conf_thres=0.7) # inference
+        cfgs = inference_yolov8(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.8) # inference
     else:
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制

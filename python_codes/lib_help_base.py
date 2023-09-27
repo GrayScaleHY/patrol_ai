@@ -11,7 +11,7 @@ import os
 import time
 import shutil
 import wget
-import threading
+import glob
 
 class GetInputData:
     """
@@ -499,11 +499,14 @@ def is_include(sub_box, par_box, srate=0.8):
         return False
     
 
-def rm_patrolai(out_json):
+def rm_patrolai(out_json, save_dict, out_dir):
     """
     将分析结果保存下来的图片删除或转移
     """
+    out_name = os.path.basename(out_json)
     file_head = out_json[:-16]
+    checkpoint = out_name[11:-16]
+    type_ = os.path.basename(os.path.dirname(out_json))
     rm_list = []
     rm_list.append(out_json)
     rm_list.append(file_head + "input_data.json")
@@ -519,6 +522,25 @@ def rm_patrolai(out_json):
         is_cp = True
     else:
         is_cp = False
+        if "data" in out_data and isinstance(out_data["data"], list):
+            labels = []
+            for cfg in out_data["data"]:
+                if "label" in cfg:
+                    labels.append(cfg["label"])
+            labels.sort()
+
+            if len(labels) > 0: #and labels not in save_dict[type_][checkpoint]:
+                if type_ in save_dict and checkpoint in save_dict[type_]:
+                    if labels not in save_dict[type_][checkpoint]["labels"]:
+                        save_dict[type_][checkpoint]["labels"].append(labels)
+                        print(type_ + "/" + checkpoint + ":" + str(save_dict[type_][checkpoint]))
+                        is_cp = True
+                else:
+                    if type_ not in save_dict:
+                        save_dict[type_] = {}
+                    if checkpoint not in save_dict[type_]:
+                        save_dict[type_][checkpoint] = {"labels": [labels]}
+                        is_cp = True
 
     file_name = os.path.basename(out_json)
     day_head = float(file_name[:4])
@@ -526,39 +548,70 @@ def rm_patrolai(out_json):
     for in_file in rm_list:
         if not os.path.exists(in_file):
             continue
-        out_file = in_file.replace("result_patrol", "result_wrong")
-        if is_cp and not os.path.exists(out_file):
+        out_file = os.path.join(out_dir, type_, os.path.basename(in_file))
+        if is_cp and not os.path.exists(out_file) and out_file.endswith(".json"):
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
             shutil.copy(in_file, out_file)
         
         day_now = float(time.strftime("%m%d"))
-        if day_head > day_now or day_head < day_now - 5:
+        if day_head > day_now or day_head < day_now - 2:
             os.remove(in_file)
+    
+    return save_dict
 
 
 def rm_result_patrolai():
     """
-    将分析异常的图片转移到/data/PatrolAi/result_wrong
+    将分析异常的图片转移到/data/PatrolAi/result_saved
     """
+    
     in_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     in_dir = os.path.join(in_dir, "result_patrol")
-    out_dir = os.path.join(os.path.dirname(in_dir), "result_wrong")
+
+    # while True:
+
+    month = time.strftime("%Y%m")
+    out_dir = os.path.join(os.path.dirname(in_dir), "result_saved", month)
     os.makedirs(out_dir, exist_ok=True)
 
-    while True:
-        for root, dirs, files in os.walk(in_dir):
-            for file_name in files:
-                if not file_name.endswith("output_data.json"):
-                    continue
-                out_json = os.path.join(root, file_name)
+    ## 初始化save_dict
+    save_file = os.path.join(out_dir, "save_dict.json")
+    if os.path.exists(save_file):
+        f = open(save_file, "r", encoding='utf-8')
+        save_dict = json.load(f)
+        f.close()
+    else:
+        json_list = glob.glob(os.path.join(os.path.dirname(in_dir), "result_saved/*/save_dict.json"))
+        json_list.sort()
+        if len(json_list) < 1:
+            save_dict = {}
+        else:
+            json_file = json_list[-1]
+            f = open(json_file, "r", encoding='utf-8')
+            save_dict = json.load(f)
+            f.close()
+            for type_ in save_dict:
+                for checkpoint in save_dict[type_]:
+                    if len(save_dict[type_][checkpoint]["labels"]) > 1:
+                        labels = save_dict[type_][checkpoint]["labels"][-1]
+                        save_dict[type_][checkpoint]["labels"] = [labels]
+    
+    for root, dirs, files in os.walk(in_dir):
+        for file_name in files:
+            if not file_name.endswith("output_data.json"):
+                continue
+            out_json = os.path.join(root, file_name)
 
-                try:
-                    rm_patrolai(out_json)
-                except:
-                    print(out_json, "is wrong !!")
+            try:
+                save_dict = rm_patrolai(out_json, save_dict, out_dir)
+            except:
+                print(out_json, "is wrong !!")
+    
+    f = open(save_file, "w", encoding='utf-8')
+    json.dump(save_dict, f, ensure_ascii=False, indent=2)
+    f.close()
+
+        # time.sleep(36000)
         
-        time.sleep(36000)
-
-
 if __name__ == '__main__':
     rm_result_patrolai()
