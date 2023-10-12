@@ -7,6 +7,7 @@ from lib_sift_match import sift_create, sift_match, detect_diff
 from lib_img_registration import convert_coor, correct_offset
 import base64
 import hashlib
+from lib_help_base import GetInputData
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -94,30 +95,28 @@ def inspection_identify_defect(input_data):
     """
     yolov5的目标检测推理。
     """
-    ## 将输入请求信息可视化
-    TIME_START = time.strftime("%m%d%H%M%S") + "_"
-    if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str) and len(input_data["checkpoint"]) > 0:
-        TIME_START = TIME_START + input_data["checkpoint"] + "_"
-    save_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    save_path = os.path.join(save_path, "result_patrol", input_data["type"])
-    os.makedirs(save_path, exist_ok=True)
-    f = open(os.path.join(save_path, TIME_START + "input_data.json"), "w")
-    json.dump(input_data, f, ensure_ascii=False)  # 保存输入信息json文件
-    f.close()
+
+    # 提取输入请求信息
+    DATA = GetInputData(input_data)
+    checkpoint = DATA.checkpoint
+    an_type = DATA.type
+    img_tag = DATA.img_tag
+    img_ref = DATA.img_ref
+
+    # 画上点位名称和osd区域
+    img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint, (10, 100), color=(255, 0, 0), size=30)
 
     ## 初始化输入输出信息。
     img_tag, img_ref = get_input_data(input_data)
     out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     img_tag_ = img_tag.copy()
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag) # 将输入图片可视化
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref) # 将输入图片可视化
 
     if img_ref is None:
         out_data["msg"] = out_data["msg"] + "; img_ref not exist;"
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
         out_data["img_result"] = img2base64(img_tag_)
-        cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
     ## 检查图片是否能用md5匹配
@@ -127,9 +126,6 @@ def inspection_identify_defect(input_data):
 
     if tag_diff is None:  
         tag_diff = panbie_main(img_ref, img_tag) ## 使用算法
-    else:
-        f = open(os.path.join(save_path, TIME_START + name), "w")
-        f.close()
 
     out_cfg = []
     if len(tag_diff) == 0:
@@ -144,14 +140,8 @@ def inspection_identify_defect(input_data):
     
     out_data["data"] = out_cfg
 
-    ## 可视化计算结果
-    f = open(os.path.join(save_path, TIME_START + "out_data.json"), "w")
-    json.dump(out_data, f, ensure_ascii=False, indent=2)  # 保存输入信息json文件
-    f.close()
-    
     ## 输出可视化结果的图片。
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
-    cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
     out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
