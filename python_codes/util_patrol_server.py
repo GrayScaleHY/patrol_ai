@@ -210,7 +210,10 @@ def inspection_identify_defect_server():
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
     data = json.loads(request.get_data(as_text=True))
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_identify_defect(data)
+    save_output_data(res, save_dir, name_head)
     print("-----------------------------------------------")
     for s in res:
         if s != "img_result":
