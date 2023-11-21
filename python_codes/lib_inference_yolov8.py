@@ -47,7 +47,7 @@ def inference_yolov8(model,
     """
     labels = model.names  # 标签名
     img_ = img.copy()
-    result = model(img_, iou=same_iou_thres, conf=conf_thres)[0]  # 推理结果
+    result = model(img_, iou=same_iou_thres, conf=conf_thres, imgsz=resize)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
     H, W = img.shape[:2]
 
