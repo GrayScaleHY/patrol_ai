@@ -441,8 +441,14 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
     
     if img_tag is not None:
         cv2.imwrite(os.path.join(save_dir, name_head + "tag.jpg"), img_tag)
+    else:
+        return 0
+        
     if img_ref is not None:
         cv2.imwrite(os.path.join(save_dir, name_head + "ref.jpg"), img_ref)
+    else:
+        return 0
+    
     if os.path.exists(video_path):
         shutil.copy(video_path, os.path.join(save_dir, name_head + "tag.mp4"))
 
