@@ -29,6 +29,7 @@ draw_img = True
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False # 让jsonify返回的json串支持中文
+app.url_map.strict_slashes = False
 
 ## ai能力列表
 @app.route('/AI_function/', methods=['GET'])
