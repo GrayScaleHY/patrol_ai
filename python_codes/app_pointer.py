@@ -546,7 +546,7 @@ def inspection_pointer(input_data):
     H, W = img_tag.shape[:2]
     s = W / 800
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(
-        seg[3])-5), cv2.FONT_HERSHEY_SIMPLEX, round(s), (0, 255, 0), thickness=round(s*2))
+        seg[3])-5), cv2.FONT_HERSHEY_SIMPLEX, math.ceil(s), (0, 255, 0), thickness=math.ceil(s*2))
     img_tag_ = img_chinese(
         img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
@@ -584,7 +584,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/0815020214__input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/1123084815__input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)

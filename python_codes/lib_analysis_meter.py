@@ -88,7 +88,7 @@ def angle2sclae(cfg, ang):
     return:
         scale: 指针的刻度。
     """
-    if ang < cfg[0]:
+    if ang <= cfg[0]:
         scale = cfg[1] + (cfg[0] - ang) * cfg[2]
     else:
         scale = cfg[1] + (cfg[0] + 360 - ang) * cfg[2]
