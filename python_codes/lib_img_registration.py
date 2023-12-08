@@ -19,23 +19,73 @@ except:
     print("warning: no kornia pkg !")
 
 try:
-    matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
-    registration_opt = "loftr"
+    '''
+    https://github.com/cvg/LightGlue/tree/main
+    python -m pip install -e .
+    '''
+    from lightglue import LightGlue, SuperPoint
+    from lightglue.utils import  rbd
+except:
+    print("warning: no lightglue pkg !")
+
+try:
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda")
+    extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+    matcher = LightGlue(features="superpoint").eval().to(device)
+    registration_opt = "lightglue"
 except:
     try:
-        import sys
-        sys.path.insert(0,'../SuperGluePretrainedNetwork')
-        from models.matching import Matching
-        from models.utils import frame2tensor
-        torch.set_grad_enabled(False)
-        device='cuda'
-        config = {'superpoint': {'nms_radius': 4,'keypoint_threshold': 0.005,'max_keypoints': -1},
-                    'superglue': {'weights': "indoor",'sinkhorn_iterations': 20,'match_threshold': 0.6}}
-        matching = Matching(config).eval().to(device) # 初始化模型
-        registration_opt = "superglue"
+        matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
+        registration_opt = "loftr"
     except:
-        print("Warning: Not gpu memory enough to load LoFTR module !")
-        registration_opt = "fft"
+        try:
+            import sys
+            sys.path.insert(0,'../SuperGluePretrainedNetwork')
+            from models.matching import Matching
+            from models.utils import frame2tensor
+            torch.set_grad_enabled(False)
+            device='cuda'
+            config = {'superpoint': {'nms_radius': 4,'keypoint_threshold': 0.005,'max_keypoints': -1},
+                        'superglue': {'weights': "indoor",'sinkhorn_iterations': 20,'match_threshold': 0.6}}
+            matching = Matching(config).eval().to(device) # 初始化模型
+            registration_opt = "superglue"
+        except:
+            print("Warning: Not gpu memory enough to load LoFTR module !")
+            registration_opt = "fft"
+
+def numpy_image_to_torch(image: np.ndarray) -> torch.Tensor:
+    """Normalize the image tensor and reorder the dimensions."""
+    if image.ndim == 3:
+        image = image.transpose((2, 0, 1))  # HxWxC to CxHxW
+    elif image.ndim == 2:
+        image = image[None]  # add channel axis
+    else:
+        raise ValueError(f"Not an image: {image.shape}")
+    return torch.tensor(image / 255.0, dtype=torch.float)
+
+def lightglue_registration(img_ref, img_tag):
+    """
+    lightglue纠偏算法
+    https://github.com/cvg/LightGlue/tree/main
+    https://colab.research.google.com/github/cvg/LightGlue/blob/main/demo.ipynb#scrollTo=6JA4sWG9PV7M
+    """
+    img_ref = numpy_image_to_torch(img_ref)
+    img_tag = numpy_image_to_torch(img_tag)
+
+    feats0 = extractor.extract(img_ref.to(device))
+    feats1 = extractor.extract(img_tag.to(device))
+    matches01 = matcher({"image0": feats0, "image1": feats1})
+
+    feats0, feats1, matches01 = [rbd(x) for x in [feats0, feats1, matches01]]  # remove batch dimension
+
+    kpts0, kpts1, matches = feats0["keypoints"], feats1["keypoints"], matches01["matches"]
+    mkpts0, mkpts1 = kpts0[matches[..., 0]], kpts1[matches[..., 1]]
+    mkpts0 = mkpts0.cpu().numpy()
+    mkpts1 = mkpts1.cpu().numpy()
+
+    M, mask = cv2.estimateAffinePartial2D(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
+    return M
 
 def superglue_registration(img_ref, img_tag):
     """
@@ -181,20 +231,18 @@ def registration(img_ref, img_tag):
     return:
         M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
     """
-    if registration_opt == "fft":
-        print("registration with fft !")
-        return fft_registration(img_ref, img_tag)
-
-    if registration_opt == "superglue":
-        print("registration with SuperGlue !")
-        return superglue_registration(img_ref, img_tag) # 优先使用superglue纠偏算法
-    
-    try:
+    if registration_opt == "lightglue":
+        print("registration with lightglue !")
+        return lightglue_registration(img_ref, img_tag) # 使用lightglue纠偏算法
+    elif registration_opt == "loftr":
         print("registration with LoFTR !")
-        return loftr_registration(img_ref, img_tag) # 优先使用Loftr纠偏算法
-    except:
+        return loftr_registration(img_ref, img_tag) # 使用Loftr纠偏算法
+    elif registration_opt == "superglue":
+        print("registration with SuperGlue !")
+        return superglue_registration(img_ref, img_tag) # 使用superglue纠偏算法
+    else:
         print("registration with fft !")
-        return fft_registration(img_ref, img_tag) # 否则使用fft纠偏算法
+        return fft_registration(img_ref, img_tag) # 最不优先使用fft纠偏算法
     
 def correct_offset(tag_img, M, b=False):
     """
