@@ -64,12 +64,23 @@ def numpy_image_to_torch(image: np.ndarray) -> torch.Tensor:
         raise ValueError(f"Not an image: {image.shape}")
     return torch.tensor(image / 255.0, dtype=torch.float)
 
-def lightglue_registration(img_ref, img_tag):
+def lightglue_registration(img_ref, img_tag, max_size=1280):
     """
     lightglue纠偏算法
     https://github.com/cvg/LightGlue/tree/main
     https://colab.research.google.com/github/cvg/LightGlue/blob/main/demo.ipynb#scrollTo=6JA4sWG9PV7M
     """
+    # 若图片最长边大于max_size，将图片resize到max_size内
+    shape_max = max(list(img_ref.shape[:2]) + list(img_tag.shape[:2]))
+    resize_rate = math.ceil(shape_max / max_size)
+    H, W = img_tag.shape[:2]
+    img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
+    H, W = img_ref.shape[:2]
+    img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
+
+    resize_scale = [1, 1, resize_rate] # 原始图片相对于resize后的图片的偏移矩阵M的关系。
+    M_scale = np.diag(np.array(resize_scale)) 
+
     img_ref = numpy_image_to_torch(img_ref)
     img_tag = numpy_image_to_torch(img_tag)
 
@@ -85,6 +96,8 @@ def lightglue_registration(img_ref, img_tag):
     mkpts1 = mkpts1.cpu().numpy()
 
     M, mask = cv2.estimateAffinePartial2D(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
+
+    M = np.dot(M, M_scale) # 偏移矩阵还原会原始图片对应的M
     return M
 
 def superglue_registration(img_ref, img_tag):
@@ -175,6 +188,7 @@ def fft_registration(img_ref, img_tag, retained_angle=45):
 
     ## 若resize过，则将resize信息放入到M中
     M = np.dot(M, M_scale)
+    
 
     return M
 
@@ -342,4 +356,3 @@ if __name__ == '__main__':
     #              (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
     # cv2.imwrite("img_tag.jpg", img_tag)
     # cv2.imwrite("img_ref.jpg", img_ref)
-    

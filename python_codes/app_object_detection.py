@@ -87,6 +87,8 @@ def inspection_object_detection(input_data):
         labels = defect_LIST
         if len(label_list) > 0:
             labels = [convert_label(l, "rec_defect") for l in label_list]
+            if "jsxs" in label_list:
+                labels = labels + ["jsxs_ddjt", "jsxs_ddyx", "jsxs_jdyxx", "jsxs_ecjxh"]
         model_type = "rec_defect"
     elif an_type == "disconnector_notemp":
         yolov5_model = yolov5_daozha
