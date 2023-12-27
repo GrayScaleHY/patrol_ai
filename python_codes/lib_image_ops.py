@@ -11,7 +11,94 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips
 import random
 import base64
 import numpy as np
+import json
+try:
+    from imagededup.methods import PHash # pip install imagededup
+    from imagededup.methods import CNN
+except:
+    print("Warning: imagededup package is not exist!")
 
+def duplicates_phash(img_dir):
+    '''
+    使用Phash寻找文件夹中的重复图片
+    https://github.com/idealo/imagededup
+    args:
+        img_dir: 存放图片的文件夹路径
+    return:
+        duplicates: 描述重复关系的字典。格式：{"name1": ["name2", "name3"], "name2": ["name1", "name3"]}
+    '''
+    print("de duplicates with PHash")
+    phasher = PHash()
+    encodings = phasher.encode_images(image_dir=img_dir)
+    duplicates = phasher.find_duplicates(encoding_map=encodings)
+    return duplicates
+
+def duplicates_cnn(img_dir, min_similarity_threshold=0.97):
+    '''
+    使用CNN寻找文件夹中的重复图片
+    https://github.com/idealo/imagededup/blob/master/examples/Evaluation.ipynb
+    args:
+        img_dir: 存放图片的文件夹路径
+    return:
+        duplicates: 描述重复关系的字典。格式：{"name1": [("name2", score), ("name3", score)]}
+    '''
+    print("de duplicates with CNN")
+    cnn_encoder = CNN()
+    duplicates = cnn_encoder.find_duplicates(image_dir=img_dir, scores=True, min_similarity_threshold=min_similarity_threshold)
+    return duplicates
+
+def process_duplicates_images(img_dir, method="Phash", conf=0.97):
+    """
+    处理需要去重的文件夹
+    args:
+        img_dir: 存放图片的文件夹路径
+        matod: 选择去重的算法，可选"CNN"或"Phash"
+    """
+    # 创建diff和same文件夹
+    diff_dir = os.path.join(img_dir, "diff")
+    same_dir = os.path.join(img_dir, "same")
+    os.makedirs(diff_dir, exist_ok=True)
+    os.makedirs(same_dir, exist_ok=True)
+
+    # 求出文件夹中重复的图片
+    if method == "CNN":
+        d_ = duplicates_cnn(img_dir, min_similarity_threshold=conf)
+        duplicates = {}
+        for name in d_:
+            duplicates[name] = [(i[0], float(round(i[1], 3))) for i in d_[name]]
+    else:
+        d_ = duplicates_phash(img_dir)
+        duplicates = {}
+        for name in d_:
+            duplicates[name] = [(i, 1.0) for i in d_[name]]
+
+    
+    # 打包字典
+    out_dict = {}
+    for name in duplicates:
+        if len(list(set([i for i in out_dict]) & set([i[0] for i in duplicates[name]]))) == 0:
+            out_dict[name] = duplicates[name]
+
+    ## 将重复的文件名对应关系保存成字典
+    f = open(os.path.join(img_dir, "duplicates.json"), "w", encoding='utf-8')
+    json.dump(out_dict, f, ensure_ascii=False, indent=2)
+    f.close()
+
+    # 移动图片到diff或same文件夹
+    for diff_name in out_dict:
+        diff_file = os.path.join(img_dir, diff_name)
+        diff_out = os.path.join(diff_dir, diff_name)
+        os.rename(diff_file, diff_out)
+
+        for same_ in out_dict[diff_name]:
+            same_file = os.path.join(img_dir, same_[0])
+            if os.path.exists(same_file):
+                score = same_[1]
+                if score > conf:
+                    same_out = os.path.join(same_dir, same_[0])
+                else:
+                    same_out = os.path.join(diff_dir, same_[0])
+                os.rename(same_file, same_out)
 
 def get_exif_info(img_file, tag='Orientation'):
     """
@@ -28,7 +115,6 @@ def get_exif_info(img_file, tag='Orientation'):
 
     img = Image.open(img_file)
     return img._getexif()[item]
-
 
 def img_rotate_batch(dir):
     """
