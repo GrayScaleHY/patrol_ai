@@ -3,7 +3,8 @@ from lib_img_registration import registration, convert_coor
 import numpy as np
 import cv2
 import os
-import wget
+import requests
+# import wget
 
 def lib_match(img_ref, img_tag, pointers, bboxes):
     H, W = img_tag.shape[:2]
@@ -35,7 +36,15 @@ def get_img_paths(input_data):
             tag_tmp = "/export" + tag_.split(":9000")[1]
             tag_dir = os.path.dirname(tag_tmp)
             os.makedirs(tag_dir, exist_ok=True)
-            wget.download(tag_, tag_tmp)
+            print("request download--------------------------------------")
+            print(tag_)
+            print(tag_tmp)
+            os.makedirs(tag_dir, exist_ok=True)
+            r = requests.get(tag_)
+            f = open(tag_tmp, "wb")
+            f.write(r.content)
+            f.close()
+            # wget.download(tag_, tag_tmp)
             img_paths.append(tag_tmp)
         else:
             continue
