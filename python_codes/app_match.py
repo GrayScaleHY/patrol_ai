@@ -72,7 +72,13 @@ def patrol_match(input_data):
     out_data = {"code":0, "data": [], "msg": "Success!"}
     for tag_ in get_img_paths(input_data):
         img_tag = cv2.imread(tag_)
-        out_pointers, out_bboxes = lib_match(img_ref, img_tag, pointers, bboxes)
+        try:
+            out_pointers, out_bboxes = lib_match(img_ref, img_tag, pointers, bboxes)
+        except:
+            print("WARNING: wrong file:", tag_)
+            out_pointers = input_data["config"]["pointers"]
+            out_bboxes =    input_data["config"]["bboxes"]   
+            
         out_data["data"].append({"pointers": out_pointers, "bboxes": out_bboxes})
 
     return out_data

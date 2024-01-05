@@ -10,7 +10,8 @@ import json
 import os
 import time
 import shutil
-import wget
+# import wget
+import requests
 import glob
 
 class GetInputData:
@@ -91,7 +92,14 @@ class GetInputData:
                 img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
                 img_ref_dir = os.path.dirname(img_ref_path_)
                 os.makedirs(img_ref_dir, exist_ok=True)
-                wget.download(img_ref_path, img_ref_path_)
+                print("request download--------------------------------------")
+                print(img_ref_path)
+                print(img_ref_path_)
+                r = requests.get(img_ref_path)
+                f = open(img_ref_path_, "wb")
+                f.write(r.content)
+                f.close()
+                # wget.download(img_ref_path, img_ref_path_)
                 return cv2.imread(img_ref_path_)
             else:
                 return None
@@ -290,7 +298,14 @@ class GetInputData:
                 video_path = "/export" + data["video_path"].split(":9000")[1]
                 video_dir = os.path.dirname(video_path)
                 os.makedirs(video_dir, exist_ok=True)
-                wget.download(data["video_path"], video_path)
+                print("request download--------------------------------------")
+                print(data["video_path"])
+                print(video_path)
+                r = requests.get(data["video_path"])
+                f = open(video_path, "wb")
+                f.write(r.content)
+                f.close()
+                # wget.download(data["video_path"], video_path)
                 
         else:
             video_path = ""
