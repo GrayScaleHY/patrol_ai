@@ -34,17 +34,18 @@ def get_img_paths(input_data):
             img_paths.append(tag_)
         elif tag_.startswith("http"):
             tag_tmp = "/export" + tag_.split(":9000")[1]
-            tag_dir = os.path.dirname(tag_tmp)
-            os.makedirs(tag_dir, exist_ok=True)
-            print("request download--------------------------------------")
-            print(tag_)
-            print(tag_tmp)
-            os.makedirs(tag_dir, exist_ok=True)
-            r = requests.get(tag_)
-            f = open(tag_tmp, "wb")
-            f.write(r.content)
-            f.close()
-            # wget.download(tag_, tag_tmp)
+            if not os.path.exists(tag_tmp):
+                tag_dir = os.path.dirname(tag_tmp)
+                os.makedirs(tag_dir, exist_ok=True)
+                print("request download--------------------------------------")
+                print(tag_)
+                print(tag_tmp)
+                os.makedirs(tag_dir, exist_ok=True)
+                r = requests.get(tag_)
+                f = open(tag_tmp, "wb")
+                f.write(r.content)
+                f.close()
+                # wget.download(tag_, tag_tmp)
             img_paths.append(tag_tmp)
         else:
             continue

@@ -10,7 +10,7 @@ import json
 import os
 import time
 import shutil
-# import wget
+import wget
 import requests
 import glob
 
@@ -90,16 +90,17 @@ class GetInputData:
                 return cv2.imread(img_ref_path)
             elif img_ref_path.startswith("http"):
                 img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
-                img_ref_dir = os.path.dirname(img_ref_path_)
-                os.makedirs(img_ref_dir, exist_ok=True)
-                print("request download--------------------------------------")
-                print(img_ref_path)
-                print(img_ref_path_)
-                r = requests.get(img_ref_path)
-                f = open(img_ref_path_, "wb")
-                f.write(r.content)
-                f.close()
-                # wget.download(img_ref_path, img_ref_path_)
+                if not os.path.exists(img_ref_path_):
+                    img_ref_dir = os.path.dirname(img_ref_path_)
+                    os.makedirs(img_ref_dir, exist_ok=True)
+                    print("request download--------------------------------------")
+                    print(img_ref_path)
+                    print(img_ref_path_)
+                    r = requests.get(img_ref_path)
+                    f = open(img_ref_path_, "wb")
+                    f.write(r.content)
+                    f.close()
+                    # wget.download(img_ref_path, img_ref_path_)
                 return cv2.imread(img_ref_path_)
             else:
                 return None
@@ -296,16 +297,19 @@ class GetInputData:
                 assert data["video_path"].startswith("http"), data["video_path"] + "is not http url !"
 
                 video_path = "/export" + data["video_path"].split(":9000")[1]
-                video_dir = os.path.dirname(video_path)
-                os.makedirs(video_dir, exist_ok=True)
-                print("request download--------------------------------------")
-                print(data["video_path"])
-                print(video_path)
-                r = requests.get(data["video_path"])
-                f = open(video_path, "wb")
-                f.write(r.content)
-                f.close()
-                # wget.download(data["video_path"], video_path)
+                if os.path.exists(video_path):
+                    return video_path
+                else:
+                    video_dir = os.path.dirname(video_path)
+                    os.makedirs(video_dir, exist_ok=True)
+                    print("request download--------------------------------------")
+                    print(data["video_path"])
+                    print(video_path)
+                    # r = requests.get(data["video_path"])
+                    # f = open(video_path, "wb")
+                    # f.write(r.content)
+                    # f.close()
+                    wget.download(data["video_path"], video_path)
                 
         else:
             video_path = ""
