@@ -179,13 +179,17 @@ def inspection_object_detection(input_data):
                 cfg_out = {}
         out_data["data"].append(cfg_out)
     
-    ## 指示灯若没有识别到状态默认为指示灯灭
-    if an_type == "led":
+    ## 指示灯若没有识别到状态默认为指示灯灭，将没有识别到的翻牌器默认为翻牌器异常
+    if an_type == "led" or an_type == "fanpaiqi":
+        if an_type == "led":
+            label = "指示灯灭"
+        else:
+            label = "翻牌器异常"
         for i in range(len(out_data["data"])):
             if len(out_data["data"][i]) == 0:
-                c = roi_tag[i]; label = "指示灯灭"
+                c = roi_tag[i];
                 c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
-                _cfg = {"label": "指示灯灭", "bbox": c, "score": 1.0}
+                _cfg = {"label": label, "bbox": c, "score": 1.0}
                 cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
                 s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
                 img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)

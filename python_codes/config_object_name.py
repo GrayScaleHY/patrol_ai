@@ -141,7 +141,7 @@ OBJECT_MAP = {
         'kqkg_fz': '分闸',
         'fpq_h': '翻牌器合',
         'fpq_f': '翻牌器分',
-        'fpq_jd': '翻牌器接地',
+        'fpq_jd': '翻牌器异常',
         'xnkg_s': '上',
         'xnkg_zs': '左上',
         'xnkg_ys': '右上',
