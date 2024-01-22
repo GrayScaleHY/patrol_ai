@@ -327,6 +327,35 @@ def convert_coor(coor_ref, M):
 
     return tuple(coor_tag.astype(int))
 
+def roi_registration(img_ref, img_tag, roi_ref):
+    """
+    roi框纠偏，将img_ref上的roi框纠偏匹配到img_tag上
+    args:
+        roi_ref: roi字典，{"roi_1": [xmin, ymin, xmax, ymax]}
+    return:
+        roi_tag: 纠偏后的roi框, {"roi_1": [xmin, ymin, xmax, ymax]}
+    """
+    H, W = img_tag.shape[:2]
+    if len(roi_ref) == 0:
+        return {"no_roi": [0,0,W,H]}
+    
+    M = registration(img_ref, img_tag) # 求偏移矩阵
+
+    if M is None:
+        return roi_ref
+    
+    roi_tag = {}
+    for name in roi_ref:
+        roi = roi_ref[name]
+        coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
+        coors_ = [list(convert_coor(coor, M)) for coor in coors]
+        c_ = np.array(coors_, dtype=int)
+        r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
+        r = [int(r_) for r_ in r]
+        roi_tag[name] = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
+
+    return roi_tag
+
 if __name__ == '__main__':
     import time
     from lib_sift_match import convert_coor

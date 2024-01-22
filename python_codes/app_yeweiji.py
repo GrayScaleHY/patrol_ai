@@ -45,10 +45,10 @@ def conv_coor(coordinates, M, d_ref=(0,0), d_tag=(0,0)):
 ## 计算油位
 def cal_oil_value(coordinates,oil_bbox,oil_type="updown"):
     """
-        使用刻度计算液位高度。
-        args:
-            coordinates: 刻度的坐标点，格式如 {"0": [300, 600],....,"1": [600, 200]} 至少包含最小、最大两个刻度
-            oil_bbox: 检测出的液位框，格式为[x0, y0, x1, y1]
+    使用刻度计算液位高度。
+    args:
+        coordinates: 刻度的坐标点，格式如 {"0": [300, 600],....,"1": [600, 200]} 至少包含最小、最大两个刻度
+        oil_bbox: 检测出的液位框，格式为[x0, y0, x1, y1]
     """
 
     if len(coordinates) < 2:

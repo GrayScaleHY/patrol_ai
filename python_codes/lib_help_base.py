@@ -112,29 +112,35 @@ class GetInputData:
         """
         获取roi感兴趣区域
         return:
-            roi: 格式为二维列表[[xmin, ymin, xmax, ymax], ..], 或者空列表[]
+            roi: {"yb1": [xmin, ymin, xmax, ymax], ..}
         """
         if img_ref is None:
-            return []
+            return {}
 
-        if "bboxes" in config and isinstance(config["bboxes"], dict):
-            bboxes = config["bboxes"]
-        else:
-            bboxes = {}
+        if "bboxes" not in config or not isinstance(config["bboxes"], dict) or "roi" not in config["bboxes"]:
+            return {}
+        
+        raw_roi = config["bboxes"]["roi"]
 
-        if "roi" in bboxes and isinstance(bboxes["roi"], list) and len(bboxes["roi"]) > 0:
-            raw_roi = bboxes["roi"]
-        else:
-            return []
+        ## 老版本的roi是list，将list改为dict
+        if isinstance(raw_roi, list):
+            if len(raw_roi) == 0:
+                raw_roi = {}
+            else:
+                _raw_roi = raw_roi
+                dim = np.array(_raw_roi).ndim
+                if dim == 1:
+                    _raw_roi = [_raw_roi]
+                raw_roi = {}
+                for i in range(len(_raw_roi)):
+                    raw_roi["no_roi" + str(i)] = _raw_roi[i]
         
-        dim = np.array(raw_roi).ndim
-        if dim == 1:
-            raw_roi = [raw_roi]
-        
+        ## 将raw_roi中的坐标改为绝对坐标
         H, W = img_ref.shape[:2]
-        roi = []
-        for _roi in raw_roi:
-            roi.append([int(_roi[0]*W), int(_roi[1]*H), int(_roi[2]*W), int(_roi[3]*H)])
+        roi = {}
+        for name in raw_roi:
+            _roi = raw_roi[name]
+            roi[name] = [int(_roi[0]*W), int(_roi[1]*H), int(_roi[2]*W), int(_roi[3]*H)]
         
         return roi
     
@@ -475,13 +481,15 @@ def save_input_data(input_data, save_dir, name_head, draw_img=False):
         coor = pointers_ref[scale]
         cv2.circle(img_ref, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
         cv2.putText(img_ref, str(scale), (int(coor[0]), int(coor[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-    for o_ in roi:   ## 如果配置了感兴趣区域，则画出感兴趣区域
+    for name, o_ in roi.items():   ## 如果配置了感兴趣区域，则画出感兴趣区域
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_ref, "roi", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_ref, name, (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     for label in bboxes_ref:
+        if label == "roi":
+            continue
         o_ = bboxes_ref[label]
         cv2.rectangle(img_ref, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_ref, label, (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)

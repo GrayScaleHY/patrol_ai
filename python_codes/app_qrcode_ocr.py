@@ -4,31 +4,38 @@ import time
 import json
 import numpy as np
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_img_registration import registration, convert_coor
+from lib_img_registration import roi_registration
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import inference_ocr
 from lib_help_base import GetInputData, is_include
 
 
-def decoder_qrcode(img, roi):
-    img_roi = img[int(roi[1]): int(roi[3]), int(roi[0]): int(roi[2])]
-    try:
-        boxes = decoder_wechat(img)
-    except:
-        boxes = decoder(img)
+def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
+    """
+    巡视算法解二维码
+    args: 
+        roi: 模板框，格式： {"roi_name": [xmin, ymin, xmax, ymax]}
+    return:
+        cfgs:输出分析类容，格式：{"no_roi": [{'bbox': [xmin,ymin,xmax,ymax], 'content':content}, ..]}}
+    """
+    data = {}
+    for name, _roi in roi.items():
+        img_roi = img[int(_roi[1]): int(_roi[3]), int(_roi[0]): int(_roi[2])]
+        if infer_type == "ocr":
+            cfgs = inference_ocr(img_roi)
+        else:
+            try:
+                cfgs = decoder_wechat(img_roi)
+            except:
+                cfgs = decoder(img_roi)
+        
+        for i, cfg in cfgs:
+            c = cfg[i]["bbox"]
+            cfg[i]["bbox"] = [int(c[0]+roi[0]), int(c[1]+roi[1]), int(c[2]+roi[0]), int(c[3]+roi[1])]
 
-    boxes = [b for b in boxes if is_include(b['bbox'], roi, srate=0.5)]
-
-    if len(boxes) == 0:
-        try:
-            boxes = decoder_wechat(img_roi)
-        except:
-            boxes = decoder(img_roi)
-        for i in range(len(boxes)):
-            c = boxes[i]["bbox"]
-            boxes[i]["bbox"] = [int(c[0]+roi[0]), int(c[1]+roi[1]), int(c[2]+roi[0]), int(c[3]+roi[1])]
-
-    return boxes
+        data[name] == cfgs
+    
+    return data
 
 def inspection_qrcode(input_data):
     """
@@ -41,79 +48,42 @@ def inspection_qrcode(input_data):
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     roi = DATA.roi; osd = DATA.osd
 
-    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Request; "} 
+    ## 初始化
+    out_data = {"code": 1, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
 
-    ## 画上点位名称和osd区域
+    ## 画上点位名称
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
-    for o_ in osd:  ## 如果配置了感兴趣区域，则画出osd区域
-        cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
-        cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 求出目标图像的感兴趣区域
-    if len(roi) > 0:
-        # 求偏移矩阵
-        M = registration(img_ref, img_tag)
-        
-        if M is None:
-            out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-            roi_tag = roi[0]
-        else:
-            roi = roi[0]
-            coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-            coors_ = [list(convert_coor(coor, M)) for coor in coors]
-            c_ = np.array(coors_, dtype=int)
-            H, W = img_tag.shape[:2]
-            r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
-            roi_tag = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
-    else:
-        roi_tag = [0,0, img_tag.shape[1], img_tag.shape[0]]
-    img_roi = img_tag[int(roi_tag[1]): int(roi_tag[3]), int(roi_tag[0]): int(roi_tag[2])]
+    img_tag_ = img_tag.copy()
+    roi_tag = roi_registration(img_ref, img_tag, roi)
+    for name, c in roi_tag.items():
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
+        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     
-    ## 画出roi_tag
-    c = roi_tag
-    cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,0), thickness=1)
-    cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1]) + 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
-
     ## 二维码检测或文本检测
-    if an_type == "qrcode":
-        boxes = decoder_qrcode(img_tag, roi_tag)
-    elif "ocr" in an_type: # 文本检测
-        boxes = inference_ocr(img_roi)
-        for i in range(len(boxes)):
-            c = boxes[i]["bbox"]; r = roi_tag
-            boxes[i]["bbox"] = [int(c[0]+r[0]), int(c[1]+r[1]), int(c[2]+r[0]), int(c[3]+r[1])]
-    else:
-        out_data["msg"] = out_data["msg"] + "; Type is wrong !"
-        out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
-        return out_data
+    data = decoder_qrcode_ocr(img_tag, roi, infer_type=an_type)
+    out_data["data"] = data
 
-    if len(boxes) == 0: #没有检测到目标
-        out_data["msg"] = out_data["msg"] + "; Not find qrcode"
-        out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
-        return out_data
+    ## 画出二维码
+    for name, cfgs in data.items():
+        for cfg in cfgs:
+            c = cfg["bbox"]; content=cfg["content"]
+            out_data["code"] = 0
+            cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
+            s = int((c[2] - c[0]) / 10) # 根据框子大小决定字号和线条粗细。
+            img_tag_ = img_chinese(img_tag_, content, (c[0], c[1]), color=(0,0,255), size=s)
 
-    for box in boxes:
-        cfg = {"type": an_type, "content": box["content"], "bbox": box["bbox"]}
-        out_data["data"].append(cfg)
-
-    ## 可视化计算结果
-    s = (roi_tag[2] - roi_tag[0]) / 200 # 根据框子大小决定字号和线条粗细。
-    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])),
-                    (int(roi_tag[2]), int(roi_tag[3])), (0, 0, 255), thickness=round(s*2))
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1]-s)),
-                    cv2.FONT_HERSHEY_SIMPLEX, s, (0, 0, 255), thickness=round(s))
-    for bbox in boxes:
-        coor = bbox["bbox"]; label = bbox["content"]
-        s = int((coor[2] - coor[0]) / 3) # 根据框子大小决定字号和线条粗细。
-        cv2.rectangle(img_tag_, (int(coor[0]), int(coor[1])),
-                    (int(coor[2]), int(coor[3])), (0, 225, 0), thickness=round(s/50))
-        # cv2.putText(img, label, (int(coor[0])-5, int(coor[1])-5),
-        img_tag_ = img_chinese(img_tag_, label, (coor[0], coor[1]-round(s)), color=(0, 225, 0), size=round(s))
+    ## 老版本的接口输出，"data"由字典改为list
+    no_roi = [name.startswith("no_roi") for name in out_data["data"]]
+    if all(no_roi): ## 全为1， 返回True
+        _cfgs = []
+        for name, _cfg in out_data["data"].items():
+            _cfgs.append(_cfg[0])
+        out_data["data"] = _cfgs
+        if out_data["data"] == [{}]:
+            out_data["data"] = []
     
     ## 输出可视化结果的图片。
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)

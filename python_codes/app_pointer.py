@@ -467,7 +467,8 @@ def inspection_pointer(input_data):
     
     # 求出测试图的感兴趣区域
     if len(roi) > 0 and M is not None:
-        roi = roi[0]
+        for name, _roi in roi.items():
+            roi = _roi
         coors = [(roi[0], roi[1]), (roi[2], roi[1]),
                  (roi[2], roi[3]), (roi[0], roi[3])]
         coors_ = [list(convert_coor(coor, M)) for coor in coors]

@@ -34,7 +34,7 @@ def decoder(img):
         content = str(obj.data.decode("utf-8"))
         c_type = str(obj.type)
 
-        info.append({"bbox": bbox, "content": content, "c_type": c_type})
+        info.append({"type": "qrcode", "content": content, "bbox": bbox})
 
     return info
 
@@ -67,7 +67,7 @@ def decoder_wechat(img):
         p = points[i].astype(int)
         content = res[i]
         bbox = [float(np.min(p[:,0])), float(np.min(p[:,1])), float(np.max(p[:,0])), float(np.max(p[:,1]))]
-        info.append({"bbox": bbox, "content": content})
+        info.append({"type": "qrcode", "content": content, "bbox": bbox})
 
     return info
 

@@ -3,7 +3,7 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_help_base import color_list
-from lib_img_registration import registration, convert_coor
+from lib_img_registration import roi_registration
 import config_object_name
 import numpy as np
 from lib_help_base import GetInputData
@@ -11,32 +11,6 @@ from lib_help_base import is_include
 
 yolov5_daozha = load_yolov5_model("/data/PatrolAi/yolov5/daozha_v5detect.pt")
 yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
-
-def roi_registration(img_ref, img_tag, roi_ref):
-    """
-    roi框纠偏，将img_ref上的roi框纠偏匹配到img_tag上
-    return:
-        roi_tag: 纠偏后的roi框
-    """
-    H, W = img_tag.shape[:2]
-    if len(roi_ref) == 0:
-        return [[0,0,W,H]]
-    
-    M = registration(img_ref, img_tag) # 求偏移矩阵
-
-    if M is None:
-        return roi_ref
-    
-    roi_tag = []
-    for roi in roi_ref:
-        coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-        coors_ = [list(convert_coor(coor, M)) for coor in coors]
-        c_ = np.array(coors_, dtype=int)
-        r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
-        r = [int(r_) for r_ in r]
-        roi_tag.append([max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])])
-
-    return roi_tag
 
 def patrol_daozha(input_data):
     """

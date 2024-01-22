@@ -6,7 +6,7 @@ from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_help_base import color_list
-from lib_img_registration import registration, convert_coor
+from lib_img_registration import roi_registration
 import config_object_name
 from config_object_name import convert_label, defect_LIST
 import numpy as np
@@ -25,31 +25,6 @@ yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜
 # yolov5_helmet = load_yolov5_model("/data/PatrolAi/yolov5/helmet.pt") # 安全帽模型
 # yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘
 
-def roi_registration(img_ref, img_tag, roi_ref):
-    """
-    roi框纠偏，将img_ref上的roi框纠偏匹配到img_tag上
-    return:
-        roi_tag: 纠偏后的roi框
-    """
-    H, W = img_tag.shape[:2]
-    if len(roi_ref) == 0:
-        return [[0,0,W,H]]
-    
-    M = registration(img_ref, img_tag) # 求偏移矩阵
-
-    if M is None:
-        return roi_ref
-    
-    roi_tag = []
-    for roi in roi_ref:
-        coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
-        coors_ = [list(convert_coor(coor, M)) for coor in coors]
-        c_ = np.array(coors_, dtype=int)
-        r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
-        roi_tag.append([max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])])
-
-    return roi_tag
-
 def inspection_object_detection(input_data):
     """
     yolov5的目标检测推理。
@@ -61,7 +36,7 @@ def inspection_object_detection(input_data):
     roi = DATA.roi; label_list = DATA.label_list
 
     ## 初始化out_data
-    out_data = {"code": 0, "data":[], "img_result": input_data["image"], "msg": "Request; "} 
+    out_data = {"code": 0, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
 
     ## 画上点位名称
     img_tag_ = img_tag.copy()
@@ -141,9 +116,9 @@ def inspection_object_detection(input_data):
 
     ## 求出目标图像的感兴趣区域
     roi_tag = roi_registration(img_ref, img_tag, roi)
-    for c in roi_tag:
+    for name, c in roi_tag.items():
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
-        cv2.putText(img_tag_, "roi", (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 模型推理
     if an_type == "rec_defect":
@@ -169,7 +144,7 @@ def inspection_object_detection(input_data):
         img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
     ## 判断bbox是否在roi中
-    for roi in roi_tag:
+    for name, roi in roi_tag.items():
         cfg_out = {}
         for cfg in cfgs:
             if is_include(cfg["coor"], roi, srate=0.5):
@@ -177,36 +152,48 @@ def inspection_object_detection(input_data):
                 break
             else:
                 cfg_out = {}
-        out_data["data"].append(cfg_out)
+        out_data["data"][name] = [cfg_out]
     
     ## 指示灯若没有识别到状态默认为指示灯灭，将没有识别到的翻牌器默认为翻牌器异常
-    if an_type == "led" or an_type == "fanpaiqi":
+    # if an_type == "led" or an_type == "fanpaiqi" or an_type == "disconnector_notemp" or an_type == "disconnector_texie":
+    if an_type == "led":
         if an_type == "led":
             label = "指示灯灭"
-        else:
+        elif an_type == "fanpaiqi":
             label = "翻牌器异常"
-        for i in range(len(out_data["data"])):
-            if len(out_data["data"][i]) == 0:
-                c = roi_tag[i];
+        else:
+            label = "分合异常"
+        for name, _cfgs in out_data["data"].items():
+            if len(_cfgs) == 0:
+                c = roi_tag[name]
                 c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
-                _cfg = {"label": label, "bbox": c, "score": 1.0}
+                _cfg = [{"label": label, "bbox": c, "score": 1.0}]
                 cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
                 s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
                 img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
-                out_data["data"][i] = _cfg
+                out_data["data"][name] = _cfg
     
-    ## 判断是否异常
+    ## 给code赋值，判断是否异常
     if an_type == "rec_defect" or an_type == "fire_smoke":
-        for _cfg in out_data["data"]:
+        for name, _cfg in out_data["data"].items():
             if len(_cfg) > 0:
                 out_data["code"] = 1
     else:
-        for _cfg in out_data["data"]:
-            if len(_cfg) == 0:
-                out_data["code"] = 1
+        lens = [len(_cfg) for name, _cfg in out_data["data"].items()]
+        if any(lens): ## 全为0，返回false
+            out_data["code"] = 1
+        else:
+            out_data["code"] = 0
     
-    if out_data["data"] == [{}]:
-        out_data["data"] = []
+    ## 老版本的接口输出，"data"由字典改为list
+    no_roi = [name.startswith("no_roi") for name in out_data["data"]]
+    if all(no_roi): ## 全为1， 返回True
+        _cfgs = []
+        for name, _cfg in out_data["data"].items():
+            _cfgs.append(_cfg[0])
+        out_data["data"] = _cfgs
+        if out_data["data"] == [{}]:
+            out_data["data"] = []
     
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     out_data["img_result"] = img2base64(img_tag_)
@@ -215,7 +202,7 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/0704081105_6104input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/disconnector_notemp/0119161052_电海线214-3刀闸全景_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
