@@ -133,7 +133,7 @@ class GetInputData:
                     _raw_roi = [_raw_roi]
                 raw_roi = {}
                 for i in range(len(_raw_roi)):
-                    raw_roi["no_roi" + str(i)] = _raw_roi[i]
+                    raw_roi["old_roi" + str(i)] = _raw_roi[i]
         
         ## 将raw_roi中的坐标改为绝对坐标
         H, W = img_ref.shape[:2]
