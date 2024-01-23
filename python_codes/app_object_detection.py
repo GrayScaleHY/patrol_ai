@@ -186,7 +186,7 @@ def inspection_object_detection(input_data):
             out_data["code"] = 0
     
     ## 老版本的接口输出，"data"由字典改为list
-    no_roi = [name.startswith("no_roi") for name in out_data["data"]]
+    no_roi = [name.startswith("old_roi") for name in out_data["data"]]
     if all(no_roi): ## 全为1， 返回True
         _cfgs = []
         for name, _cfg in out_data["data"].items():
