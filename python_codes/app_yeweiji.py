@@ -225,7 +225,8 @@ def inspection_level_gauge(input_data):
         value = cal_oil_value(pointers_tag, cfg_out["bbox"])
 
     if value is not None:
-        cfg_out["value"] = round(value, dp)
+        value = round(value, dp)
+        cfg_out["value"] = value
         # 可视化最终计算结果
         cv2.putText(img_tag_, str(value), (int(cfg_out["bbox"][0]), int(cfg_out["bbox"][1])),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), thickness=2)
