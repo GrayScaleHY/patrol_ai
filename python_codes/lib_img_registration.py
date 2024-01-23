@@ -354,7 +354,7 @@ def roi_registration(img_ref, img_tag, roi_ref):
         r = [int(r_) for r_ in r]
         roi_tag[name] = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
 
-    return roi_tag
+    return roi_tag, M
 
 if __name__ == '__main__':
     import time
