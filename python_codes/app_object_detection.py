@@ -115,10 +115,10 @@ def inspection_object_detection(input_data):
         return out_data
 
     ## 求出目标图像的感兴趣区域
-    roi_tag = roi_registration(img_ref, img_tag, roi)
+    roi_tag, _ = roi_registration(img_ref, img_tag, roi)
     for name, c in roi_tag.items():
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
-        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 模型推理
     if an_type == "rec_defect":
@@ -179,18 +179,19 @@ def inspection_object_detection(input_data):
             if len(_cfg) > 0:
                 out_data["code"] = 1
     else:
-        lens = [len(_cfg) for name, _cfg in out_data["data"].items()]
+        lens = [len(_cfg[0]) for name, _cfg in out_data["data"].items()]
         if any(lens): ## 全为0，返回false
-            out_data["code"] = 1
-        else:
             out_data["code"] = 0
+        else:
+            out_data["code"] = 1
     
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]
     if all(no_roi): ## 全为1， 返回True
         _cfgs = []
         for name, _cfg in out_data["data"].items():
-            _cfgs.append(_cfg[0])
+            if len(_cfg) > 0:
+                _cfgs.append(_cfg[0])
         out_data["data"] = _cfgs
         if out_data["data"] == [{}]:
             out_data["data"] = []
@@ -202,7 +203,7 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/disconnector_notemp/0119161052_电海线214-3刀闸全景_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/test.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

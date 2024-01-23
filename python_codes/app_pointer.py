@@ -585,7 +585,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/1123084815__input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/指针表计读数-多盘多针.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)

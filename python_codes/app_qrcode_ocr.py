@@ -20,20 +20,24 @@ def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
     """
     data = {}
     for name, _roi in roi.items():
-        img_roi = img[int(_roi[1]): int(_roi[3]), int(_roi[0]): int(_roi[2])]
-        if infer_type == "ocr":
-            cfgs = inference_ocr(img_roi)
-        else:
+        if infer_type == "ocr": # ocr推理
+            _cfgs = inference_ocr(img)
+            cfgs = []
+            for i, cfg in enumerate(_cfgs):
+                if is_include(cfg["bbox"], _roi, 0.5):
+                    cfgs.append(cfg)
+
+        else: # 二维码推理
+            img_roi = img[int(_roi[1]): int(_roi[3]), int(_roi[0]): int(_roi[2])]
             try:
                 cfgs = decoder_wechat(img_roi)
             except:
                 cfgs = decoder(img_roi)
-        
-        for i, cfg in cfgs:
-            c = cfg[i]["bbox"]
-            cfg[i]["bbox"] = [int(c[0]+roi[0]), int(c[1]+roi[1]), int(c[2]+roi[0]), int(c[3]+roi[1])]
+            for i, cfg in enumerate(cfgs):
+                c = cfg["bbox"]
+                cfgs[i]["bbox"] = [int(c[0]+_roi[0]), int(c[1]+_roi[1]), int(c[2]+_roi[0]), int(c[3]+_roi[1])]
 
-        data[name] == cfgs
+        data[name] = cfgs
     
     return data
 
@@ -56,14 +60,13 @@ def inspection_qrcode(input_data):
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
 
     ## 求出目标图像的感兴趣区域
-    img_tag_ = img_tag.copy()
-    roi_tag = roi_registration(img_ref, img_tag, roi)
+    roi_tag, _ = roi_registration(img_ref, img_tag, roi)
     for name, c in roi_tag.items():
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
-        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])-5),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
     
     ## 二维码检测或文本检测
-    data = decoder_qrcode_ocr(img_tag, roi, infer_type=an_type)
+    data = decoder_qrcode_ocr(img_tag, roi_tag, infer_type=an_type)
     out_data["data"] = data
 
     ## 画出二维码
@@ -78,10 +81,11 @@ def inspection_qrcode(input_data):
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]
     if all(no_roi): ## 全为1， 返回True
-        _cfgs = []
-        for name, _cfg in out_data["data"].items():
-            _cfgs.append(_cfg[0])
-        out_data["data"] = _cfgs
+        cfgs = []
+        for name, _cfgs in out_data["data"].items():
+            for _cfg in _cfgs:
+                cfgs.append(_cfg)
+        out_data["data"] = cfgs
         if out_data["data"] == [{}]:
             out_data["data"] = []
     
@@ -105,7 +109,7 @@ if __name__ == '__main__':
     # ROI = [907, 7, 1583, 685]
     # W = img_.shape[1]; H = img_.shape[0]
     # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
-    json_file = "/data/PatrolAi/result_patrol/0105164329_input_data.json"
+    json_file = "/data/PatrolAi/result_patrol/ocr/0123074334_文本标识牌识别_input_data.json"
     # input_data = {"image": img_tag, "config":{}, "type": "qrcode"} # "img_ref": img_ref, "bboxes": {"roi": roi}
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
