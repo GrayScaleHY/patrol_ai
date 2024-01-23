@@ -162,6 +162,8 @@ def inspection_qrcode_server():
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 @app.route('/inspection_person/', methods=['POST'])
+@app.route('/inspection_disconnector_texie/', methods=['POST'])
+@app.route('/inspection_disconnector_notemp/', methods=['POST'])
 def inspection_object():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
@@ -172,28 +174,6 @@ def inspection_object():
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_object_detection(data)
-    save_output_data(res, save_dir, name_head)
-
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
-    return jsonify(res)
-
-@app.route('/inspection_disconnector_texie/', methods=['POST'])
-@app.route('/inspection_disconnector_notemp/', methods=['POST'])
-def patrol_daozha_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-        return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    
-    start_time = time.time()
-    save_dir, name_head = get_save_head(data)
-    save_input_data(data, save_dir, name_head, draw_img=draw_img)
-    res = patrol_daozha(data)
     save_output_data(res, save_dir, name_head)
 
     print("-----------------------------------------------")
