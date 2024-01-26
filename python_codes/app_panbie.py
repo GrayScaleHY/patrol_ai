@@ -164,13 +164,13 @@ def inspection_identify_defect(input_data):
         tag_diff = cut_diff
 
     if len(tag_diff) == 0:
-        img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=20)
+        img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=40)
         out_data["data"] = [{"label": "0", "bbox":[]}]
         out_data["code"] = 0
     else:
         rec = tag_diff
         cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
-        img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=20)
+        img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=40)
         out_data["data"] = [{"label": "1", "bbox":rec}]
         out_data["code"] = 1
 
