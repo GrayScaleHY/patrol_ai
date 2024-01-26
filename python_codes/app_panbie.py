@@ -1,21 +1,8 @@
-import os
-import time
 import cv2
-import json
-from lib_image_ops import img2base64, img_chinese
-from lib_img_registration import registration, correct_offset
-import base64
-import hashlib
 import numpy as np
 import math
 from lib_help_base import GetInputData
-import cv2
-import numpy as np
-import math
-import glob
-import os
-import argparse
-import time
+from lib_image_ops import img2base64, img_chinese
 from lib_inference_bit import load_bit_model, inference_bit
 from lib_img_registration import registration, correct_offset
 
@@ -181,6 +168,7 @@ def inspection_identify_defect(input_data):
     return out_data
 
 if __name__ == '__main__':
+    import time
     from lib_help_base import get_save_head, save_input_data, save_output_data
     ref_file = "/data/PatrolAi/result_patrol/0002_normal.jpg"
     tag_file = "/data/PatrolAi/result_patrol/0002_1.jpg"
