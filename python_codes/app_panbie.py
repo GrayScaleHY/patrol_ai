@@ -2,94 +2,123 @@ import os
 import time
 import cv2
 import json
-from lib_image_ops import base642img, img2base64, img_chinese
-from lib_sift_match import sift_create, sift_match, detect_diff
-from lib_img_registration import convert_coor, correct_offset
+from lib_image_ops import img2base64, img_chinese
+from lib_img_registration import registration, correct_offset
 import base64
 import hashlib
+import numpy as np
+import math
 from lib_help_base import GetInputData
+import cv2
+import numpy as np
+import math
+import glob
+import os
+import argparse
+import time
+from lib_inference_bit import load_bit_model, inference_bit
+from lib_img_registration import registration, correct_offset
+
+bit_model = load_bit_model("/data/PatrolAi/bit_cd/bit_cd.pt")
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-def img2base64_(img_file):
+def process_binary_img(img_diff):
     """
-    numpy的int数据转换为base64格式。
-    """
-    f = open(img_file, "rb")
-    lines = f.read()
-    f.close()
-    img_base64 = base64.b64encode(lines)
-    img_base64 = img_base64.decode()
-    return img_base64
-
-def checkout_md5(base64_tag, base64_ref):
-    """
-    查看输入的图片组是否在md5字典中
-    """
-    if not os.path.exists("md5_dict_big.json"):
-        return None, "No_md5_dict"
-    f = open("md5_dict_big.json", "r", encoding='utf-8')
-    md5_dict = json.load(f)
-    f.close()
-
-    md5_tag = hashlib.md5(base64.b64decode(base64_tag)).hexdigest()
-    md5_ref = hashlib.md5(base64.b64decode(base64_ref)).hexdigest()
-    md5_match1 = md5_tag + " : " + md5_ref
-    md5_match2 = md5_ref + " : " + md5_tag
-    if md5_match2 in md5_dict:
-        tag_diff = md5_dict[md5_match2]["box"]
-        name = md5_dict[md5_match2]["name"]
-    elif md5_match1 in md5_dict:
-        tag_diff = md5_dict[md5_match1]["box"]
-        name = md5_dict[md5_match1]["name"]
-    elif md5_tag == md5_ref:
-        tag_diff = []; name = "SAME_MAD5"
-    else:
-        tag_diff = None; name = "NO_MATCH"
-    return tag_diff, name
-
-def panbie_main(img_ref, img_tag):
-    """
-    使用判别算法求差异区域
-    """
-    ## resize, 降低分别率，加快特征提取的速度。
-    resize_rate = 2
-    H, W = img_ref.shape[:2]  ## resize
-    img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
-    feat_ref = sift_create(img_ref) # 提取sift特征
-
-    H, W = img_tag.shape[:2]  ## resize
-    img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
-    feat_tag = sift_create(img_tag) # 提取sift特征
-
-    M = sift_match(feat_tag, feat_ref, ratio=0.5, ops="Affine")
-    img_ref, cut = correct_offset(img_ref, M, b=True)
-    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
-    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
-    diff_area = detect_diff(img_ref, img_tag)
-    if len(diff_area) != 0:  
-        diff_area = [diff_area[0] + cut[0], diff_area[1] + cut[1], diff_area[2] + cut[0], diff_area[3] + cut[1]]
-    # tag_diff = identify_defect(img_ref, feat_ref, img_tag, feat_tag) # 判别算法
-    diff_area = [int(d * resize_rate) for d in diff_area] ## 将tag_diff还原回原始大小
-    return diff_area
-
-def get_input_data(input_data):
-    """
-    提取input_data中的信息。
+    对二值图做后处理，例如，去除零星的点
+    args:
+        img_diff: 二值图
     return:
-        img_tag: 目标图片数据
-        img_ref: 模板图片数据
+        img_diff: 处理后的二值图
     """
+    H, W = img_diff.shape
 
-    img_tag = base642img(input_data["image"])
+    # 去除轮廓面积小的点
+    contours, hierarchy = cv2.findContours(
+        img_diff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = list(contours)
+    areas = [cv2.contourArea(c) for c in contours]
+    if len(areas) < 2:
+        return img_diff
+    pts = [cv2.boundingRect(c)[:2] for c in contours]
+    ind_max_area = areas.index(max(areas))
+    max_area = areas[ind_max_area]
+    if max_area < 2:
+        return img_diff
+    max_pt = pts[ind_max_area]
 
-    ## 是否有模板图
-    img_ref = None
-    if "img_ref" in input_data["config"]:
-        if isinstance(input_data["config"]["img_ref"], str):
-            img_ref = base642img(input_data["config"]["img_ref"]) 
+    d_max = math.sqrt(H ** 2 + W ** 2)
+    at = [0, 0.4]  # 面积范围
+    contours_f = []
+    for i in range(len(areas)):
+        d = math.sqrt((max_pt[0]-pts[i][0]) ** 2 + (max_pt[1]-pts[i][1]) ** 2)
+        if areas[i] / max_area > at[0] + (at[1] - at[0]) * ((d / d_max) ** 2):
+            contours_f.append(contours[i])
 
-    return img_tag, img_ref
+    img_diff = cv2.drawContours(np.zeros_like(
+        img_diff), contours_f, -1, 255, -1)
+
+    # 对差异性图片进行腐蚀操作，去除零星的点。
+    max_rect = cv2.boundingRect(contours[ind_max_area])
+    rate = min(max_rect[2:]) / min(H, W)
+    erode_it = 1 + int(4 * rate)
+    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,5))
+    kernel = np.asarray(((0, 0, 1, 0, 0), (0, 1, 1, 1, 0), (1, 1,
+                        1, 1, 1), (0, 1, 1, 1, 0), (0, 0, 1, 0, 0)), dtype=np.uint8)
+    img_diff = cv2.erode(img_diff, kernel, iterations=erode_it)
+    # cv2.imwrite("test1/tag_diff_erode.jpg",img_diff)
+
+    return img_diff
+
+def diff_bit(img_ref, img_tag, resize=512):
+    """
+    使用bit孪生网络做判别
+    """
+    H, W = img_tag.shape[:2]
+    
+    # bit模型推理
+    img_diff_raw = inference_bit(bit_model, img_tag, img_ref, resize=resize)
+
+    # 对推理结果mask做腐蚀等后处理
+    img_diff = process_binary_img(img_diff_raw)
+
+    # 用轮廓外接矩形作为差异区域
+    index_255 = np.where(img_diff == 255)
+    index_255 = [a for a in index_255 if len(a) > 1]
+    if len(index_255) > 1:
+        ymin = max(0, min(index_255[0])-3)
+        xmin = max(0, min(index_255[1])-3)
+        ymax = min(img_diff.shape[0], max(index_255[0])+3)
+        xmax = min(img_diff.shape[1], max(index_255[1])+3)
+        tag_diff = [int(xmin), int(ymin), int(xmax), int(ymax)]
+
+        # 最大框不能超过总图片面积的0.6
+        h, w = img_diff.shape[:2]
+        dif_area = (tag_diff[2] - tag_diff[0]) * (tag_diff[3] - tag_diff[1])
+        if dif_area / (h * w) > 0.6:
+            tag_diff = []
+
+    else:
+        tag_diff = []
+
+    # # 将矩形框内缩5%
+    # if len(tag_diff) > 1:
+    #     td = tag_diff
+    #     in_ = int(min(td[2]-td[0], td[3]-td[1]) * 0.05)
+    #     xmin = td[0] if td[0] <= int(resize / 50) else td[0] + in_
+    #     xmax = td[2] if td[2] >= int(resize - resize / 50) else td[2] - in_
+    #     ymin = td[1] if td[1] <= int(resize / 50) else td[1] + in_
+    #     ymax = td[3] if td[3] >= int(resize - resize / 50) else td[3] - in_
+    #     tag_diff = [xmin, ymin, xmax, ymax]
+
+    if len(tag_diff) < 1:
+        return tag_diff
+
+    rw = W / resize; rh = H / resize
+    tag_diff = [int(tag_diff[0]*rw), int(tag_diff[1]*rh),
+                int(tag_diff[2]*rw), int(tag_diff[3]*rh)]
+
+    return tag_diff
 
 def inspection_identify_defect(input_data):
     """
@@ -103,14 +132,13 @@ def inspection_identify_defect(input_data):
     img_tag = DATA.img_tag
     img_ref = DATA.img_ref
 
-    # 画上点位名称和osd区域
-    img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint, (10, 100), color=(255, 0, 0), size=30)
-
     ## 初始化输入输出信息。
-    img_tag, img_ref = get_input_data(input_data)
     out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     img_tag_ = img_tag.copy()
+
+    # 画上点位名称
+    img_tag_ = img_tag.copy()
+    img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
 
     if img_ref is None:
         out_data["msg"] = out_data["msg"] + "; img_ref not exist;"
@@ -119,26 +147,32 @@ def inspection_identify_defect(input_data):
         out_data["img_result"] = img2base64(img_tag_)
         return out_data
 
-    ## 检查图片是否能用md5匹配
-    base64_tag = input_data["image"]
-    base64_ref = input_data["config"]["img_ref"]
-    tag_diff, name = checkout_md5(base64_tag, base64_ref)
+    ## 将两张图片对齐
+    M = registration(img_ref, img_tag)
+    img_ref, cut = correct_offset(img_ref, M, b=True)
+    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
+    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
 
-    if tag_diff is None:  
-        tag_diff = panbie_main(img_ref, img_tag) ## 使用算法
+    ## 检测差异区域
+    cut_diff = diff_bit(img_ref, img_tag)  
 
-    out_cfg = []
+    ## 还原回原图对于的框
+    if len(cut_diff) > 0:
+        tag_diff = [cut_diff[0] + cut[0], cut_diff[1] +
+                    cut[1], cut_diff[2] + cut[0], cut_diff[3] + cut[1]]
+    else:
+        tag_diff = cut_diff
+
     if len(tag_diff) == 0:
         img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=20)
-        out_cfg.append({"label": "0", "bbox":[]})
+        out_data["data"] = [{"label": "0", "bbox":[]}]
         out_data["code"] = 0
     else:
         rec = tag_diff
         cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
         img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=20)
-        out_cfg.append({"label": "1", "bbox":rec})
-    
-    out_data["data"] = out_cfg
+        out_data["data"] = [{"label": "1", "bbox":rec}]
+        out_data["code"] = 1
 
     ## 输出可视化结果的图片。
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=60)
@@ -147,20 +181,27 @@ def inspection_identify_defect(input_data):
     return out_data
 
 if __name__ == '__main__':
-    ref_file = "/home/yh/image/python_codes/test/panbie/0002_normal.jpg"
-    tag_file = "/home/yh/image/python_codes/test/panbie/0002_1.jpg"
+    from lib_help_base import get_save_head, save_input_data, save_output_data
+    ref_file = "/data/PatrolAi/result_patrol/0002_normal.jpg"
+    tag_file = "/data/PatrolAi/result_patrol/0002_1.jpg"
 
-    # img_tag = img2base64(cv2.imread(tag_file))
-    # img_ref = img2base64(cv2.imread(ref_file))
-    img_tag = img2base64_(tag_file)
-    img_ref = img2base64_(ref_file)
+    img_tag = img2base64(cv2.imread(tag_file))
+    img_ref = img2base64(cv2.imread(ref_file))
 
     input_data = {"image": img_tag, "config":{"img_ref": img_ref}, "type": "identify_defect"}
 
     start = time.time()
     out_data = inspection_identify_defect(input_data)
     print(time.time() - start)
-    for c_ in out_data:
-        if c_ != "img_result":
-            print(c_,":",out_data[c_])
+
+    save_dir, name_head = get_save_head(input_data)
+    save_input_data(input_data, save_dir, name_head, draw_img=True)
+    save_output_data(out_data, save_dir, name_head)
+    print("inspection_qrcode result:")
+    print("-----------------------------------------------")
+    for s in out_data:
+        if s != "img_result":
+            print(s,":",out_data[s])
+    print("----------------------------------------------")
+
 

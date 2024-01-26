@@ -7,7 +7,7 @@ from app_pointer import inspection_pointer
 # from app_counter import inspection_counter
 from app_object_detection import inspection_object_detection
 from app_qrcode_ocr import inspection_qrcode
-# from app_panbie import inspection_identify_defect
+from app_panbie import inspection_identify_defect
 from config_version import code_version
 # from app_disconnector_video import inspection_disconnector_video
 from app_yeweiji import inspection_level_gauge
@@ -184,23 +184,23 @@ def inspection_object():
     print("----------------------------------------------")
     return jsonify(res)
 
-## 判别算法
-# @app.route('/inspection_identify_defect/', methods=['POST'])
-# def inspection_identify_defect_server():
-#     if request.method != 'POST':
-#         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
-#         return jsonify(res)
-#     data = json.loads(request.get_data(as_text=True))
-#     save_dir, name_head = get_save_head(data)
-#     save_input_data(data, save_dir, name_head, draw_img=draw_img)
-#     res = inspection_identify_defect(data)
-#     save_output_data(res, save_dir, name_head)
-#     print("-----------------------------------------------")
-#     for s in res:
-#         if s != "img_result":
-#             print(s,":",res[s])
-#     print("----------------------------------------------")
-#     return jsonify(res)
+# 判别算法
+@app.route('/inspection_identify_defect/', methods=['POST'])
+def inspection_identify_defect_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = inspection_identify_defect(data)
+    save_output_data(res, save_dir, name_head)
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
 
 # ## 刀闸分合识别
 # @app.route('/inspection_disconnector/', methods=['POST'])

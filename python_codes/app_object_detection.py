@@ -160,9 +160,9 @@ def inspection_object_detection(input_data):
         if an_type == "led":
             label = "指示灯灭"
         elif an_type == "fanpaiqi":
-            label = "翻牌器异常"
+            label = "识别异常"
         else:
-            label = "分合异常"
+            label = "识别异常"
         for name, _cfgs in out_data["data"].items():
             if len(_cfgs) == 0:
                 c = roi_tag[name]
