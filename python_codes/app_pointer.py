@@ -295,7 +295,7 @@ def pointer_detect(img_tag, number):
     for j, c in enumerate(bboxes):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
 
-        cfgs = inference_yolov8(yolov8_pointer,img, same_iou_thres=0.85) # 指针分割推理
+        cfgs = inference_yolov8(yolov8_pointer,img, same_iou_thres=0.85, resize=1280) # 指针分割推理
         cfgs = cfgs2segs(cfgs) 
 
         for i in range(len(cfgs)):
@@ -585,7 +585,7 @@ if __name__ == '__main__':
     #     "color": 2
     # }
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
-    json_file = "/data/PatrolAi/result_patrol/指针表计读数-多盘多针.json"
+    json_file = "/data/PatrolAi/result_patrol/0129074824_35kVIII-1L电抗器436断路器SF6表_input_data.json"
     print(json_file)
     f = open(json_file,"r", encoding='utf-8')
     input_data = json.load(f)

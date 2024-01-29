@@ -122,6 +122,9 @@ class GetInputData:
         
         raw_roi = config["bboxes"]["roi"]
 
+        if not isinstance(raw_roi, list) and not isinstance(raw_roi, dict):
+            return {}
+
         ## 老版本的roi是list，将list改为dict
         if isinstance(raw_roi, list):
             if len(raw_roi) == 0:
