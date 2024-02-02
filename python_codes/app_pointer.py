@@ -550,7 +550,13 @@ def inspection_pointer(input_data):
         seg[3])-5), cv2.FONT_HERSHEY_SIMPLEX, math.ceil(s), (0, 255, 0), thickness=math.ceil(s*2))
     img_tag_ = img_chinese(
         img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-    out_data["img_result"] = img2base64(img_tag_)
+    
+    if os.path.exists(input_data["image"]): 
+        out_file = input_data["image"][:-4] + "_result.jpg"
+        cv2.imwrite(out_file, img_tag_)
+        out_data["img_result"] = out_file
+    else:
+        out_data["img_result"] = img2base64(img_tag_)
 
     return out_data
 

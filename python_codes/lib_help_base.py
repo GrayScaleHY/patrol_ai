@@ -46,17 +46,47 @@ class GetInputData:
             checkpoint = ""
         return checkpoint
     
+    def get_img(self, img_str):
+        """
+        将字符串形式的图片转成numpy图片，字符串形式图片可以是base64格式、http链接、图片绝对路径
+        """
+        if img_str.startswith("http"): # 如果是网络图，则尝试下载
+            img_str_file = "/export" + img_str.split(":9000")[1]
+            if not os.path.exists(img_str_file): # 如果不存在，则下载
+                img_str_dir = os.path.dirname(img_str_file)
+                os.makedirs(img_str_dir, exist_ok=True)
+                print("request download--------------------------------------")
+                print(img_str_file)
+                r = requests.get(img_str_file)
+                f = open(img_str_file, "wb")
+                f.write(r.content)
+                f.close()
+                # wget.download(img_ref_path, img_ref_path_)
+            img = cv2.imread(img_str_file)
+
+        elif os.path.exists(img_str): # 如果是绝对路径，则直接读取
+            img = cv2.imread(img_str)
+
+        else: # 若是base64,转换为img
+            try:
+                img = base642img(img_str)
+            except:
+                print("data[image] can not convert to img!")
+                img = None
+
+        return img
+    
     def get_img_tag(self, data):
         """
         获取测试图
         return:
             img_tag: numpy的图像数据。
         """
-        if "image" in data and isinstance(data["image"], str) and data["image"] != "":
-            img_tag = base642img(data["image"])
-        else:
-            img_tag = None
-        return img_tag
+        if "image" not in data or not isinstance(data["image"], str):
+            return None
+        img_t = data["image"]
+        
+        return self.get_img(img_t)
     
     def get_type(self, data):
         """
@@ -82,31 +112,14 @@ class GetInputData:
         """
         获取模板图。
         """
-        if "img_ref" in config and isinstance(config["img_ref"], str) and config['img_ref']!="":
-            img_ref = base642img(config["img_ref"])
-        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str) and config['img_ref_path']!="":
-            img_ref_path = config["img_ref_path"]
-            if os.path.exists(img_ref_path):
-                return cv2.imread(img_ref_path)
-            elif img_ref_path.startswith("http"):
-                img_ref_path_ = "/export" + img_ref_path.split(":9000")[1]
-                if not os.path.exists(img_ref_path_):
-                    img_ref_dir = os.path.dirname(img_ref_path_)
-                    os.makedirs(img_ref_dir, exist_ok=True)
-                    print("request download--------------------------------------")
-                    print(img_ref_path)
-                    print(img_ref_path_)
-                    r = requests.get(img_ref_path)
-                    f = open(img_ref_path_, "wb")
-                    f.write(r.content)
-                    f.close()
-                    # wget.download(img_ref_path, img_ref_path_)
-                return cv2.imread(img_ref_path_)
-            else:
-                return None
+        if "img_ref" in config and isinstance(config["img_ref"], str):
+            img_r = config["img_ref"]
+        if "img_ref_path" in config and isinstance(config["img_ref_path"], str):
+            img_r = config["img_ref_path"]
         else:
-            img_ref = None
-        return img_ref
+            return None
+        
+        return self.get_img(img_r)
     
     def get_roi(self, config, img_ref):
         """
@@ -509,8 +522,11 @@ def save_output_data(output_data, save_dir, name_head):
     f = open(os.path.join(save_dir, name_head + "output_data.json"), "w", encoding='utf-8')
     json.dump(output_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
-    img_tag_cfg = base642img(output_data["img_result"])
-    cv2.imwrite(os.path.join(save_dir, name_head + "tag_cfg.jpg"), img_tag_cfg)
+    if os.path.exists(output_data["img_result"]):
+        os.rename(output_data["img_result"], os.path.join(save_dir, name_head + "tag_cfg.jpg"))
+    else:
+        img_tag_cfg = base642img(output_data["img_result"])
+        cv2.imwrite(os.path.join(save_dir, name_head + "tag_cfg.jpg"), img_tag_cfg)
 
 def is_include(sub_box, par_box, srate=0.8):
     

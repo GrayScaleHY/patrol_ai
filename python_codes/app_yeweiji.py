@@ -238,7 +238,13 @@ def inspection_level_gauge(input_data):
         out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "at least two coordinates are required"
 
-    out_data["img_result"] = img2base64(img_tag_)
+    if os.path.exists(input_data["image"]): 
+        out_file = input_data["image"][:-4] + "_result.jpg"
+        cv2.imwrite(out_file, img_tag_)
+        out_data["img_result"] = out_file
+    else:
+        out_data["img_result"] = img2base64(img_tag_)
+        
     return out_data
 
 
