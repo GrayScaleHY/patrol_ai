@@ -7,7 +7,7 @@ from copy import deepcopy
 from lib_image_ops import img2base64, img_chinese
 import numpy as np
 from lib_img_registration import roi_registration, convert_coor
-from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data
+from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result
 from lib_inference_yolov5 import inference_yolov5, check_iou
 import config_object_name
 from lib_inference_yolov5 import load_yolov5_model
@@ -141,7 +141,7 @@ def inspection_level_gauge(input_data):
     if an_type != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
         out_data["code"] = 1
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
     else:
         out_data["code"] = 0
@@ -162,7 +162,7 @@ def inspection_level_gauge(input_data):
         out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "; Not find object"
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=_size)
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     # labels 列表 和 color 列表
@@ -238,12 +238,7 @@ def inspection_level_gauge(input_data):
         out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "at least two coordinates are required"
 
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + "_result.jpg"
-        cv2.imwrite(out_file, img_tag_)
-        out_data["img_result"] = out_file
-    else:
-        out_data["img_result"] = img2base64(img_tag_)
+    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         
     return out_data
 

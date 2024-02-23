@@ -10,7 +10,7 @@ import copy
 
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_img_registration import registration, convert_coor
-from lib_help_base import GetInputData
+from lib_help_base import GetInputData, creat_img_result
 
 # yolov5_mubiaokuang = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_crop.pt")  # 数字表记寻框模型
 # yolov5_shuzishibie = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_rec.pt")  # 数字表记数字识别模型
@@ -86,14 +86,7 @@ def inspection_digital_rec(input_data):
         out_data["msg"] = out_data["msg"] + "type isn't digital or counter; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        if os.path.exists(input_data["image"]):
-            out_file = input_data["image"][:-4] + "_result.jpg"
-            cv2.imwrite(out_file, img_tag_)
-            out_data["img_result"] = out_file
-        else:
-            out_data["img_result"] = img2base64(img_tag_)
-        # out_data["img_result"] = img2base64(img_tag_)
-        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     yolo_crop, yolo_rec = yolov5_jishukuang, yolov5_jishushibie
@@ -159,13 +152,7 @@ def inspection_digital_rec(input_data):
         out_data["msg"] = out_data["msg"] + "Can not find digital; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        if os.path.exists(input_data["image"]):
-            out_file = input_data["image"][:-4] + "_result.jpg"
-            cv2.imwrite(out_file, img_tag_)
-            out_data["img_result"] = out_file
-        else:
-            out_data["img_result"] = img2base64(img_tag_)
-        # out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         out_data['data']['values'] = None
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
@@ -234,13 +221,7 @@ def inspection_digital_rec(input_data):
     if out_data["code"] == 1:
         out_data["msg"] = out_data["msg"] + "Can not find digital; "
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
-        if os.path.exists(input_data["image"]):
-            out_file = input_data["image"][:-4] + "_result.jpg"
-            cv2.imwrite(out_file, img_tag_)
-            out_data["img_result"] = out_file
-        else:
-            out_data["img_result"] = img2base64(img_tag_)
-        # out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
 
@@ -270,12 +251,7 @@ def inspection_digital_rec(input_data):
     # f = open(os.path.join(save_path, TIME_START + "output_data.json"), "w", encoding='utf-8')
     # json.dump(out_data, f, indent=2, ensure_ascii=False)
     # f.close()
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + "_result.jpg"
-        cv2.imwrite(out_file, img_tag_)
-        out_data["img_result"] = out_file
-    else:
-        out_data["img_result"] = img2base64(img_tag_)
+    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         
     return out_data
 

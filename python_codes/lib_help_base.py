@@ -5,7 +5,7 @@ import math
 from config_object_name import COLOR_HSV_MAP
 import cv2
 import numpy as np
-from lib_image_ops import base642img
+from lib_image_ops import base642img, img2base64
 import json
 import os
 import time
@@ -114,7 +114,7 @@ class GetInputData:
         """
         if "img_ref" in config and isinstance(config["img_ref"], str):
             img_r = config["img_ref"]
-        if "img_ref_path" in config and isinstance(config["img_ref_path"], str):
+        elif "img_ref_path" in config and isinstance(config["img_ref_path"], str):
             img_r = config["img_ref_path"]
         else:
             return None
@@ -523,7 +523,7 @@ def save_output_data(output_data, save_dir, name_head):
     json.dump(output_data, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
     if os.path.exists(output_data["img_result"]):
-        os.rename(output_data["img_result"], os.path.join(save_dir, name_head + "tag_cfg.jpg"))
+        shutil.copy(output_data["img_result"], os.path.join(save_dir, name_head + "tag_cfg.jpg"))
     else:
         img_tag_cfg = base642img(output_data["img_result"])
         cv2.imwrite(os.path.join(save_dir, name_head + "tag_cfg.jpg"), img_tag_cfg)
@@ -549,6 +549,18 @@ def is_include(sub_box, par_box, srate=0.8):
         return True
     else:
         return False
+
+def creat_img_result(input_data, img_tag_):
+    """
+    巡视算法输出的img_result兼容图片路径和base64.
+    """
+    if os.path.exists(input_data["image"]): 
+        out_file = input_data["image"][:-4] + "_result.jpg"
+        cv2.imwrite(out_file, img_tag_)
+        img_result = out_file
+    else:
+        img_result = img2base64(img_tag_)
+    return img_result
     
 
 def rm_patrolai(out_json, save_dict, out_dir):

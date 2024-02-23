@@ -7,7 +7,7 @@ from lib_image_ops import base642img, img2base64, img_chinese
 from lib_img_registration import roi_registration
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import inference_ocr
-from lib_help_base import GetInputData, is_include
+from lib_help_base import GetInputData, is_include, creat_img_result
 
 
 def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
@@ -92,12 +92,7 @@ def inspection_qrcode(input_data):
     ## 输出可视化结果的图片。
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + "_result.jpg"
-        cv2.imwrite(out_file, img_tag_)
-        out_data["img_result"] = out_file
-    else:
-        out_data["img_result"] = img2base64(img_tag_)
+    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
 
     return out_data
 

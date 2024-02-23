@@ -8,7 +8,7 @@ from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, intersection_pointers
 from lib_img_registration import registration, convert_coor
-from lib_help_base import color_area, GetInputData
+from lib_help_base import color_area, GetInputData, creat_img_result
 import math
 
 yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表记检测
@@ -442,7 +442,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     # 检测指针
@@ -453,7 +453,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     # 画出所有指针
@@ -493,7 +493,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     # 使用映射变换矫正目标图，并且转换坐标点。
@@ -508,9 +508,9 @@ def inspection_pointer(input_data):
         out_data["msg"] = out_data["msg"] + \
             "Can not find center in pointers_tag; "
         out_data["code"] = 1
-        out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     # 将指针按score从大到小排列，筛选指针
@@ -526,9 +526,9 @@ def inspection_pointer(input_data):
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
         out_data["code"] = 1
-        out_data["img_result"] = img2base64(img_tag_)
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     if meter_type == "blq_zzscsb" or meter_type == "nszb_zzscsb":
@@ -551,12 +551,7 @@ def inspection_pointer(input_data):
     img_tag_ = img_chinese(
         img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
     
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + "_result.jpg"
-        cv2.imwrite(out_file, img_tag_)
-        out_data["img_result"] = out_file
-    else:
-        out_data["img_result"] = img2base64(img_tag_)
+    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
 
     return out_data
 

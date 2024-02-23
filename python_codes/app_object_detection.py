@@ -5,13 +5,11 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
-from lib_help_base import color_list
 from lib_img_registration import roi_registration
 import config_object_name
 from config_object_name import convert_label, defect_LIST
 import numpy as np
-from lib_help_base import GetInputData
-from lib_help_base import is_include
+from lib_help_base import GetInputData, is_include, color_list, creat_img_result
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 
 yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
@@ -111,7 +109,7 @@ def inspection_object_detection(input_data):
         out_data["msg"] = out_data["msg"] + "Type isn't object; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = img2base64(img_tag_)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
     ## 求出目标图像的感兴趣区域
@@ -176,7 +174,7 @@ def inspection_object_detection(input_data):
     ## 给code赋值，判断是否异常
     if an_type == "rec_defect" or an_type == "fire_smoke":
         for name, _cfg in out_data["data"].items():
-            if len(_cfg) > 0:
+            if len(_cfg[0]) > 0:
                 out_data["code"] = 1
     else:
         lens = [len(_cfg[0]) for name, _cfg in out_data["data"].items()]
@@ -198,12 +196,7 @@ def inspection_object_detection(input_data):
     
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
 
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + "_result.jpg"
-        cv2.imwrite(out_file, img_tag_)
-        out_data["img_result"] = out_file
-    else:
-        out_data["img_result"] = img2base64(img_tag_)
+    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
     
     return out_data
 
