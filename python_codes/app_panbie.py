@@ -155,7 +155,7 @@ def inspection_identify_defect(input_data):
         out_data["data"] = [{"label": "0", "bbox":[]}]
         out_data["code"] = 0
     else:
-        rec = rec = [int(i) for i in tag_diff]
+        rec = [int(i) for i in tag_diff]
         cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
         img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=40)
         out_data["data"] = [{"label": "1", "bbox":rec}]
