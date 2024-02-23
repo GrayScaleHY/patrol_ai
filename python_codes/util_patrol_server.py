@@ -17,7 +17,6 @@ from app_match import patrol_match
 import time
 import threading
 from config_object_name import AI_FUNCTION, convert_ai_function
-from app_daozha import patrol_daozha
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
