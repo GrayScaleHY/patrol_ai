@@ -292,10 +292,10 @@ def correct_offset(tag_img, M, b=False):
         points = np.stack([[[x0, y0]],[[x1, y1]],[[x2, y2]],[[x3, y3]]])
         res = cv2.transform(points, Mi)
         (x0t, y0t), (x1t, y1t), (x2t, y2t), (x3t, y3t) = np.squeeze(res, 1)
-        xmin = max(x0, x0t, x1t)
-        xmax = min(x2, x2t, x3t)
-        ymin = max(y0, y0t, y3t)
-        ymax = min(y2, y2t, y1t)
+        xmin = max(x0, min(x0t, x1t, x2t, x3t))
+        xmax = min(x2, max(x0t, x1t, x2t, x3t))
+        ymin = max(y0, min(y0t, y1t, y2t, y3t))
+        ymax = min(y2, max(y0t, y1t, y2t, y3t))
         
         return img_tag_warped, [xmin, ymin, xmax, ymax]
 
