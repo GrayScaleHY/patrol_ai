@@ -44,10 +44,9 @@ def check_position(input_data):
     an_type = DATA.type
     img_ref = DATA.img_ref
     img_tag = DATA.img_tag
-    serial = DATA.serial
 
     out_data = {"code": 0, "msg": "Request; ",
-                "checkpoint": checkpoint, "serial_number": serial}
+                "checkpoint": checkpoint}
 
     if an_type != "position_shift":
         out_data["code"] = 1
