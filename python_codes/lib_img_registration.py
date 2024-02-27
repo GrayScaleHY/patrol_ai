@@ -94,10 +94,15 @@ def lightglue_registration(img_ref, img_tag, max_size=1280):
     mkpts0, mkpts1 = kpts0[matches[..., 0]], kpts1[matches[..., 1]]
     mkpts0 = mkpts0.cpu().numpy()
     mkpts1 = mkpts1.cpu().numpy()
-
+    if len(mkpts0) < 3 or len(mkpts1) < 3:
+        return None
     M, mask = cv2.estimateAffinePartial2D(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
 
+    if M is None:
+        return None
+
     M = np.dot(M, M_scale) # 偏移矩阵还原会原始图片对应的M
+    
     return M
 
 def superglue_registration(img_ref, img_tag):
