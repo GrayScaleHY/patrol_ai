@@ -143,14 +143,15 @@ def inspection_object_detection(input_data):
 
     ## 判断bbox是否在roi中
     for name, roi in roi_tag.items():
-        cfg_out = {}
+        out_data["data"][name] = []
         for cfg in cfgs:
             if is_include(cfg["coor"], roi, srate=0.5):
                 cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
-                break
-            else:
-                cfg_out = {}
-        out_data["data"][name] = [cfg_out]
+                out_data["data"][name].append(cfg_out)
+                if an_type != "rec_defect":
+                    break
+        if len(out_data["data"][name]) == 0:
+            out_data["data"][name] = [{}]
     
     ## 指示灯若没有识别到状态默认为指示灯灭，将没有识别到的翻牌器默认为翻牌器异常
     # if an_type == "led" or an_type == "fanpaiqi" or an_type == "disconnector_notemp" or an_type == "disconnector_texie":
