@@ -120,7 +120,7 @@ def inspection_identify_defect(input_data):
     img_ref = DATA.img_ref
 
     ## 初始化输入输出信息。
-    out_data = {"code": 1, "data":[], "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
+    out_data = {"code": 1, "data":{}, "img_result": input_data["image"], "msg": "Success request object detect; "} # 初始化out_data
     img_tag_ = img_tag.copy()
 
     # 画上点位名称
@@ -152,13 +152,13 @@ def inspection_identify_defect(input_data):
 
     if len(tag_diff) == 0:
         img_tag_ = img_chinese(img_tag_, "正常", (20,10), (0, 255, 0), size=40)
-        out_data["data"] = [{"label": "0", "bbox":[]}]
+        out_data["data"] = {"no_roi": [{"label": "0", "bbox":[]}]}
         out_data["code"] = 0
     else:
         rec = [int(i) for i in tag_diff]
         cv2.rectangle(img_tag_, (int(rec[0]), int(rec[1])),(int(rec[2]), int(rec[3])), (0,0,255), thickness=2)
         img_tag_ = img_chinese(img_tag_, "异常", (int(rec[0])+10, int(rec[1])+20), (0,0,255), size=40)
-        out_data["data"] = [{"label": "1", "bbox":rec}]
+        out_data["data"] = {"no_roi": [{"label": "1", "bbox":rec}]}
         out_data["code"] = 1
 
     ## 输出可视化结果的图片。
