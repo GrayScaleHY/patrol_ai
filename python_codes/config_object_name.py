@@ -194,7 +194,7 @@ OBJECT_MAP = {
         'jsxs_jdyxx': '金属锈蚀',
         'jsxs_ecjxh': '金属锈蚀',
         'hzyw': '设备烟火',
-        'bmwh': '外绝缘表面污秽',
+        'bmwh': '表面污秽',
         'ws_ywyc': '瓦斯观察窗油位下降',
         'ws_ywzc': '瓦斯观察窗油位正常',
         'yljdq_flow': '流油继电器flow',
