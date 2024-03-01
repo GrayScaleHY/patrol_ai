@@ -337,4 +337,9 @@ def convert_label(label, type_):
     for l in OBJECT_MAP[type_]:
         if label == OBJECT_MAP[type_][l]:
             return l
+    if l == "bjdsyc":
+        label = "bjdsyc_zz"
+    if l == "yxdghsg":
+        label = "yxdgsg"
+    
     return label
