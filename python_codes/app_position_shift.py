@@ -1,5 +1,5 @@
 from lib_img_registration import registration
-from lib_help_base import GetInputData
+from lib_help_base import GetInputData, creat_img_result
 
 import sys
 import torch
@@ -45,38 +45,45 @@ def check_position(input_data):
     img_ref = DATA.img_ref
     img_tag = DATA.img_tag
 
-    out_data = {"code": 0, "msg": "Request; ",
+    out_data = {"code": 1, "msg": "Request; ",
                 "checkpoint": checkpoint}
 
     if an_type != "position_shift":
-        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "Type is wrong! "
         return out_data
 
     if img_ref is None:
-        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "Reference image is None! "
         return out_data
 
     if img_tag is None:
-        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "Target image is None! "
         return out_data
 
     h, w, _ = img_ref.shape
+
+    # 输出初始化
+    out_data = {"code": 1,
+                "data": {"no_roi": [{"label": "1", "bbox": [0, 0, int(w), int(h)]}]},
+                "img_result": creat_img_result(input_data, img_tag),
+                "msg": "Request; ",
+                "checkpoint": checkpoint}
+
+
     M = registration(img_ref, img_tag)
 
     if M is None:
-        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "Preset offset! "
         return out_data
 
     print('shift matrix:{}'.format(M.tolist()))
     result = analyse_shift_matrix(M.tolist(), h, w)
     if result:
-        out_data["code"] = 1
         out_data["msg"] = out_data["msg"] + "Preset offset! "
     else:
+        out_data["code"] = 0
+        out_data["data"]["no_roi"][0]["label"] = "0"
+        out_data["data"]["no_roi"][0]["bbox"] = []
         out_data["msg"] = out_data["msg"] + "Normal preset position. "
     return out_data
 
