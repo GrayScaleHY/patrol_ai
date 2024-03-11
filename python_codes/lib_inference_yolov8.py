@@ -26,7 +26,7 @@ def load_yolov8_model(model_file, decode=False):
 
 def inference_yolov8(model,
                      img,
-                     resize=640,
+                     resize=None,
                      conf_thres=0.25,
                      same_iou_thres=0.7,
                      diff_iou_thres=1,
@@ -47,6 +47,10 @@ def inference_yolov8(model,
     """
     labels = model.names  # 标签名
     img_ = img.copy()
+    
+    if resize is None:
+        resize = model.model.args["imgsz"]
+
     result = model(img_, iou=same_iou_thres, conf=conf_thres, imgsz=resize)[0]  # 推理结果
     task = model.task  # 模型类型, detect, segment, classify
     H, W = img.shape[:2]
