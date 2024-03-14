@@ -57,7 +57,7 @@ class GetInputData:
                 os.makedirs(img_str_dir, exist_ok=True)
                 print("request download--------------------------------------")
                 print(img_str_file)
-                r = requests.get(img_str_file)
+                r = requests.get(img_str)
                 f = open(img_str_file, "wb")
                 f.write(r.content)
                 f.close()
