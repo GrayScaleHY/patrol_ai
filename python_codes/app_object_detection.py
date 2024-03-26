@@ -7,7 +7,7 @@ from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_img_registration import roi_registration
 import config_object_name
-from config_object_name import convert_label, defect_LIST
+from config_object_name import convert_label, defect_LIST, DEFAULT_STATE
 import numpy as np
 from lib_help_base import GetInputData, is_include, color_list, creat_img_result
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
@@ -16,6 +16,7 @@ yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 
 yolov8_rec_defect = load_yolov8_model("/data/PatrolAi/yolov8/rec_defect.pt") # 送检18类缺陷,x6模型
 yolov5_daozha = load_yolov5_model("/data/PatrolAi/yolov5/daozha_v5detect.pt")  # 加载刀闸模型
 yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
+# yolov5_count = load_yolov5_model("/data/PatrolAi/yolov5/count.pt")#大电流端子借用钥匙计数功能
 # yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
 # yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
 # yolov5_action = load_yolov5_model("/data/PatrolAi/yolov5/action.pt") # 动作识别，倒地
@@ -104,7 +105,7 @@ def inspection_object_detection(input_data):
         labels = ["xmbhyc", "xmbhzc"]
         model_type = "ErCiSheBei"
     elif an_type == "key":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov5_model = yolov5_count
         labels = ["ys"]
         model_type = "ErCiSheBei"
     else:
@@ -154,25 +155,14 @@ def inspection_object_detection(input_data):
                     break
         if len(out_data["data"][name]) == 0:
             out_data["data"][name] = [{}]
-    
-    ## 指示灯若没有识别到状态默认为指示灯灭，将没有识别到的翻牌器默认为翻牌器异常
-    # if an_type == "led" or an_type == "fanpaiqi" or an_type == "disconnector_notemp" or an_type == "disconnector_texie":
-    if an_type == "led":
-        if an_type == "led":
-            label = "指示灯灭"
-        elif an_type == "fanpaiqi":
-            label = "识别异常"
-        else:
-            label = "识别异常"
+
+    if an_type == "key":
         for name, _cfgs in out_data["data"].items():
-            if len(_cfgs) == 0:
-                c = roi_tag[name]
-                c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
-                _cfg = [{"label": label, "bbox": c, "score": 1.0}]
-                cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
-                s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
-                img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
-                out_data["data"][name] = _cfg
+            num=len(_cfgs)
+            cfg_out = {"label": 'key', "number":num, "score": 0.99}
+            out_data["data"][name].append(cfg_out)
+            if len(out_data["data"][name]) == 0:
+                out_data["data"][name] = [{}]
     
     ## 给code赋值，判断是否异常
     if an_type == "rec_defect" or an_type == "fire_smoke":
@@ -185,6 +175,19 @@ def inspection_object_detection(input_data):
             out_data["code"] = 0
         else:
             out_data["code"] = 1
+
+    ## 指示灯若没有识别到目标物，是否也默认给定识别结果
+    if an_type in DEFAULT_STATE and DEFAULT_STATE[an_type] is not None:
+        for name, _cfgs in out_data["data"].items():
+            if len(_cfgs[0]) == 0:
+                c = roi_tag[name]
+                c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
+                _cfg = [{"label": DEFAULT_STATE[an_type], "bbox": c, "score": 1.0}]
+                cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
+                s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+                img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
+                out_data["data"][name] = _cfg
+                out_data["code"] = DEFAULT_STATE["abnormal_code"]
     
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]

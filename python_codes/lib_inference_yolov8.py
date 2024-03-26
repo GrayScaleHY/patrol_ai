@@ -87,7 +87,7 @@ def inference_yolov8(model,
     for i, b in enumerate(res_boxes):
         box = [int(b[0]), int(b[1]), int(b[2]), int(b[3])]
         label = labels[b[-1]]  # 标签
-        score = b[-2]
+        score = float(b[-2])
 
         if task == "segment":
             mask = scale_image(res_masks[i], result.orig_shape)[:,:,0]
@@ -100,7 +100,8 @@ def inference_yolov8(model,
             segments = None
         
         if task == "pose":
-            keys = rec_keys[i].astype(int)
+            keys = rec_keys[i].astype(int).tolist()
+            # keys = keys.to_list()
         else:
             keys = None
 

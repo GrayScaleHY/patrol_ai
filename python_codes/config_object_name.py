@@ -1,6 +1,110 @@
+## 目标检测，若没检测到返回的默认状态
+DEFAULT_STATE = {
+    "abnormal_code": 1, # 识别异常是的code，若code=0,则验收时不会产生异常
+    "led": "指示灯灭", # 指示灯默认状态
+    "fanpaiqi": "识别异常", # 翻牌器默认状态
+    "disconnector_notemp": "识别异常", # 默认刀闸识别
+    "disconnector_texie": "识别异常",  # 刀闸特写识别
+    "door": "箱门正常", # 箱门闭合状态
+    "air_switch": None, # 空气开关
+    "pressplate": None, # 压板
+}
 
 ## 目标检测中各标签的命名
 OBJECT_MAP = {
+    "ErCiSheBei":{
+        'xmbhyc': '箱门异常',
+        'xmbhzc': '箱门正常',
+        'kgg_ybh': '合',
+        'kgg_ybf': '分',
+        'kqkg_hz': '合闸',
+        'kqkg_fz': '分闸',
+        'fpq_h': '翻牌器合',
+        'fpq_f': '翻牌器分',
+        'fpq_jd': '翻牌器异常',
+        'xnkg_s': '上',
+        'xnkg_zs': '左上',
+        'xnkg_ys': '右上',
+        'xnkg_z': '左',
+        'ys': '钥匙',
+        'zsd_l': "指示灯亮",
+        'zsd_m': '指示灯灭'
+    },
+
+    "led": {
+        "name": "LED灯",
+        "led_off": "指示灯_灭",
+        "green_dc": "绿灯亮_断开",
+        "red_c": "红灯亮_接通",
+        "red_off": "红灯亮_接地",
+        "red_cn": "红灯亮_储能灯",
+        "yellow_cn": "黄灯亮_储能灯",
+        "white_cn": "白灯亮_储能灯",
+        "green_cn": "绿灯亮_储能灯",
+        "yellow_ml": "黄灯亮_米粒灯",
+        "white_ml": "白灯亮_米粒灯",
+        "green_ml": "绿灯亮_米粒灯",
+        "red_ml": "红灯亮_米粒灯",
+        "yellow_yx": "黄灯亮_运行灯",
+        "white_yx": "白灯亮_运行灯",
+        "green_yx": "路灯亮_运行灯",
+        "red_yx": "红灯亮_运行灯"
+    },
+    "rec_defect": {
+        'sly_bjbmyw': '部件表面油污',
+        'sly_dmyw': '地面油污',
+        'pzqcd': '膨胀器冲顶', # '金属膨胀器冲顶破损',
+        'jyhbx': '均压环破损变形',
+        'drqgd': '电容器鼓肚',
+        'jyz_pl': '绝缘子破裂', # '外绝缘裂纹破损'
+        'yxdgsg': '引线断股松股', #
+        'jdyxxsd': '接地引下线松动',
+        'jsxs_ddjt': '金属锈蚀',
+        'jsxs_ddyx': '金属锈蚀',
+        'jsxs_jdyxx': '金属锈蚀',
+        'jsxs_ecjxh': '金属锈蚀',
+        'hzyw': '火灾烟雾', # '设备烟火',
+        'bmwh': '表面污秽',
+        'ws_ywyc': '瓦斯观察窗油位下降',
+        'ws_ywzc': '瓦斯观察窗油位正常',
+        'yljdq_flow': '流油继电器flow',
+        'yljdq_stop': '流油继电器stop',
+        'fhz_f': '刀闸指示分',
+        'fhz_h': '刀闸指示合',
+        'fhz_ztyc': '刀闸指示异常',
+        'hxq_gjbs': '呼吸器硅胶变色',
+        'hxq_gjzc': '呼吸器硅胶正常',
+        'ywzt_yfyc': '油位状态油封异常', # '油封油位异常',
+        'ywzt_yfzc': '油封油位正常',
+        'hxq_gjtps': '硅胶筒破损',
+        'hxq_yfps': '呼吸器油封破损',
+        'bj_wkps': '表计外壳破损',
+        'bj_bpps': '表计表盘破损',
+        'bjzc': '表计正常',
+        'bjdsyc_zz': '表计读数异常', # '指针表表计读数异常'
+        'bjdsyc_sx': '表计读数异常', # '数显表表计读数异常',
+        'bjdsyc_ywj': '表计读数异常', # '油位表计读数异常',
+        'bjdsyc_ywc': '表计读数异常', # '油位观察窗异常',
+        'bj_bpmh': '表计表盘模糊',
+        'gcc_mh': '观察窗模糊',
+        'gcc_ps': '观察窗破损',
+        'xmbhyc': '箱门闭合异常',
+        'xmbhzc': '箱门闭合正常',
+        'yw_nc': '异物－鸟巢',
+        'yw_gkxfw': '异物－高空悬浮物',
+        'kgg_ybf': '压板分',
+        'kgg_ybh': '压板合',
+        'kk_f': '空开分',
+        'kk_h': '空开合',
+        'zsd_l': '指示灯亮',
+        'zsd_m': '指示灯灭',
+        'mbhp': '面板指示异常',
+        'wcgz': '未穿工装',
+        'gzzc': '工装正常',
+        'wcaqm': '未穿安全帽',
+        'aqmzc': '安全帽正常',
+        'xy': '吸烟'
+    },
     "coco": {
         "name": "coco labels",
         "person": "人员", "bicycle": "自行车", "car": "車", "motorcycle": "摩托", "airplane": "飞机", "bus": "公共汽车", "train": "火车", 
@@ -26,25 +130,6 @@ OBJECT_MAP = {
         "name": "表记",
         "meter": "表记",
         "pointer": "指针"
-    },
-    "led": {
-        "name": "LED灯",
-        "led_off": "指示灯_灭",
-        "green_dc": "绿灯亮_断开",
-        "red_c": "红灯亮_接通",
-        "red_off": "红灯亮_接地",
-        "red_cn": "红灯亮_储能灯",
-        "yellow_cn": "黄灯亮_储能灯",
-        "white_cn": "白灯亮_储能灯",
-        "green_cn": "绿灯亮_储能灯",
-        "yellow_ml": "黄灯亮_米粒灯",
-        "white_ml": "白灯亮_米粒灯",
-        "green_ml": "绿灯亮_米粒灯",
-        "red_ml": "红灯亮_米粒灯",
-        "yellow_yx": "黄灯亮_运行灯",
-        "white_yx": "白灯亮_运行灯",
-        "green_yx": "路灯亮_运行灯",
-        "red_yx": "红灯亮_运行灯"
     },
     "action_recognition":{
         "name": "行为识别",
@@ -139,24 +224,6 @@ OBJECT_MAP = {
         'Flashlight': '手电筒',
         'Tape measure': '卷尺'
     },
-    "ErCiSheBei":{
-        'xmbhyc': '箱门异常',
-        'xmbhzc': '箱门正常',
-        'kgg_ybh': '合',
-        'kgg_ybf': '分',
-        'kqkg_hz': '合闸',
-        'kqkg_fz': '分闸',
-        'fpq_h': '翻牌器合',
-        'fpq_f': '翻牌器分',
-        'fpq_jd': '翻牌器异常',
-        'xnkg_s': '上',
-        'xnkg_zs': '左上',
-        'xnkg_ys': '右上',
-        'xnkg_z': '左',
-        'ys': '钥匙',
-        'zsd_l': "指示灯亮",
-        'zsd_m': '指示灯灭'
-    },
     "equipment_defects": {
         "name": "设备部件与缺陷",
         '变压器_本体': '变压器_本体',
@@ -186,61 +253,6 @@ OBJECT_MAP = {
         '异物': '异物',
         '缺陷不知道': '缺陷不知道',
         '设备不知道_操作机构箱': '设备不知道_操作机构箱'
-    },
-    "rec_defect": {
-        'sly_bjbmyw': '部件表面油污',
-        'sly_dmyw': '地面油污',
-        'pzqcd': '膨胀器冲顶', # '金属膨胀器冲顶破损',
-        'jyhbx': '均压环破损变形',
-        'drqgd': '电容器鼓肚',
-        'jyz_pl': '绝缘子破裂', # '外绝缘裂纹破损'
-        'yxdgsg': '引线断股松股', #
-        'jdyxxsd': '接地引下线松动',
-        'jsxs_ddjt': '金属锈蚀',
-        'jsxs_ddyx': '金属锈蚀',
-        'jsxs_jdyxx': '金属锈蚀',
-        'jsxs_ecjxh': '金属锈蚀',
-        'hzyw': '火灾烟雾', # '设备烟火',
-        'bmwh': '表面污秽',
-        'ws_ywyc': '瓦斯观察窗油位下降',
-        'ws_ywzc': '瓦斯观察窗油位正常',
-        'yljdq_flow': '流油继电器flow',
-        'yljdq_stop': '流油继电器stop',
-        'fhz_f': '刀闸指示分',
-        'fhz_h': '刀闸指示合',
-        'fhz_ztyc': '刀闸指示异常',
-        'hxq_gjbs': '呼吸器硅胶变色',
-        'hxq_gjzc': '呼吸器硅胶正常',
-        'ywzt_yfyc': '油位状态油封异常', # '油封油位异常',
-        'ywzt_yfzc': '油封油位正常',
-        'hxq_gjtps': '硅胶筒破损',
-        'hxq_yfps': '呼吸器油封破损',
-        'bj_wkps': '表计外壳破损',
-        'bj_bpps': '表计表盘破损',
-        'bjzc': '表计正常',
-        'bjdsyc_zz': '表计读数异常', # '指针表表计读数异常'
-        'bjdsyc_sx': '表计读数异常', # '数显表表计读数异常',
-        'bjdsyc_ywj': '表计读数异常', # '油位表计读数异常',
-        'bjdsyc_ywc': '表计读数异常', # '油位观察窗异常',
-        'bj_bpmh': '表计表盘模糊',
-        'gcc_mh': '观察窗模糊',
-        'gcc_ps': '观察窗破损',
-        'xmbhyc': '箱门闭合异常',
-        'xmbhzc': '箱门闭合正常',
-        'yw_nc': '异物－鸟巢',
-        'yw_gkxfw': '异物－高空悬浮物',
-        'kgg_ybf': '压板分',
-        'kgg_ybh': '压板合',
-        'kk_f': '空开分',
-        'kk_h': '空开合',
-        'zsd_l': '指示灯亮',
-        'zsd_m': '指示灯灭',
-        'mbhp': '面板指示异常',
-        'wcgz': '未穿工装',
-        'gzzc': '工装正常',
-        'wcaqm': '未穿安全帽',
-        'aqmzc': '安全帽正常',
-        'xy': '吸烟'
     },
         "disconnector_texie": {
         "name": "刀闸状态-无模板配置",
