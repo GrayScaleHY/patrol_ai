@@ -306,7 +306,7 @@ class GetInputData:
         return label_list
 
     def get_sense(self, config):
-        if "sence" in config and isinstance(config["sence"], int):
+        if "sence" in config and isinstance(config["sence"], (int, float)) and config["sence"] > 0:
             sence = config["sence"]
         else:
             sence = None
