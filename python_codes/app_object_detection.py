@@ -33,6 +33,7 @@ def inspection_object_detection(input_data):
     checkpoint = DATA.checkpoint; an_type = DATA.type
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     roi = DATA.roi; label_list = DATA.label_list
+    sense = DATA.sense
 
     ## 初始化out_data
     out_data = {"code": 0, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
@@ -123,7 +124,14 @@ def inspection_object_detection(input_data):
 
     ## 模型推理
     if an_type == "rec_defect":
-        cfgs = inference_yolov8(yolov5_model, img_tag, resize=640, focus_labels=labels, conf_thres=0.8) # inference
+        conf_thres = 0.8
+        ## 根据灵敏度sense调整conf_thres阈值,sense越大，conf_thres越小
+        if sense is not None:
+            if sense > 5:
+                conf_thres = conf_thres - (((sense - 5) / 5) * conf_thres)
+            else:
+                conf_thres = ((5 - sense) / 5) * (1 - conf_thres) + conf_thres
+        cfgs = inference_yolov8(yolov5_model, img_tag, resize=640, focus_labels=labels, conf_thres=conf_thres) # inference
     else:
         cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制

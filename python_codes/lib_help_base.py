@@ -35,6 +35,7 @@ class GetInputData:
         self.number, self.length, self.width, self.color, self.val_size, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
+        self.sense = self.get_sense(self.config)
         
     def get_checkpoint(self, data):
         """
@@ -303,6 +304,13 @@ class GetInputData:
         else:
             label_list = []
         return label_list
+
+    def get_sense(self, config):
+        if "sence" in config and isinstance(config["sence"], int):
+            sence = config["sence"]
+        else:
+            sence = None
+        return sence
     
     def get_video_path(self, data):
         """
