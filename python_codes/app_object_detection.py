@@ -216,7 +216,7 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/test.json"
+    json_file = "/data/PatrolAi/result_patrol/0330051344_鸟巢点位测试_input_data.json"
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()

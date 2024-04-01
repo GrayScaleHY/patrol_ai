@@ -306,11 +306,11 @@ class GetInputData:
         return label_list
 
     def get_sense(self, config):
-        if "sence" in config and isinstance(config["sence"], (int, float)) and config["sence"] > 0:
-            sence = config["sence"]
+        if "sense" in config and isinstance(config["sense"], (int, float)) and config["sense"] > 0:
+            sense = config["sense"]
         else:
-            sence = None
-        return sence
+            sense = None
+        return sense
     
     def get_video_path(self, data):
         """
