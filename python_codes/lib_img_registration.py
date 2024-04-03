@@ -343,6 +343,9 @@ def roi_registration(img_ref, img_tag, roi_ref):
     if len(roi_ref) == 0:
         roi_ref = {"no_roi": [0,0,W,H]}
     
+    if img_ref is None:
+        return roi_ref, None
+
     M = registration(img_ref, img_tag) # 求偏移矩阵
 
     if M is None:
