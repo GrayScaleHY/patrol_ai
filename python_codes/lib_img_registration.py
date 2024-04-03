@@ -29,15 +29,15 @@ except:
     print("warning: no lightglue pkg !")
 
 try:
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cuda")
-    extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
-    matcher = LightGlue(features="superpoint").eval().to(device)
-    registration_opt = "lightglue"
+    matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
+    registration_opt = "loftr"
 except:
     try:
-        matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
-        registration_opt = "loftr"
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda")
+        extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+        matcher = LightGlue(features="superpoint").eval().to(device)
+        registration_opt = "lightglue"
     except:
         try:
             import sys
@@ -77,7 +77,6 @@ def lightglue_registration(img_ref, img_tag, max_size=1280):
     img_tag = cv2.resize(img_tag, (int(W / resize_rate), int(H / resize_rate)))
     H, W = img_ref.shape[:2]
     img_ref = cv2.resize(img_ref, (int(W / resize_rate), int(H / resize_rate)))
-
     resize_scale = [1, 1, resize_rate] # 原始图片相对于resize后的图片的偏移矩阵M的关系。
     M_scale = np.diag(np.array(resize_scale)) 
 
@@ -250,12 +249,12 @@ def registration(img_ref, img_tag):
     return:
         M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
     """
-    if registration_opt == "lightglue":
-        print("registration with lightglue !")
-        return lightglue_registration(img_ref, img_tag) # 使用lightglue纠偏算法
-    elif registration_opt == "loftr":
+    if registration_opt == "loftr":
         print("registration with LoFTR !")
         return loftr_registration(img_ref, img_tag) # 使用Loftr纠偏算法
+    elif registration_opt == "lightglue":
+        print("registration with lightglue !")
+        return lightglue_registration(img_ref, img_tag) # 使用lightglue纠偏算法
     elif registration_opt == "superglue":
         print("registration with SuperGlue !")
         return superglue_registration(img_ref, img_tag) # 使用superglue纠偏算法
@@ -342,7 +341,7 @@ def roi_registration(img_ref, img_tag, roi_ref):
     """
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
-        return {"no_roi": [0,0,W,H]}, None
+        roi_ref = {"no_roi": [0,0,W,H]}
     
     M = registration(img_ref, img_tag) # 求偏移矩阵
 
