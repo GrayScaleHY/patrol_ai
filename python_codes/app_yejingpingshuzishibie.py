@@ -239,7 +239,7 @@ def inspection_digital_rec(input_data):
                 for item in _cfg:
                     value_list.append(item['values'])
                     bbox_list.append(item['bbox'])
-        out_data["data"] = {'type': 'digital', "value": value_list, 'bboxes': bbox_list}
+        out_data["data"] = {'type': 'digital', "values": value_list, 'bboxes': bbox_list}
 
     # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
 
