@@ -90,7 +90,9 @@ def inference_yolov8(model,
         score = float(b[-2])
 
         if task == "segment":
-            mask = scale_image(res_masks[i], result.orig_shape)[:,:,0]
+            mask = scale_image(res_masks[i], result.orig_shape)#[:,:,0]
+            if len(mask.shape) == 3 :
+                mask = mask[:,:,0]
             segments = res_segments[i] * np.array(list(result.orig_shape))
             segments = segments.astype(int)
             if np.sum(segments) == 0: # 没有mask的情况
