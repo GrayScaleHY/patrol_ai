@@ -146,7 +146,7 @@ def inspection_digital_rec(input_data):
     # bboxes_list = {}  # 位置列表
 
     # 第一阶段区域识别，截取图像
-    bbox_cfg = inference_yolov5(yolo_crop, img_tag_)
+    bbox_cfg = inference_yolov5(yolo_crop, img_tag)
     # 未检测到目标
     if len(bbox_cfg) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find digital; "
