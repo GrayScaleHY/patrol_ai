@@ -8,11 +8,11 @@ from lib_image_ops import img2base64, img_chinese
 import numpy as np
 from lib_img_registration import roi_registration, convert_coor
 from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result
-from lib_inference_yolov5 import inference_yolov5, check_iou
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_rcnn_ops import check_iou
 import config_object_name
-from lib_inference_yolov5 import load_yolov5_model
 
-yolov5_yeweiji = load_yolov5_model("/data/PatrolAi/yolov5/yeweiji.pt") # 加载液位计模型
+yolov8_yeweiji = load_yolov8_model("/data/PatrolAi/yolov8/yeweiji.pt") # 加载液位计模型
 
 
 def conv_coor(coordinates, M, d_ref=(0, 0), d_tag=(0, 0)):
@@ -145,15 +145,15 @@ def inspection_level_gauge(input_data):
         return out_data
     else:
         out_data["code"] = 0
-        yolov5_model = yolov5_yeweiji
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_yeweiji
+        labels_dict = yolov8_model.names
         labels = [labels_dict[i] for i in labels_dict]    # 油位
 
         # img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=_size)
         # out_data["img_result"] = img2base64(img_tag_)
         
-    # 用yolov5检测油位
-    cfgs = inference_yolov5(yolov5_yeweiji, img_tag, resize=640, pre_labels=labels) 
+    # 用yolov8检测油位
+    cfgs = inference_yolov8(yolov8_yeweiji, img_tag, resize=640) 
     cfgs = check_iou(cfgs, iou_limit=0.5)
     # print("cfgs:", cfgs)
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     # },
     #     "type": "level_gauge"}
 ## JSON方式
-    f = open("/data/PatrolAi/yolov5/json/yeweiji_old.json","r", encoding='utf-8')
+    f = open("/data/PatrolAi/yolov8/json/yeweiji_old.json","r", encoding='utf-8')
     input_data = json.load(f)
 
     out_data = inspection_level_gauge(input_data)

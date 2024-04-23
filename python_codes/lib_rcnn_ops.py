@@ -138,6 +138,37 @@ def filter_cfgs(cfgs, conf_thres=0.25, same_iou_thres=1, diff_iou_thres=1, focus
     cfgs = out_cfgs
 
     return cfgs
+
+def check_iou(cfgs_in, iou_limit=0.8):
+    """
+    将模型推理结果中重合度高的框去掉（即使label不一样）。
+    args:
+        cfgs_in: inference_yolov5的输出,格式为[{"label": "", "coor": [x0, y0, x1, y1], "score": float}, {}, ..]
+        iou_limit: iou阈值
+    return:
+        cfgs_out: 去重后的cfgs
+    """
+    if len(cfgs_in) < 2:
+        return cfgs_in
+
+    rm_ids = []
+    for i in range(len(cfgs_in)):
+        for j in range(len(cfgs_in)):
+            if j == i:
+                continue
+            if iou(cfgs_in[i]["coor"], cfgs_in[j]["coor"]) < iou_limit:
+                continue
+        
+            if cfgs_in[i]["score"] > cfgs_in[j]["score"]:
+                rm_ids.append(j)
+            elif cfgs_in[i]["score"] > cfgs_in[j]["score"]:
+                continue
+            else:
+                rm_ids.append(i)
+    rm_ids = list(set(rm_ids))
+
+    cfgs_out = [c for i, c in enumerate(cfgs_in) if i not in rm_ids]
+    return cfgs_out
     
 
 if __name__ == "__main__":

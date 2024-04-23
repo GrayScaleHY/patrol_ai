@@ -3,7 +3,7 @@ import time
 import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
+from lib_rcnn_ops import check_iou
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_img_registration import roi_registration
 import config_object_name
@@ -12,21 +12,21 @@ import numpy as np
 from lib_help_base import GetInputData, is_include, color_list, creat_img_result
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 
-yolov5_ErCiSheBei = load_yolov5_model("/data/PatrolAi/yolov5/ErCiSheBei.pt") ## 二次设备状态
+yolov8_ErCiSheBei = load_yolov8_model("/data/PatrolAi/yolov8/ErCiSheBei.pt") ## 二次设备状态
 yolov8_rec_defect = load_yolov8_model("/data/PatrolAi/yolov8/rec_defect.pt") # 送检18类缺陷,x6模型
-yolov5_daozha = load_yolov5_model("/data/PatrolAi/yolov5/daozha_v5detect.pt")  # 加载刀闸模型
-yolov5_led_color = load_yolov5_model("/data/PatrolAi/yolov5/led.pt") # led灯颜色状态模型
-# yolov5_count = load_yolov5_model("/data/PatrolAi/yolov5/count.pt")#大电流端子借用钥匙计数功能
-# yolov5_dztx = load_yolov5_model("/data/PatrolAi/yolov5/daozha_texie.pt")  # 刀闸分析模型
-# yolov5_coco = load_yolov5_model("/data/PatrolAi/yolov5/coco.pt") # coco模型
-# yolov5_action = load_yolov5_model("/data/PatrolAi/yolov5/action.pt") # 动作识别，倒地
-# yolov5_fire_smoke = load_yolov5_model("/data/PatrolAi/yolov5/fire_smoke.pt") # 烟火模型
-# yolov5_helmet = load_yolov5_model("/data/PatrolAi/yolov5/helmet.pt") # 安全帽模型
-# yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表盘
+yolov8_daozha = load_yolov8_model("/data/PatrolAi/yolov8/daozha_v5detect.pt")  # 加载刀闸模型
+yolov8_led_color = load_yolov8_model("/data/PatrolAi/yolov8/led.pt") # led灯颜色状态模型
+# yolov8_count = load_yolov8_model("/data/PatrolAi/yolov8/count.pt")#大电流端子借用钥匙计数功能
+# yolov8_dztx = load_yolov8_model("/data/PatrolAi/yolov8/daozha_texie.pt")  # 刀闸分析模型
+# yolov8_coco = load_yolov8_model("/data/PatrolAi/yolov8/coco.pt") # coco模型
+# yolov8_action = load_yolov8_model("/data/PatrolAi/yolov8/action.pt") # 动作识别，倒地
+# yolov8_fire_smoke = load_yolov8_model("/data/PatrolAi/yolov8/fire_smoke.pt") # 烟火模型
+# yolov8_helmet = load_yolov8_model("/data/PatrolAi/yolov8/helmet.pt") # 安全帽模型
+# yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt") # 表盘
 
 def inspection_object_detection(input_data):
     """
-    yolov5的目标检测推理。
+    yolov8的目标检测推理。
     """
     ## 提取输入请求信息
     DATA = GetInputData(input_data)
@@ -43,22 +43,22 @@ def inspection_object_detection(input_data):
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
 
     if an_type == "fire_smoke":
-        yolov5_model = yolov5_fire_smoke
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_fire_smoke
+        labels_dict = yolov8_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "fire_smoke"
     elif an_type == "helmet":
-        yolov5_model = yolov5_helmet
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_helmet
+        labels_dict = yolov8_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "helmet"
     elif an_type == "led_color":
-        yolov5_model = yolov5_led_color
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_led_color
+        labels_dict = yolov8_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "led"
     elif an_type == "rec_defect":
-        yolov5_model = yolov8_rec_defect
+        yolov8_model = yolov8_rec_defect
         labels = defect_LIST
         if len(label_list) > 0:
             labels = [convert_label(l, "rec_defect") for l in label_list]
@@ -68,45 +68,45 @@ def inspection_object_detection(input_data):
                 labels = labels + ["bjdsyc_zz", "bjdsyc_sx", "bjdsyc_ywj", "bjdsyc_ywc"]
         model_type = "rec_defect"
     elif an_type == "disconnector_notemp":
-        yolov5_model = yolov5_daozha
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_daozha
+        labels_dict = yolov8_model.names
         labels = ["he","fen","budaowei"]
         model_type = "disconnector_texie"
     elif an_type == "disconnector_texie":
-        yolov5_model = yolov5_dztx
-        labels_dict = yolov5_model.module.names if hasattr(yolov5_model, 'module') else yolov5_model.names
+        yolov8_model = yolov8_dztx
+        labels_dict = yolov8_model.names
         labels = ["he","fen","budaowei"]
         model_type = "disconnector_texie"
     elif an_type == "person":
-        yolov5_model = yolov5_coco
+        yolov8_model = yolov8_coco
         labels = ["person"]
         model_type = "coco"
     elif an_type == "pressplate": 
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         labels = ["kgg_ybh", "kgg_ybf"]
         model_type = "ErCiSheBei"
     elif an_type == "air_switch":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         labels = ["kqkg_hz", "kqkg_fz"]
         model_type = "ErCiSheBei"
     elif an_type == "led":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         labels = ["zsd_l", "zsd_m"]
         model_type = "ErCiSheBei"
     elif an_type == "fanpaiqi":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         model_type = "ErCiSheBei"
         labels = ["fpq_h", "fpq_f", "fpq_jd"]
     elif an_type == "rotary_switch":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z"]
         model_type = "ErCiSheBei"
     elif an_type == "door":
-        yolov5_model = yolov5_ErCiSheBei
+        yolov8_model = yolov8_ErCiSheBei
         labels = ["xmbhyc", "xmbhzc"]
         model_type = "ErCiSheBei"
     elif an_type == "key":
-        yolov5_model = yolov5_count
+        yolov8_model = yolov8_count
         labels = ["ys"]
         model_type = "ErCiSheBei"
     else:
@@ -123,6 +123,7 @@ def inspection_object_detection(input_data):
         cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     ## 模型推理
+    conf_thres = 0.3
     if an_type == "rec_defect":
         conf_thres = 0.8
         ## 根据灵敏度sense调整conf_thres阈值,sense越大，conf_thres越小
@@ -131,9 +132,8 @@ def inspection_object_detection(input_data):
                 conf_thres = conf_thres - (((sense - 5) / 5) * conf_thres)
             else:
                 conf_thres = ((5 - sense) / 5) * (1 - conf_thres) + conf_thres
-        cfgs = inference_yolov8(yolov5_model, img_tag, resize=640, focus_labels=labels, conf_thres=conf_thres) # inference
-    else:
-        cfgs = inference_yolov5(yolov5_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.3) # inference
+
+    cfgs = inference_yolov8(yolov8_model, img_tag, resize=640, focus_labels=labels, conf_thres=conf_thres) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制
 
     ## labels 列表 和 color 列表

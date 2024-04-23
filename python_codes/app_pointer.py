@@ -4,14 +4,13 @@ import time
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
-from lib_inference_yolov5 import inference_yolov5, load_yolov5_model
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, intersection_pointers
 from lib_img_registration import registration, convert_coor
 from lib_help_base import color_area, GetInputData, creat_img_result
 import math
 
-yolov5_meter = load_yolov5_model("/data/PatrolAi/yolov5/meter.pt") # 表记检测
+yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt") # 表记检测
 yolov8_pointer = load_yolov8_model("/data/PatrolAi/yolov8/pointer.pt") # 指针分割
 
 def is_include(sub_box, par_box, srate=0.8):
@@ -286,7 +285,7 @@ def pointer_detect(img_tag, number):
     """
     # 识别图中的表盘
     h, w = img_tag.shape[:2]
-    cfgs = inference_yolov5(yolov5_meter, img_tag, resize=640)
+    cfgs = inference_yolov8(yolov8_meter, img_tag, resize=640)
     bboxes = [[0, 0, w, h]] + [cfg["coor"] for cfg in cfgs]
 
     # 找到bboxes中的所有指针

@@ -8,14 +8,15 @@ from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
 import copy
 
-from lib_inference_yolov5 import load_yolov5_model, inference_yolov5, check_iou
+from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_rcnn_ops import check_iou
 from lib_img_registration import registration, convert_coor
 from lib_help_base import GetInputData, creat_img_result
 
-# yolov5_mubiaokuang = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_crop.pt")  # 数字表记寻框模型
-# yolov5_shuzishibie = load_yolov5_model("/data/PatrolAi/yolov5/shuzi_rec.pt")  # 数字表记数字识别模型
-yolov5_jishukuang = load_yolov5_model("/data/PatrolAi/yolov5/jishu_crop.pt")  # 计数表寻框模型
-yolov5_jishushibie = load_yolov5_model("/data/PatrolAi/yolov5/jishu_rec.pt")  # 计数表数字识别模型
+# yolov8_mubiaokuang = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_crop.pt")  # 数字表记寻框模型
+# yolov8_shuzishibie = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_rec.pt")  # 数字表记数字识别模型
+yolov8_jishukuang = load_yolov8_model("/data/PatrolAi/yolov8/jishu_crop.pt")  # 计数表寻框模型
+yolov8_jishushibie = load_yolov8_model("/data/PatrolAi/yolov8/jishu_rec.pt")  # 计数表数字识别模型
 
 
 def get_dp(config):
@@ -89,7 +90,7 @@ def inspection_digital_rec(input_data):
         out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
 
-    yolo_crop, yolo_rec = yolov5_jishukuang, yolov5_jishushibie
+    yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
 
     # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
 
@@ -146,7 +147,7 @@ def inspection_digital_rec(input_data):
     # bboxes_list = {}  # 位置列表
 
     # 第一阶段区域识别，截取图像
-    bbox_cfg = inference_yolov5(yolo_crop, img_tag)
+    bbox_cfg = inference_yolov8(yolo_crop, img_tag)
     # 未检测到目标
     if len(bbox_cfg) < 1:
         out_data["msg"] = out_data["msg"] + "Can not find digital; "
@@ -193,7 +194,7 @@ def inspection_digital_rec(input_data):
         img_empty = img_fill(img_tag_, coor[0], coor[1], coor[2], coor[3], 640)
 
         # 二次识别
-        bbox_cfg_result = inference_yolov5(yolo_rec, img_empty)
+        bbox_cfg_result = inference_yolov8(yolo_rec, img_empty)
         bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
         # print("bbox_cfg_result:",bbox_cfg_result)
         # 按横坐标排序组合结果
