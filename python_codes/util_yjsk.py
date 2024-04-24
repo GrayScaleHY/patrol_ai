@@ -1,239 +1,305 @@
-from lib_sift_match import my_ssim, sift_create, sift_match, cw_ssim_index
-from lib_img_registration import convert_coor, correct_offset
 import cv2
-import json
 import numpy as np
 import os
 import glob
 import time
 import argparse
+from lib_inference_yolov8 import inference_yolov8, load_yolov8_model
 
-def json2bboxes(json_file, img_open):
-    """
-    将json_file里的框子信息提取出来。
-    return:
-        bboxes: 格式，[[xmin, ymin, xmax, ymax], ..]
-    """
-    f = open(json_file, "r", encoding='utf-8')
-    cfg = json.load(f)
-    f.close()
-    H, W = img_open.shape[:2]
-    ids = [id_ for id_ in cfg]
-    ids.sort()
-    bboxes = []
-    for id_ in ids:
-        c = np.array([[cfg[id_][0]["x"], cfg[id_][0]["y"]],[cfg[id_][1]["x"], cfg[id_][1]["y"]]])
-        coor = [np.min(c[:,0]), np.min(c[:,1]), np.max(c[:,0]), np.max(c[:,1])]
-        coor = np.array(coor) * np.array([W, H, W, H])
-        bboxes.append(coor.astype(int).tolist())
-    return bboxes
+yolov8_model = load_yolov8_model("./yjsk/yolov8_clsbeijing20240410.pt")
+
+## 读取roi配置
+import json
+with open('./roi.json','r',encoding='utf-8') as file:
+  roi = json.load(file)
+print(roi)
 
 
-def disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd=[], img_yichangs=[]):
-    """
-    刀闸分合判别， 可支持多模板以及异常图片模板。
+def get_video_id(basename):
+    """获取video_id"""
+    return int(basename[:-4].split('_')[0])
+
+def disconnector_state(real_model, img_tag):
+    """:
     args:
         img_tag: 待分析图
-        img_opens: 分闸模板图, list
-        img_closes: 合闸模板图, list
-        box_state: 用于对比ssim的框子坐标，格式为[[xmin, ymin, xmax, ymax], ..]
-        box_osd: sift匹配时需要扣掉的区域，格式为[[xmin, ymin, xmax, ymax], ..]
-        img_yichangs: 异常模板图,剪切过后的, list
     return: 
         state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
-        scores: 每个box里面的得分,[[score_close, score_open, score_yc], ..]
-        bboxes_tag: 模板图上的两个框框映射到待分析图上的大概位置，[[xmin, ymin, xmax, ymax], ..]
+        score: 分类得分
     """
-    assert isinstance(img_opens, list) and len(img_opens) > 0, "img_opens is not requested !"
-    assert isinstance(img_closes, list) and len(img_closes) > 0, "img_closes is not requested !"
-    assert isinstance(box_state, list) and len(box_state) > 0, "box_state is not requested !"
+    cfgs = inference_yolov8(real_model, img_tag)
 
-    feat_open = sift_create(img_opens[0], rm_regs=box_osd[2:]) # 提取参考图sift特征
-    feat_tag = sift_create(img_tag, rm_regs=box_osd[2:]) # 提取待分析图sift特征
+    label = cfgs[0]["label"]; score = cfgs[0]["score"]
 
-    img_tag_ = img_tag.copy() 
-
-    M = sift_match(feat_open, feat_tag, ratio=0.5, ops="Affine") # 求偏移矩阵
-    img_tag_warped = correct_offset(img_tag, M) # 对待分析图进行矫正
-
-    
-    ## 将框子区域在open和close和tag文件中画出来，以方便查看矫正偏移对不对
-    # open_ = img_open.copy()
-    # close_ = img_close.copy()
-    # tag_ = img_tag_warped.copy()
-    img_open= img_opens[0]
-
-    ## 将模板图上的bbox映射到待分析图上，求bboxes_tag
-    bboxes_tag = []
-    for b in box_state:
-        
-        bbox = list(convert_coor((b[0], b[1]), M)) + list(convert_coor((b[2], b[3]), M))
-        bboxes_tag.append(bbox)
-
-    ## 分析box_state里面的刀闸状态
-    states = []
-    s = ""
-    scores = []
-    for bbox in box_state:
-        ## 判断bbox是否符合要求
-        H, W = img_tag.shape[:2]
-        if 0 <= bbox[0] <= bbox[2] <= W and 0 <= bbox[1] <= bbox[3] <= H:
-            pass
-        else:
-            return "无法判别状态", scores, bboxes_tag
-
-        ## 截取图片区域，并且用ssim算法比较相似性
-        img_ta = img_tag_warped[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-
-        ## 求score open
-        score_open = 0
-        for img_open in img_opens:
-            img_op = img_open[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-            score = cw_ssim_index(img_ta, img_op)
-            if score > score_open:
-                score_open = score
-
-        ## 求score close
-        score_close = 0
-        for img_close in img_closes:
-            img_cl = img_close[bbox[1]: bbox[3], bbox[0]: bbox[2]]
-            score = cw_ssim_index(img_ta, img_cl)
-            if score > score_close:
-                score_close = score
-
-        ## 求score yichang
-        score_yc = 0
-        for img_yc in img_yichangs:
-            if img_yc.shape != img_ta.shape:
-                continue
-            score = cw_ssim_index(img_ta, img_yc)
-            if score > score_yc:
-                score_yc = score
-
-        ## 根据score_open和score_close对比，判断该框框的状态。
-        if score_yc > score_open and score_yc > score_close:
-            state_ = "yichang"
-        elif score_close > score_open:
-            state_ = "close"
-        else:
-            state_ = "open"
-        states.append(state_)
-        scores.append([round(score_close, 3), round(score_open, 3), round(score_yc, 3)])
-    
     ## 判断当前刀闸状态
-    if all(state_ == "open" for state_ in states):
+    if label == "fen":
         state = "分"
-    elif all(state_ == "close" for state_ in states):
+    elif label == "he":
         state = "合"
     else:
         state = "异常"
 
-    return state, scores, bboxes_tag
+    return state, score ,cfgs[0]["label2"] ,cfgs[0]["score2"]
 
-def video_states(tag_video, cfg_dir):
+def video_states(tag_video):
     """
     获取tag_video的状态列表。
     args:
         tag_video: 待分析视频
-        img_open: 刀闸分模板图
-        img_close: 刀闸合模板图
-        bboxes: 配置的框子信息
     return:
-        states: 视频状态列表，例如：[分, 异常, 合]
+        states_start: 视频状态列表，例如：[分, 异常, 合]
+        states_end: 视频状态列表，例如：[分, 异常, 合]
     """
-    video_name = os.path.basename(tag_video)
-    v_id = video_name.split("_")[0]
 
-    json_file = os.path.join(cfg_dir, v_id + "_normal.json")
-    open_files = [os.path.join(cfg_dir, v_id + "_normal_off.png")]
-    close_files = [os.path.join(cfg_dir, v_id + "_normal_on.png")]
-    yc_files = glob.glob(os.path.join(cfg_dir, v_id + "_normal_*yc.png"))
-    img_opens = [cv2.imread(f_) for f_ in open_files]
-    img_closes = [cv2.imread(f_) for f_ in close_files]
-    img_yichangs = [cv2.imread(f_) for f_ in yc_files]
-    bboxes = json2bboxes(json_file, img_opens[0])
-    box_state = bboxes[:2]
-    box_osd = bboxes[2:]
+    step = 1 # 多少帧抽一帧
+    context = 10 # 看开头或结尾几帧
 
-    step = 2 # 多少帧抽一帧
-
+    video_basename = os.path.basename(tag_video)
+    idx = get_video_id(video_basename)
+    video_roi = [0,0,1,1]
+    if str(idx) in roi.keys():
+      video_roi = roi[str(idx)]
+    print("video idx:",idx)
+    print("video roi:",video_roi)
+    
     cap = cv2.VideoCapture(tag_video) ## 建立视频对象
     frame_number = cap.get(7)  # 视频文件的帧数
-    if frame_number < 12:
+    if frame_number < context * 2:
         cap.release() # 释放内存
         print("Warning:", tag_video, "is wrong !")
-        return ["异常"] * 12
+        return ["分"] * context, ["异常"] * context
         
-    states = []
-    count = 0
+    ## 取帧，头几帧存放在start_frames中，尾几帧存放在end_frames中
+    start_frames = []
+    end_frames = [np.ones((3,3,3),dtype=np.uint8)] * context
+    end_counts = [0] * context
     counts = []
-    scores = []
+    count = -1
     while(cap.isOpened()):
         ret, img_tag = cap.read() # 逐帧读取
-
-        if ret==True:
-            if count % step == 0 and (count < 6 * step or count >= frame_number - 6 * step): # 抽前10帧和后10帧
-
-                state, score, _ = disconnector_state(img_tag, img_opens, img_closes, box_state, box_osd, img_yichangs)
-                states.append(state)
+        
+        
+        if ret==True and img_tag is not None:
+            
+            # print(img_tag.shape)
+            img_tag_ori = img_tag
+            w,h = img_tag.shape[:2]
+            img_tag = img_tag[int(video_roi[0]*w):int(video_roi[2]*w),int(video_roi[1]*h):int(video_roi[3]*h)]
+            # cv2.imwrite('test.png',img_tag)
+            
+            if np.sum(img_tag) < 100:
+                continue
+            
+            if count % step == 0 and len(start_frames) < context:
+                start_frames.append(img_tag)
                 counts.append(count)
-                sc_ = []
-                for scs in score:
-                    sc_ = sc_ + [round(sc,2) for sc in scs]
-                scores.append(sc_)
 
+            if count % step == 0:
+                end_frames.pop(0)
+                end_frames.append(img_tag)
+                end_counts.pop(0)
+                end_counts.append(count)
             count += 1
         else:
             break
-
-    print("frame indexs:", counts)
-    print("states list:", states)
-    print("scores list:", scores)
-
     cap.release() # 释放内存
 
-    return states
+    ## 推理生成states
+    states_start = []
+    states_end = []
+    scores_start = []
+    scores_end = []
+    real_model = yolov8_model
+    
+    states_start2 = []
+    states_end2 = []
+    scores_start2 = []
+    scores_end2 = []
+    
+    
 
-def final_state(states, len_window=4):
+    for img_tag in start_frames: 
+        state, score, state2, score2 = disconnector_state(real_model, img_tag)
+        states_start.append(state)
+        scores_start.append(score)
+        states_start2.append(state2)
+        scores_start2.append(score2)
+        
+    
+    for img_tag in end_frames:
+        state, score, state2, score2 = disconnector_state(real_model, img_tag)
+        states_end.append(state)
+        scores_end.append(score)
+        states_end2.append(state2)
+        scores_end2.append(score2)
+
+    counts = counts + end_counts
+    print("frame indexs:", counts)
+    print("states_start list:", states_start, "states_end list:", states_end)
+    print("scores_start list:", scores_start, "scores_end list:", scores_end)
+
+    return states_start, states_end, states_start2, states_end2, scores_start2, scores_end2
+
+def final_state(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2, len_window=3):
     """
     判断states列表的动状态。
     用固定大小的滑窗在states上滑动，当滑窗内的元素都相同，则表示为该时刻的状态，通过对比起始状态和结尾状态判断states的动状态。
     args:
-        states: 状态列表，例如["分","分","分","异常","异常","异常","合","合","合"]
+        states_start: 视频起始状态列表，例如["分","分","分","异常","异常","异常","合","合","合"]
+        states_end: 视频结束状态列表，例如["分","分","分","异常","异常","异常","合","合","合"]
         len_window: 滑窗大小
     return:
         0 代表无法判别状态; 1 代表合闸正常; 2 代表合闸异常; 3 代表分闸正常; 4 代表分闸异常。
     """
 
-    ## 用len_window长度的滑窗滑动states, 得出state_start和state_end
-    state_start = ""
-    state_end = ""
-    for i in range(len(states) - (len_window - 1)):
-        s_types = set(states[i:i+len_window]) # 取len_window长度的元素，并去除不同元素
-        if s_types == {"分"} or s_types == {"合"} or s_types == {"异常"}:
+    # if len(states_end) <= len_window or len(states_start) <= len_window:
+    #     return 2
+
+    ## 根据states_end和states_start判断出视频起始状态和最终状态。
+    is_yc = True
+    for i in range(len(states_end) - len_window + 1):
+        s_types = set(states_end[i:i+len_window])
+        if s_types == {"分"} or s_types == {"合"}:
             state_end = list(s_types)[0]
-            if state_start == "":
-                state_start = list(s_types)[0]
+            is_yc = False
+    if is_yc:
+        state_end = "异常"
+    
+    start_count = [states_start.count(i) for i in ["分", "合", "异常", "无法识别状态"]]
+    if start_count[0] > start_count[1]:
+        state_start = "分"
+    elif start_count[0] < start_count[1]:
+        state_start = "合" 
+    
+    else:
+        state_start = "异常"
 
     ## 根据state_start合state_end的组合判断该states的最终状态
     ## 其中 0 代表无法判别状态，1 代表合闸正常， 2 代表合闸异常，3 代表分闸正常，4 代表分闸异常
-    if state_end == "合":
+    print(state_start,state_end)
+    if state_start == "合" and state_end == "分":
         print("1, 合闸正常")
         return 1 # 合闸正常
-    elif state_end == "分":
+    elif state_start == "合" and state_end == "合":
+        print("4, 分闸异常")
+        return 4 # 分闸异常
+    elif state_start == "合" and state_end == "异常":
+        print("4, 分闸异常")
+        return 4 # 分闸异常
+        
+    elif state_start == "分" and state_end == "合":
+        print("3, 合闸正常")
+        return 3 # 合闸正常
+    elif state_start == "分" and state_end == "分":
+        print("2, 合闸异常")
+        return 2 # 合闸异常
+    elif state_start == "分" and state_end == "异常":
+        print("2, 合闸异常")
+        return 2 # 合闸异常
+        
+    elif state_start == "异常" and state_end == "合":
+        print("1, 合闸正常")
+        return 1 # 合闸异常
+    elif state_start == "异常" and state_end == "分":
         print("3, 分闸正常")
-        return 3 # 分闸正常
-    else: 
-        if state_start == "分":
-            print("2, 合闸异常")
-            return 2 # 合闸异常
-        elif state_start == "合":
-            print("4, 分闸异常")
-            return 4 # 分闸异常
-        else:
-            print("2, 合闸异常")
-            return 2 # 无法判别状态
+        return 3 # 分闸正常 
+            
+    else:
+        print("异常到异常")
+        return yc2yc(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2)
+            # return 2 # 无法判别状态
+
+def yc2yc(states_start, states_end, states_start2, states_end2,scores_start2, scores_end2):
+    """
+    判断异常到异常的情况
+    """
     
+    ## 比较除了异常以外的状态个数
+    from collections import Counter
+    result=Counter(states_start)
+    if result['分'] > result['合']:
+      state_start = '分'
+    elif result['合'] > result['分']:
+      state_start = '合'
+    else:
+      state_start = '异常'
+      
+    result=Counter(states_end)
+    if result['分'] > result['合']:
+      state_end = '分'
+    elif result['合'] > result['分']:
+      state_end = '合'
+    else:
+      state_end = '异常'
+      
+    ## 和之前的判断逻辑一样的
+    print('异常到异常但是不是全异常')
+    
+    if state_start == "合" and state_end == "分":
+        print("1, 合闸正常")
+        return 1 # 合闸正常
+    elif state_start == "合" and state_end == "合":
+        print("4, 分闸异常")
+        return 4 # 分闸异常
+    elif state_start == "合" and state_end == "异常":
+        print("4, 分闸异常")
+        return 4 # 分闸异常
+        
+    elif state_start == "分" and state_end == "合":
+        print("3, 合闸正常")
+        return 3 # 合闸正常
+    elif state_start == "分" and state_end == "分":
+        print("2, 合闸异常")
+        return 2 # 合闸异常
+    elif state_start == "分" and state_end == "异常":
+        print("2, 合闸异常")
+        return 2 # 合闸异常
+        
+    elif state_start == "异常" and state_end == "合":
+        print("1, 合闸正常")
+        return 1 # 合闸异常
+    elif state_start == "异常" and state_end == "分":
+        print("3, 分闸正常")
+        return 3 # 分闸正常 
+            
+    else:
+        ## 如果还是全部异常
+        print("20个全部都是异常")
+        print(scores_start2,states_start2)
+        print(scores_end2,states_end2)
+        
+        start_score = max(scores_start2)
+        end_score = max(scores_end2)
+        start_score_idx = scores_start2.index(max(scores_start2))
+        end_score_idx = scores_end2.index(max(scores_end2))
+        
+        if start_score > end_score:
+          state_start = states_start2[start_score_idx]
+          state_end = '异常'
+        else:
+          state_start = '异常'
+          state_end = states_end2[end_score_idx]
+        
+        ## 和之前的判断逻辑一样的
+        if state_end == "he" and state_start == "fen":
+            print("1, 合闸正常")
+            return 1 # 合闸正常
+        elif state_end == "fen" and state_start == "he":
+            print("2, 分闸正常")
+            return 2 # 分闸正常
+        else: 
+            if state_start == "fen":
+                print("3, 合闸异常")
+                return 3 # 合闸异常
+            elif state_start == "he":
+                print("4, 分闸异常")
+                return 4 # 分闸异常
+            else:
+                print("4, 无法判别状态,随即猜测为分闸异常")
+                return 4
+            
+            
+            
 
 if __name__ == "__main__":
 
@@ -241,7 +307,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--source',
         type=str,
-        default='./test/yjsk',
+        default='./yjsk/test/',
         help='source dir.')
     parser.add_argument(
         '--out_dir',
@@ -258,6 +324,11 @@ if __name__ == "__main__":
         type=str,
         default='1/1',
         help='part of data split.')
+    '''parser.add_argument(
+        '--roi',
+        type=str,
+        default='./roi.json',
+        help='roi of video to cut one object.')'''
     args, unparsed = parser.parse_known_args()
 
     # video_dir = "test/yjsk"
@@ -267,6 +338,8 @@ if __name__ == "__main__":
     out_dir = args.out_dir # 结果保存目录
     cfg_dir = args.cfgs # md5列表目录
     data_part = args.data_part # 分隔数据部分
+    # roi_path = args.roi
+    
 
     os.makedirs(out_dir, exist_ok=True)
     start_all = time.time()
@@ -282,6 +355,10 @@ if __name__ == "__main__":
     else:
         video_list = video_list[int(_l*(_p-1)/_s):]
 
+    # ## 保存图片的路径
+    # save_copy_dir = "/home/data/yjsk"
+    # os.makedirs(save_copy_dir, exist_ok=True)
+
     for tag_video in video_list:
         
         if "_normal." in tag_video:
@@ -291,14 +368,19 @@ if __name__ == "__main__":
         print(tag_video)
         start_loop = time.time()
 
-        states = video_states(tag_video, cfg_dir) # 求tag_video的状态列表
-        f_state = final_state(states, len_window=3) # 求最终状态
+        # ## 保存一份原图
+        # save_copy_file = os.path.join(save_copy_dir, os.path.basename(tag_video))
+        # if not os.path.exists(save_copy_file):
+        #     shutil.copy(tag_video, save_copy_file)
+        
+        states_start, states_end, states_start2, states_end2, scores_start2, scores_end2 = video_states(tag_video) # 求tag_video的状态列表
+        f_state = final_state(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2,len_window=3) # 求最终状态
         print(f_state)
 
         ## 保存比赛的格式
         tag_name = os.path.basename(tag_video)
         id_ = 1
-        s = "ID,Name,Type\n"
+        s = "ID,NAME,TYPE\n"
         s = s + str(id_) + "," + tag_name + "," + str(f_state) + "\n"
         f = open(os.path.join(out_dir, tag_name[:-4] + ".txt"), "w", encoding='utf-8')
         f.write(s)
