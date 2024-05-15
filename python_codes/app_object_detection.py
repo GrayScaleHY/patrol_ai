@@ -145,22 +145,23 @@ def inspection_object_detection(input_data):
         else:
             name_dict[label] = label
 
-    ## 画出boxes
-    for cfg in cfgs:
-        c = cfg["coor"]; label = cfg["label"]
-        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
-        s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
-        img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
-
     ## 判断bbox是否在roi中
     for name, roi in roi_tag.items():
         out_data["data"][name] = []
         for cfg in cfgs:
             if is_include(cfg["coor"], roi, srate=0.5):
-                cfg_out = {"label": name_dict[cfg["label"]], "bbox": cfg["coor"], "score": float(cfg["score"])}
+                c = cfg["coor"]; label = cfg["label"]
+                cfg_out = {"label": name_dict[label], "bbox": c, "score": float(cfg["score"])}
                 out_data["data"][name].append(cfg_out)
+
+                # 画出识别框
+                cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), color_dict[label], thickness=2)
+                s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+                img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
+
                 if an_type != "rec_defect":
                     break
+                
         if len(out_data["data"][name]) == 0:
             out_data["data"][name] = [{}]
 
