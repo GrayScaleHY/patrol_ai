@@ -1,8 +1,8 @@
 # 巡检算法服务
 该项目存放巡检图像算法所需的代码
 
-### 巡检算法服务的部署（ubuntu 18.04）
-该部署教程以ubuntu 18.04以上版本为例，注意，部署服务器必须配备英伟达显卡。凝思系统上部署请参考教程[凝思操作系统部署巡检算法服务](https://git.utapp.cn/yuanhui/patrol_ai/-/wikis/巡视算法部署文档(凝思))。
+### 巡检算法服务的部署
+注意，部署服务器必须配备英伟达显卡。
 ##### 1. 准备部署文件
 (1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。内网下载链接为[ \\\192.168.105.36\Outgoing\巡检算法部署 ]，外网下载链接为[http://61.145.230.152:8775/巡检算法部署/](http://61.145.230.152:8775/巡检算法部署/)。  
 (2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
@@ -36,13 +36,9 @@
 ```
 注：若未安装显卡硬件或显卡驱动，请联系相关人员安装好再执行下面步骤。
 ##### 3. 安装docker (若已安装，跳过)
-若可以使用外网，则使用下面命令完成docker安装
+输入以下命令完成docker的安装。
 ```
-curl -sSL https://get.daocloud.io/docker | sh
-```
-若无法使用外网，则输入以下命令安装docker
-```
-cd /data/PatrolAi/install/ubuntu18.04
+cd /data/PatrolAi/install/docker-24.0.7
 sudo chmod +x install_docker.sh
 sudo ./install_docker.sh
 ```
@@ -50,24 +46,12 @@ sudo ./install_docker.sh
 ```
 REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ```
-##### 4. 安装nvidia-docker
-若可以使用外网，则使用下面命令完成nvidia-docker安装
+##### 4. 安装nvidia-toolkit
+输入以下命令安装nvidia-toolkit
 ```
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
-```
-若无法使用外网，则输入以下命令安装nvidia-docker
-```
-cd /data/PatrolAi/install/ubuntu18.04
-sudo chmod +x install_nvidia_docker.sh
-sudo ./install_nvidia_docker.sh
-```
-安装完成后，重启服务器，终端输入```sudo nvidia-docker images```命令，屏幕出现以下形式的打印时表示docker安装成功。
-```
-REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
+cd /data/PatrolAi/install/docker-24.0.7
+sudo chmod +x install_nvidia_toolkit.sh
+sudo ./install_nvidia_toolkit.sh
 ```
 ##### 5. 加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
@@ -83,8 +67,9 @@ REPOSITORY           TAG                                   IMAGE ID       CREATE
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
-sudo chmod +x /data/PatrolAi/run_PatrolAi.sh
-sudo docker run --gpus all -d --cpus="16." -e LANG=C.UTF-8 --shm-size 16g --name ut-PatrolAi --restart=always -p 29528:29528 --ipc=host -v /export:/export -v /data/PatrolAi:/data/PatrolAi --entrypoint "/data/PatrolAi/run_PatrolAi.sh" utdnn/patrol_ai:cuda11.6
+cd /data/PatrolAi
+chmod +x run.sh
+./run.sh
 ```
 等待2分钟左右，输入```sudo docker logs ut-PatrolAi --tail 100```, 若出现如下打印，则表示算法部署成功。
 ```
