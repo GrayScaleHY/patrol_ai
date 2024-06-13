@@ -157,7 +157,7 @@ class GetInputData:
         roi = {}
         for name in raw_roi:
             _roi = raw_roi[name]
-            roi[name] = [int(_roi[0]*W), int(_roi[1]*H), int(_roi[2]*W), int(_roi[3]*H)]
+            roi[name] = [int(float(_roi[0])*W), int(float(_roi[1])*H), int(float(_roi[2])*W), int(float(_roi[3])*H)]
         
         return roi
     
@@ -207,7 +207,7 @@ class GetInputData:
         pointers = {}
         for scale in raw_pointers:
             point = raw_pointers[scale]
-            pointers[scale] = [int(point[0] * W), int(point[1] * H)]
+            pointers[scale] = [int(float(point[0]) * W), int(float(point[1]) * H)]
         
         return pointers
     
