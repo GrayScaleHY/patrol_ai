@@ -21,9 +21,6 @@ from config_object_name import AI_FUNCTION, convert_ai_function
 from app_jmjs import patrolai_jmjs
 from config_object_name import jmjs_dict
 from lib_help_base import GetInputData
-# from app_jmjs import patrolai_jmjs
-# from config_object_name import jmjs_dict
-# from lib_help_base import GetInputData
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
@@ -200,13 +197,13 @@ def inspection_rec_server():
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
 
-    # DATA = GetInputData(data)
-    # label_list = DATA.label_list
-    # jmjs_list = [i for i in jmjs_dict]
-    # if len(label_list) > 0 and len(list(set(label_list) & set(jmjs_list))) == len(label_list):
-    #     res = patrolai_jmjs(data)
-    # else:
-    res = inspection_object_detection(data)
+    DATA = GetInputData(data)
+    label_list = DATA.label_list
+    jmjs_list = [i for i in jmjs_dict]
+    if len(label_list) > 0 and len(list(set(label_list) & set(jmjs_list))) == len(label_list):
+        res = patrolai_jmjs(data)
+    else:
+        res = inspection_object_detection(data)
 
     save_output_data(res, save_dir, name_head)
 

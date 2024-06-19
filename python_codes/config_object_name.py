@@ -13,15 +13,16 @@ DEFAULT_STATE = {
 jmjs_dict = {
     "sb_bx": {"name": "设备变形", "labels": ["pzqcd", "jyhbx", "drqgd"]},
     "sb_dl": {"name": "设备断裂", "labels": ["jyz_pl", "yxdgsg", "jdyxxsd"]},
+    "sb_qx": {"name": "设备断裂", "labels": ["hxq_gjtps"]},
     "rq_yw": {"name": "异物入侵", "labels": ["yw_nc", "yw_gkxfw"]},
     "rq_ry": {"name": "越线闯入", "labels": ["person"]},
     "rq_xdw": {"name": "小动物", "labels": ["bird", "cat", "dog", "sheep", "animal"]},
     "js_dm": {"name": "积水", "labels": ["jishui"]},
-    # "hzyw": {"name": "设备烟火", "labels": ["hzyw"]},
-    # "wcgz": {"name": "未穿长袖工作服", "labels": ["wcgz"]},
-    # "wcaqm": {"name": "未正确佩戴安全帽", "labels": ["wcaqm"]},
-    # "sly_bjbmyw": {"name": "渗漏油", "labels": ["sly_bjbmyw"]},
-    # "sly_dmyw": {"name": "渗漏油", "labels": ["sly_dmyw"]},
+    "hzyw": {"name": "设备烟火", "labels": ["hzyw"]},
+    "wcgz": {"name": "未穿长袖工作服", "labels": ["wcgz"]},
+    "wcaqm": {"name": "未正确佩戴安全帽", "labels": ["wcaqm"]},
+    "sly_bjbmyw": {"name": "渗漏油", "labels": ["sly_bjbmyw"]},
+    "sly_dmyw": {"name": "渗漏油", "labels": ["sly_dmyw"]},
 }
 
 ## 目标检测中各标签的命名

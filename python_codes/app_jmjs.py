@@ -14,7 +14,7 @@ yolov8_rec_defect = load_yolov8_model("/data/PatrolAi/yolov8/rec_defect.pt") # �
 yolov8_coco = load_yolov8_model("/data/PatrolAi/yolov8/coco.pt") # coco模型
 yolov8_xdw = load_yolov8_model("/data/PatrolAi/yolov8/xdw_js.pt") # 小动物 积水模型
 
-rec_list = ["sb_bx", "sb_dl", "hzyw", "rq_yw", "wcgz", "wcaqm", "sly_bjbmyw"]
+rec_list = ["sb_bx", "sb_dl", "sb_qx", "hzyw", "rq_yw", "wcgz", "wcaqm", "sly_bjbmyw", "sly_dmyw"]
 xdw_list = ["js_dm", "rq_xdw"]
 coco_list = ["rq_ry", "rq_xdw"]
 
@@ -58,7 +58,7 @@ def patrolai_jmjs(input_data):
     
     cfgs = []
     for yolov8_model in yolov8_models:
-        cfg = inference_yolov8(yolov8_model, img_tag, resize=640, pre_labels=labels, conf_thres=0.2) # inference
+        cfg = inference_yolov8(yolov8_model, img_tag, resize=640, focus_labels=labels, conf_thres=0.2) # inference
         cfgs = cfgs + cfg
     
     out_cfgs = []
