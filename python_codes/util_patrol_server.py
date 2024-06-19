@@ -18,6 +18,12 @@ from app_position_shift import check_position
 import time
 import threading
 from config_object_name import AI_FUNCTION, convert_ai_function
+from app_jmjs import patrolai_jmjs
+from config_object_name import jmjs_dict
+from lib_help_base import GetInputData
+# from app_jmjs import patrolai_jmjs
+# from config_object_name import jmjs_dict
+# from lib_help_base import GetInputData
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
@@ -160,7 +166,6 @@ def inspection_qrcode_server():
 @app.route('/inspection_rotary_switch/', methods=['POST']) # 旋钮开关
 @app.route('/inspection_door/', methods=['POST']) # 箱门
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
-@app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
 @app.route('/inspection_person/', methods=['POST'])
 @app.route('/inspection_disconnector_texie/', methods=['POST'])
 @app.route('/inspection_disconnector_notemp/', methods=['POST'])
@@ -174,6 +179,35 @@ def inspection_object():
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_object_detection(data)
+    save_output_data(res, save_dir, name_head)
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+@app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
+def inspection_rec_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+
+    # DATA = GetInputData(data)
+    # label_list = DATA.label_list
+    # jmjs_list = [i for i in jmjs_dict]
+    # if len(label_list) > 0 and len(list(set(label_list) & set(jmjs_list))) == len(label_list):
+    #     res = patrolai_jmjs(data)
+    # else:
+    res = inspection_object_detection(data)
+
     save_output_data(res, save_dir, name_head)
 
     print("-----------------------------------------------")
