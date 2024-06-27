@@ -76,7 +76,7 @@ def patrolai_jmjs(input_data):
     
     out_data["data"]["no_roi"] = out_cfgs
 
-    if len(out_cfgs) > 1:
+    if len(out_cfgs) > 0:
         out_data["code"] = 1
 
     for cfg in out_cfgs:

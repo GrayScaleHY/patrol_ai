@@ -125,7 +125,7 @@ def inspection_object_detection(input_data):
     ## 模型推理
     conf_thres = 0.3
     if an_type == "rec_defect":
-        conf_thres = 0.8
+        conf_thres = 0.3
         ## 根据灵敏度sense调整conf_thres阈值,sense越大，conf_thres越小
         if sense is not None:
             if sense > 5:
