@@ -23,6 +23,7 @@ yolov8_led_color = load_yolov8_model("/data/PatrolAi/yolov8/led.pt") # led灯颜
 # yolov8_fire_smoke = load_yolov8_model("/data/PatrolAi/yolov8/fire_smoke.pt") # 烟火模型
 # yolov8_helmet = load_yolov8_model("/data/PatrolAi/yolov8/helmet.pt") # 安全帽模型
 # yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt") # 表盘
+# yolov8_biaoshipai = load_yolov8_model("/data/PatrolAi/yolov8/biaoshipai.pt") # 表盘
 
 def inspection_object_detection(input_data):
     """
@@ -52,6 +53,11 @@ def inspection_object_detection(input_data):
         labels_dict = yolov8_model.names
         labels = [labels_dict[id] for id in labels_dict]
         model_type = "helmet"
+    elif an_type == "biaoshipai":
+        yolov8_model = yolov8_biaoshipai
+        labels_dict = yolov8_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+        model_type = "biaoshipai"
     elif an_type == "led_color":
         yolov8_model = yolov8_led_color
         labels_dict = yolov8_model.names
@@ -159,7 +165,7 @@ def inspection_object_detection(input_data):
                 s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
                 img_tag_ = img_chinese(img_tag_, name_dict[label], (c[0], c[1]), color=color_dict[label], size=s)
 
-                if an_type != "rec_defect":
+                if an_type != "rec_defect" and an_type != "biaoshipai":
                     break
                 
         if len(out_data["data"][name]) == 0:
@@ -217,10 +223,18 @@ def inspection_object_detection(input_data):
 
 if __name__ == '__main__':
     from lib_help_base import get_save_head, save_input_data, save_output_data
-    json_file = "/data/PatrolAi/result_patrol/0330051344_鸟巢点位测试_input_data.json"
-    f = open(json_file,"r",encoding='utf-8')
-    input_data = json.load(f)
-    f.close()
+    # json_file = "/data/PatrolAi/result_patrol/0330051344_鸟巢点位测试_input_data.json"
+    # f = open(json_file,"r",encoding='utf-8')
+    # input_data = json.load(f)
+    # f.close()
+    input_data = {
+    "checkpoint": "巡视点位01",  
+
+    "image":"/data/PatrolAi/patrol_ai/python_codes/images/014237_001_10101_16392_3698003230.jpg", 
+   
+    "type": "biaoshipai"
+
+    }
     
     out_data = inspection_object_detection(input_data)
     save_dir, name_head = get_save_head(input_data)

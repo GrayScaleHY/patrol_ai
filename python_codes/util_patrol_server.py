@@ -164,6 +164,7 @@ def inspection_qrcode_server():
 @app.route('/inspection_door/', methods=['POST']) # 箱门
 @app.route('/inspection_key/', methods=['POST']) # 钥匙
 @app.route('/inspection_person/', methods=['POST'])
+@app.route('/inspection_biaoshipai/', methods=['POST'])
 @app.route('/inspection_disconnector_texie/', methods=['POST'])
 @app.route('/inspection_disconnector_notemp/', methods=['POST'])
 def inspection_object():

@@ -120,6 +120,11 @@ OBJECT_MAP = {
         'aqmzc': '安全帽正常',
         'xy': '吸烟'
     },
+
+    "biaoshipai":{
+        "signage": "标识牌"
+    },
+
     "coco": {
         "name": "coco labels",
         "person": "人员", "bicycle": "自行车", "car": "車", "motorcycle": "摩托", "airplane": "飞机", "bus": "公共汽车", "train": "火车", 
