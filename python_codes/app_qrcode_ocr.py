@@ -23,9 +23,15 @@ def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
         if infer_type == "ocr": # ocr推理
             _cfgs = inference_ocr(img)
             cfgs = []
+            content = ""
+            bboxes = []
             for i, cfg in enumerate(_cfgs):
                 if is_include(cfg["bbox"], _roi, 0.5):
-                    cfgs.append(cfg)
+                    content = content + cfg["content"]
+                    bboxes.append(cfg["bbox"])
+                boxes = np.array(bboxes)
+                bbox = [int(min(boxes[:, 0])), int(min(boxes[:, 1])), int(max(boxes[:, 2])), int(max(boxes[:, 3]))]
+                cfgs = [{"content": content, "bbox": bbox}]
 
         else: # 二维码推理
             img_roi = img[int(_roi[1]): int(_roi[3]), int(_roi[0]): int(_roi[2])]
@@ -102,19 +108,17 @@ if __name__ == '__main__':
     import time
     from lib_help_base import get_save_head, save_output_data,save_input_data
     
-    # tag_file = "/data/PatrolAi/result_patrol/img_tag.jpg"
-    
-    # img_tag = img2base64(cv2.imread(tag_file))
-    # img_ = cv2.imread(ref_file)
-    # img_ref = img2base64(img_)
-    # ROI = [907, 7, 1583, 685]
-    # W = img_.shape[1]; H = img_.shape[0]
-    # roi = [ROI[0]/W, ROI[1]/H, ROI[2]/W, ROI[3]/H]
     json_file = "/data/PatrolAi/result_patrol/ocr/0123074334_文本标识牌识别_input_data.json"
-    # input_data = {"image": img_tag, "config":{}, "type": "qrcode"} # "img_ref": img_ref, "bboxes": {"roi": roi}
     f = open(json_file,"r",encoding='utf-8')
     input_data = json.load(f)
     f.close()
+
+    input_data = {
+        "checkpoint": "巡视点位01", 
+        "image":"/data/PatrolAi/patrol_ai/python_codes/images/013247_000_shuju1_fhz_f_5e94f3aef43b4e8f466ceb86d6711c32002726.jpg", 
+        "type": "ocr"
+    }
+
     out_data = inspection_qrcode(input_data)
     save_dir, name_head = get_save_head(input_data)
     save_input_data(input_data, save_dir, name_head, draw_img=True)
