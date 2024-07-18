@@ -14,7 +14,7 @@ from app_yeweiji import inspection_level_gauge
 # from app_ocr import ocr_digit_detection
 from app_yejingpingshuzishibie import inspection_digital_rec
 from app_match import patrol_match
-from app_position_shift import check_position
+from app_position_shift import check_position, registration_ptz
 import time
 import threading
 from config_object_name import AI_FUNCTION, convert_ai_function
@@ -249,6 +249,29 @@ def inspection_position_server():
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = check_position(data)
+    save_output_data(res, save_dir, name_head)
+    
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s, ":", res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
+
+# 预置位偏移
+@app.route('/inspection_registration/', methods=['POST'])
+def inspection_registration_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+
+    start_time = time.time()
+    # 根据input_data和当前时刻获取保存文件夹和文件名头
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = registration_ptz(data)
     save_output_data(res, save_dir, name_head)
     
     print("-----------------------------------------------")
