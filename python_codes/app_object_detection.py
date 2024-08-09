@@ -157,7 +157,7 @@ def inspection_object_detection(input_data):
         for cfg in cfgs:
             if is_include(cfg["coor"], roi, srate=0.5):
                 c = cfg["coor"]; label = cfg["label"]
-                cfg_out = {"label": name_dict[label], "bbox": c, "score": float(cfg["score"])}
+                cfg_out = {"label": name_dict[label], "bbox": c, "score": float(cfg["score"]), "label_en": cfg["label"]}
                 out_data["data"][name].append(cfg_out)
 
                 # 画出识别框
