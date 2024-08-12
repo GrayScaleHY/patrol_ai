@@ -178,18 +178,6 @@ def inspection_object_detection(input_data):
             out_data["data"][name].append(cfg_out)
             if len(out_data["data"][name]) == 0:
                 out_data["data"][name] = [{}]
-    
-    ## 给code赋值，判断是否异常
-    if an_type == "rec_defect" or an_type == "fire_smoke":
-        for name, _cfg in out_data["data"].items():
-            if len(_cfg[0]) > 0:
-                out_data["code"] = 1
-    else:
-        lens = [len(_cfg[0]) for name, _cfg in out_data["data"].items()]
-        if any(lens): ## 全为0，返回false
-            out_data["code"] = 0
-        else:
-            out_data["code"] = 1
 
     ## 指示灯若没有识别到目标物，是否也默认给定识别结果
     if an_type in DEFAULT_STATE and DEFAULT_STATE[an_type] is not None:
@@ -203,6 +191,18 @@ def inspection_object_detection(input_data):
                 img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
                 out_data["data"][name] = _cfg
                 out_data["code"] = DEFAULT_STATE["abnormal_code"]
+    
+    ## 给code赋值，判断是否异常
+    if an_type == "rec_defect" or an_type == "fire_smoke":
+        for name, _cfg in out_data["data"].items():
+            if len(_cfg[0]) > 0:
+                out_data["code"] = 1
+    else:
+        lens = [len(_cfg[0]) for name, _cfg in out_data["data"].items()]
+        if any(lens): ## 全为0，返回false
+            out_data["code"] = 0
+        else:
+            out_data["code"] = 1
     
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]
