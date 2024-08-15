@@ -33,7 +33,7 @@ def get_img_paths(input_data):
         if os.path.exists(tag_):
             img_paths.append(tag_)
         elif tag_.startswith("http"):
-            tag_tmp = "/export" + tag_.split(":9000")[1]
+            tag_tmp = "/export/" + "/".join(tag_.split("/")[-3:])
             if not os.path.exists(tag_tmp):
                 tag_dir = os.path.dirname(tag_tmp)
                 os.makedirs(tag_dir, exist_ok=True)
