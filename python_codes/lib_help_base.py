@@ -52,7 +52,7 @@ class GetInputData:
         将字符串形式的图片转成numpy图片，字符串形式图片可以是base64格式、http链接、图片绝对路径
         """
         if img_str.startswith("http"): # 如果是网络图，则尝试下载
-            img_str_file = "/export" + img_str.split(":9000")[1]
+            img_str_file = "/export/" + "/".join(img_str.split("/")[-3:])
             if not os.path.exists(img_str_file): # 如果不存在，则下载
                 img_str_dir = os.path.dirname(img_str_file)
                 os.makedirs(img_str_dir, exist_ok=True)
