@@ -29,9 +29,12 @@ def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
                 if is_include(cfg["bbox"], _roi, 0.5):
                     content = content + cfg["content"]
                     bboxes.append(cfg["bbox"])
+            if len(bboxes) == 0:
+                bbox = []
+            else:
                 boxes = np.array(bboxes)
                 bbox = [int(min(boxes[:, 0])), int(min(boxes[:, 1])), int(max(boxes[:, 2])), int(max(boxes[:, 3]))]
-                cfgs = [{"content": content, "bbox": bbox}]
+            cfgs = [{"content": content, "bbox": bbox}]
 
         else: # 二维码推理
             img_roi = img[int(_roi[1]): int(_roi[3]), int(_roi[0]): int(_roi[2])]
