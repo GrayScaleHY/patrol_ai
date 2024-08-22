@@ -139,7 +139,7 @@ def inspection_object_detection(input_data):
             else:
                 conf_thres = ((5 - sense) / 5) * (1 - conf_thres) + conf_thres
 
-    cfgs = inference_yolov8(yolov8_model, img_tag, resize=640, focus_labels=labels, conf_thres=conf_thres) # inference
+    cfgs = inference_yolov8(yolov8_model, img_tag, focus_labels=labels, conf_thres=conf_thres) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制
 
     ## labels 列表 和 color 列表
