@@ -1,6 +1,7 @@
 import numpy as np
 import requests
 import math
+from app_adjust_camera import adjust_camera
 
 W = 704
 H = 576

@@ -21,6 +21,7 @@ from config_object_name import AI_FUNCTION, convert_ai_function
 from app_jmjs import patrolai_jmjs
 from config_object_name import jmjs_dict
 from lib_help_base import GetInputData
+from app_adjust_camera import adjust_camera
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
@@ -38,6 +39,29 @@ app.url_map.strict_slashes = False
 @app.route('/AI_function/', methods=['GET'])
 def inspection_ai_function():
     return jsonify(convert_ai_function(AI_FUNCTION))
+
+@app.route('/adjust_camera_v2/', methods=['POST'])
+def adjust_camera_v2_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    
+    start_time = time.time()
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=False)
+    res = adjust_camera(data)
+    f = open(os.path.join(save_dir, name_head + "output_data.json"), "w", encoding='utf-8')
+    json.dump(res, f, ensure_ascii=False)  # 保存输入信息json文件
+    f.close()
+
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s,":",res[s])
+    print("total spend time:", time.time() - start_time)
+    print("----------------------------------------------")
+    return jsonify(res)
 
 @app.route('/inspection_counter/', methods=['POST'])
 @app.route('/inspection_digital/', methods=['POST'])
