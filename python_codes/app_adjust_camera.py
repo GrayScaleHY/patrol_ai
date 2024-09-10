@@ -10,7 +10,7 @@ class GetInputData:
         self.checkpoint = self.get_checkpoint(data)  # 点位名称
         self.config = self.get_config(data)  # 模板信息
         self.p, self.t, self.z = self.get_ptz(self.config)
-        self.center, self.resize_rate, self.size = self.get_rectangle_info(self.config)
+        self.center, self.resize_rate = self.get_rectangle_info(self.config)
         self.fov_h, self.fov_v = self.get_fov(self.config)
         self.direction_p, self.direction_t = self.get_direction(self.config)
         self.range_p, self.range_t, self.range_z = self.get_range(self.config)
@@ -40,13 +40,10 @@ class GetInputData:
         return p, t, z
     
     def get_rectangle_info(self, config):
-        w = config["Width"]
-        h = config["Height"]
         b = config["rectangle_coords"]
-        center = [int((w*b[2] + w*b[0])/2), int((h*b[3] + h*b[1])/2)]
+        center = [(b[2] + b[0])/2, (b[3] + b[1])/2]
         resize_rate = 1 / (max(b[2]-b[0], b[3]-b[1]))
-        size = [w, h]
-        return center, resize_rate, size
+        return center, resize_rate
     
     def get_fov(self, config):
         fov_h = config["Horizontal"]
@@ -92,7 +89,6 @@ def adjust_camera(input_data):
     z = DATA.z
     x, y = DATA.center # 框子中心点坐标
     resize_rate = DATA.resize_rate
-    W, H = DATA.size
     fov_h = DATA.fov_h
     fov_v = DATA.fov_v
     range_p = DATA.range_p
@@ -102,15 +98,15 @@ def adjust_camera(input_data):
     direction_t = DATA.direction_t
 
     # 将框子中心点坐标移到画面中心
-    if x > (W / 2): # 水平方向
-        delt_x = np.rad2deg(np.arctan((x - W / 2) / (W / 2) * np.tan( np.deg2rad(fov_h /2))))
+    if x > 0.5: # 水平方向
+        delt_x = np.rad2deg(np.arctan((x - 0.5) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
     else:
-        delt_x = -np.rad2deg(np.arctan((W / 2 - x) / (W / 2) * np.tan( np.deg2rad(fov_h /2))))
+        delt_x = -np.rad2deg(np.arctan((0.5 - x) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
     
-    if y > (H / 2): # 垂直方向
-        delt_y = np.rad2deg(np.arctan((y - H / 2) / (H / 2) * np.tan( np.deg2rad(fov_v/ 2))))
+    if y > 0.5: # 垂直方向
+        delt_y = np.rad2deg(np.arctan((y - 0.5) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
     else:
-        delt_y = -np.rad2deg(np.arctan((H / 2 - y) / (H / 2) * np.tan( np.deg2rad(fov_v/ 2))))
+        delt_y = -np.rad2deg(np.arctan((0.5 - y) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
     
     if direction_p == 1:
         new_p = p + delt_x
