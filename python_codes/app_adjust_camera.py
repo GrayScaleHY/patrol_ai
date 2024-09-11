@@ -69,12 +69,15 @@ class GetInputData:
             range_p = [0, 360]
         
         if "range_t" in config and isinstance(config["range_t"], list) and len(config["range_t"]) > 0:
-            range_t = [min(config["range_t"]), max(config["range_t"])]
+            # range_t = [min(config["range_t"]), max(config["range_t"])]
+            range_t = config["range_t"]
+            if range_t[0] > range_t[1]:
+                range_t[0] = range_t[0] - 360
         else:
             range_t = [-5, 90]
 
         if "range_z" in config and isinstance(config["range_z"], list) and len(config["range_z"]) > 0:
-            range_z = [min(config["range_z"]),  max(config["range_z"])]
+            range_z = config["range_z"]
         else:
             range_z = [1, 25]
         
