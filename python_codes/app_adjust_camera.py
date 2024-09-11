@@ -42,7 +42,7 @@ class GetInputData:
     def get_rectangle_info(self, config):
         b = config["rectangle_coords"]
         center = [(b[2] + b[0])/2, (b[3] + b[1])/2]
-        resize_rate = 1 / (max(b[2]-b[0], b[3]-b[1]))
+        resize_rate = 0.6 / (max(b[2]-b[0], b[3]-b[1]))
         return center, resize_rate
     
     def get_fov(self, config):
@@ -64,17 +64,14 @@ class GetInputData:
     
     def get_range(self, config):
         if "range_p" in config and isinstance(config["range_p"], list) and len(config["range_p"]) > 0:
-            range_p = [min(config["range_p"]), max(config["range_p"])]
+            range_p = config["range_p"]
         else:
             range_p = [0, 360]
         
         if "range_t" in config and isinstance(config["range_t"], list) and len(config["range_t"]) > 0:
-            # range_t = [min(config["range_t"]), max(config["range_t"])]
             range_t = config["range_t"]
-            if range_t[0] > range_t[1]:
-                range_t[0] = range_t[0] - 360
         else:
-            range_t = [-5, 90]
+            range_t = [0, 90]
 
         if "range_z" in config and isinstance(config["range_z"], list) and len(config["range_z"]) > 0:
             range_z = config["range_z"]
@@ -82,6 +79,25 @@ class GetInputData:
             range_z = [1, 25]
         
         return range_p, range_t, range_z
+
+def convert_pt(x, range_x):
+    xmax = range_x[1]
+    if range_x[0] < range_x[1]:
+        xmin = range_x[0]
+    else:
+        xmin = range_x[0] - 360
+    
+    if x > xmax:
+        return xmax
+    
+    if x < xmin:
+        x = xmin
+    
+    if x < 0:
+        x = x + 360
+    
+    return x
+
 
 def adjust_camera(input_data):
     # 解析input_data
@@ -132,12 +148,10 @@ def adjust_camera(input_data):
             new_p = new_p - 360
         else:
             new_p = range_p[1]
-    
-    if new_t < range_t[0]:
-        new_t = range_t[0]
-    
-    if new_t > range_t[1]:
-        new_t = range_t[1]
+            
+    # pt特殊转换
+    new_p = convert_pt(new_p, range_t)
+    new_t = convert_pt(new_t, range_t)
     
     # 计算new_z
     new_z = z * resize_rate
