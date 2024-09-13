@@ -9,11 +9,12 @@ class GetInputData:
         # self.input_data = input_data
         self.checkpoint = self.get_checkpoint(data)  # 点位名称
         self.config = self.get_config(data)  # 模板信息
-        self.p, self.t, self.z = self.get_ptz(self.config)
+        self.range_p, self.range_t, self.range_z = self.get_range(self.config)
+        self.p, self.t, self.z = self.get_ptz(self.config, self.range_p, self.range_t)
         self.center, self.resize_rate = self.get_rectangle_info(self.config)
         self.fov_h, self.fov_v = self.get_fov(self.config)
         self.direction_p, self.direction_t = self.get_direction(self.config)
-        self.range_p, self.range_t, self.range_z = self.get_range(self.config)
+        
         
     def get_checkpoint(self, data):
         """
@@ -35,14 +36,19 @@ class GetInputData:
             config = {}
         return config
     
-    def get_ptz(self, config):
+    def get_ptz(self, config, range_p, range_t):
         p, t, z = config["ptz_coords"]
+        if p > range_p[1]:
+            p = range_p - 360
+        
+        if t > range_t[1]:
+            t = range_t - 360
         return p, t, z
     
     def get_rectangle_info(self, config):
         b = config["rectangle_coords"]
         center = [(b[2] + b[0])/2, (b[3] + b[1])/2]
-        resize_rate = 0.6 / (max(b[2]-b[0], b[3]-b[1]))
+        resize_rate = 0.8 / (max(b[2]-b[0], b[3]-b[1]))
         return center, resize_rate
     
     def get_fov(self, config):
@@ -87,6 +93,10 @@ def convert_pt(x, range_x):
     else:
         xmin = range_x[0] - 360
     
+    if range_x[0] == 0:
+        if x < 0:
+            x = 360 + x
+
     if x > xmax:
         return xmax
     
@@ -127,6 +137,9 @@ def adjust_camera(input_data):
     else:
         delt_y = -np.rad2deg(np.arctan((0.5 - y) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
     
+    print("delt_x:", delt_x)
+    print("delt_y:", delt_y)
+
     if direction_p == 1:
         new_p = p + delt_x
     else:
@@ -136,21 +149,9 @@ def adjust_camera(input_data):
         new_t = t + delt_y
     else:
         new_t = t - delt_y
-    
-    # 根据p\t的范围调试得到的p\t值
-    if new_p < range_p[0]:
-        if range_p[0] == 0 and range_p[1] == 360:
-            new_p = 360 + new_p
-        else:
-            new_p = range_p[0]
-    if new_p > range_p[1]:
-        if range_p[0] == 0 and range_p[1] == 360:
-            new_p = new_p - 360
-        else:
-            new_p = range_p[1]
-            
+
     # pt特殊转换
-    new_p = convert_pt(new_p, range_t)
+    new_p = convert_pt(new_p, range_p)
     new_t = convert_pt(new_t, range_t)
     
     # 计算new_z
@@ -165,21 +166,39 @@ def adjust_camera(input_data):
     return out_data
 
 if __name__ == "__main__":
+    import requests
+
+    ## 获取摄像机参数
+    get_url = "http://192.168.52.66:31010/api/v1/channel/getGisInfo" # ?chnid=1669
+    data = {"chnid": 1670}
+    cam_info = requests.get(get_url, params=data).json()
+    P = cam_info["data"]["PanPos"]
+    T = cam_info["data"]["TiltPos"]
+    Z = cam_info["data"]["ZoomPos"]
+    FOV_H = cam_info["data"]["Horizontal"]
+    FOV_V = cam_info["data"]["Vertical"]
+    print("FOV_H:", FOV_H, "\tFOV_V:", FOV_V)
+    print("P:", P, "\tT:", T, "\tZ:",Z)
+
     input_data = {
         "checkpoint": "预置位1", 
         "config":{
-            "ptz_coords": [316.5, 4.099999904632568, 3.0], 
-            "rectangle_coords": [0.9147727,0.121527778,0.94886364,0.17708333],
-            "Horizontal": 20.899999618530273,
-            "Vertical": 11.84000015258789,
-            "Width": 704,
-            "Height": 576,
+            "ptz_coords": [P, T, Z],
+            "rectangle_coords": [0, 0.9, 0.1, 1],
+            "Horizontal": FOV_H,
+            "Vertical": FOV_V,
             "direction_p": 1,
-            "direction_t": 1,
+            "direction_t": 2,
             "range_p": [0, 360],
-            "range_t": [-5, 90]
+            "range_t": [270, 90]
                 }, 
         "type": "adjust_camera"
     }
     out_data = adjust_camera(input_data)
-    print(out_data)
+
+    ptz = out_data["data"]["ptz_new"]
+    data = {"z": ptz[2], "p": ptz[0], "t": ptz[1], "chnid": 1670}
+    put_url = "http://192.168.52.66:31010/api/v1/channel/ptzPos"
+    cam_put = requests.put(put_url, params=data).json()
+
+    print("p:", ptz[0], "\tt:", ptz[1], "\tz", ptz[2])
