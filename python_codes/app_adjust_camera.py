@@ -48,7 +48,7 @@ class GetInputData:
     def get_rectangle_info(self, config):
         b = config["rectangle_coords"]
         center = [(b[2] + b[0])/2, (b[3] + b[1])/2]
-        resize_rate = 0.7 / (max(b[2]-b[0], b[3]-b[1]))
+        resize_rate = 0.8 / (max(b[2]-b[0], b[3]-b[1]))
         return center, resize_rate
     
     def get_fov(self, config):
@@ -197,6 +197,7 @@ if __name__ == "__main__":
     }
     out_data = adjust_camera(input_data)
 
+    # 摄像机执行ptz操作
     ptz = out_data["data"]["ptz_new"]
     data = {"z": ptz[2], "p": ptz[0], "t": ptz[1], "chnid": 5334}
     put_url = "http://192.168.44.143:31010/api/v1/channel/ptzPos"
