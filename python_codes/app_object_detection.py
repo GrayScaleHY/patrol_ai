@@ -188,7 +188,7 @@ def inspection_object_detection(input_data):
                 _cfg = [{"label": DEFAULT_STATE[an_type], "bbox": c, "score": 1.0}]
                 cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
                 s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
-                img_tag_ = img_chinese(img_tag_, label, (c[0], c[1]), color=(0,0,255), size=s)
+                img_tag_ = img_chinese(img_tag_, DEFAULT_STATE[an_type], (c[0], c[1]), color=(0,0,255), size=s)
                 out_data["data"][name] = _cfg
                 out_data["code"] = DEFAULT_STATE["abnormal_code"]
     
