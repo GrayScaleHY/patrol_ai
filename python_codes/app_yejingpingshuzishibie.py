@@ -191,7 +191,7 @@ def inspection_digital_rec(input_data):
             continue
         # bboxes_list.append(coor)
         # 640*640填充
-        img_empty = img_fill(img_tag_, coor[0], coor[1], coor[2], coor[3], 640)
+        img_empty = img_fill(img_tag, coor[0], coor[1], coor[2], coor[3], 640)
 
         # 二次识别
         bbox_cfg_result = inference_yolov8(yolo_rec, img_empty)

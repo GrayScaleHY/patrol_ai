@@ -10,6 +10,7 @@ from lib_img_registration import roi_registration, convert_coor
 from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
+from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie,img_fill
 import config_object_name
 
 yolov8_yeweiji = load_yolov8_model("/data/PatrolAi/yolov8/yeweiji.pt") # 加载液位计模型
@@ -138,11 +139,92 @@ def inspection_level_gauge(input_data):
         cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
+    roi_tag_dict, M = roi_registration(img_ref, img_tag, roi)
+    if M is None:
+        out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
+    assert isinstance(roi_tag_dict, dict), f'The type of roi_tag must be dict, but not {type(roi_tag_dict)}.'
+    # 画出roi_tag
+    roi_name = list(roi_tag_dict.keys())[0]
+    roi_tag = roi_tag_dict[roi_name]
+    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])), (int(roi_tag[2]), int(roi_tag[3])),
+                  (255, 0, 255), thickness=1)
+    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1])-5),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+
+    # 使用映射变换矫正目标图，并且转换坐标点。
+    pointers_tag = conv_coor(pointers, M)
+    # for scale in pointers_tag:
+    #     coor = pointers_tag[scale]
+    #     cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
+    #     cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])),
+    #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=1)
+
     if an_type != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
         out_data["code"] = 1
         out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
+    #数字识别液位计
+    elif len(pointers_tag)==1:
+        bbox_cfg = inference_yolov8(yolov8_jishukuang, img_tag)
+        if len(bbox_cfg) < 2:
+            out_data["msg"] = out_data["msg"] + "Can not find enough level scale; "
+            out_data["code"] = 1
+            img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
+            out_data['data']['value'] = None
+            # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+            return out_data
+
+            # 检测出的位置按y坐标排序，做640*640填充，二次识别
+        coor_list = [item['coor'] for item in bbox_cfg]
+        bboxes_list_sort = sorted(coor_list, key=lambda x: x[-1], reverse=False)
+        # print("bboxes_list:",bboxes_list)
+        value_list=[]
+        for coor in bboxes_list_sort:
+            img_empty = img_fill(img_tag, coor[0], coor[1], coor[2], coor[3], 640)
+            # 二次识别
+            bbox_cfg_result = inference_yolov8(yolov8_jishushibie, img_empty)
+            bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
+            # print("bbox_cfg_result:",bbox_cfg_result)
+            # 按横坐标排序组合结果
+            if len(bbox_cfg_result) < 1:
+                continue
+            label_list = [[item['label'], item['coor']] for item in bbox_cfg_result]
+            label_list = sorted(label_list, key=lambda x: x[1][0], reverse=False)
+            label = []
+            for item in label_list:
+                label.append(str(item[0]))
+            label.insert(1, ".")
+            label = "".join(label)
+            label=float(label)
+            value_list.append([coor,label])
+            cv2.putText(img_tag_, str(label), (int(coor[0]), int(coor[1])),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), thickness=2)
+        if len(value_list)<2:
+            out_data["msg"] = out_data["msg"] + "Can not recognize enough level scale; "
+            out_data["code"] = 1
+            img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
+            out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
+            out_data['data']['value'] = None
+            # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
+            return out_data
+        v_max=value_list[0][1]
+        v_min=value_list[-1][1]
+        coor_max=value_list[0][0][3]
+        coor_min=value_list[-1][0][3]
+        for p in pointers_tag:
+            point_coor=pointers_tag[p]
+        value=(v_max-v_min)*(point_coor[1]-coor_max)/(coor_min-coor_max)+v_min
+        cv2.putText(img_tag_, str(value), (int(point_coor[0]), int(point_coor[1])),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), thickness=2)
+        cfg_out = {"label": "油位","value":round(value,3)}
+        out_data["data"] = cfg_out
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)
+        out_data["msg"] = out_data["msg"] + "success;"
+        return out_data
+
+
     else:
         out_data["code"] = 0
         yolov8_model = yolov8_yeweiji
@@ -184,25 +266,7 @@ def inspection_level_gauge(input_data):
         label = cfg["label"]
         cv2.line(img_tag_, (int(c[0]), int(c[1])), (int(c[2]), int(c[1])), color_dict[label], thickness=2)
 
-    roi_tag_dict, M = roi_registration(img_ref, img_tag, roi)
-    if M is None:
-        out_data["msg"] = out_data["msg"] + "; Not enough matches are found"
-    assert isinstance(roi_tag_dict, dict), f'The type of roi_tag must be dict, but not {type(roi_tag_dict)}.'
-    # 画出roi_tag
-    roi_name = list(roi_tag_dict.keys())[0]
-    roi_tag = roi_tag_dict[roi_name]
-    cv2.rectangle(img_tag_, (int(roi_tag[0]), int(roi_tag[1])), (int(roi_tag[2]), int(roi_tag[3])),
-                  (255, 0, 255), thickness=1)
-    cv2.putText(img_tag_, "roi", (int(roi_tag[0]), int(roi_tag[1])-5),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
-    # 使用映射变换矫正目标图，并且转换坐标点。
-    pointers_tag = conv_coor(pointers, M)
-    for scale in pointers_tag:
-        coor = pointers_tag[scale]
-        cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
-        cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=1)
        
     # 判断bbox是否在roi中
     cfg_out = {}
