@@ -23,6 +23,7 @@ jmjs_dict = {
     "wcaqm": {"name": "未正确佩戴安全帽", "labels": ["wcaqm"]},
     "sly_bjbmyw": {"name": "渗漏油", "labels": ["sly_bjbmyw"]},
     "sly_dmyw": {"name": "渗漏油", "labels": ["sly_dmyw"]},
+    "ryjjph": {"name": "人员聚集徘徊", "labels": ["person"]}
 }
 
 ## 目标检测中各标签的命名
@@ -278,7 +279,11 @@ OBJECT_MAP = {
         "name": "刀闸状态-无模板配置",
         "he": "合闸正常",
         "fen": "分闸正常",
-        "budaowei": "分合异常"
+        "budaowei": "分合异常",
+        "dlq_f": "断路器分",
+        "dlq_h": "断路器合",
+        "glkg_f": "隔离开关分",
+        "glkg_h": "隔离开关合"
     },
     "level_gauge": {
         "name": "油位液位",
