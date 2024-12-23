@@ -42,9 +42,14 @@ OBJECT_MAP = {
         'xnkg_zs': '左上',
         'xnkg_ys': '右上',
         'xnkg_z': '左',
+        'xnkg_y': '右', 
+        "xnkg_yx": "右上",
+        "xnkg_x": "下",
+        "xnkg_zx": "左下",
         'ys': '钥匙',
-        'zsd_l': "指示灯亮",
-        'zsd_m': '指示灯灭'
+        'zsd_l': '指示灯亮',
+        'zsd_m': '指示灯灭',
+        'byyb': '备用压板'
     },
 
     "led": {

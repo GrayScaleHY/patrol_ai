@@ -5,7 +5,7 @@ import math
 from config_object_name import COLOR_HSV_MAP
 import cv2
 import numpy as np
-from lib_image_ops import base642img, img2base64
+from lib_image_ops import base642img, img2base64, img_chinese
 import json
 import os
 import time
@@ -36,6 +36,7 @@ class GetInputData:
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
         self.sense = self.get_sense(self.config)
+        self.is_region = self.get_region(self.config)
         
     def get_checkpoint(self, data):
         """
@@ -312,6 +313,13 @@ class GetInputData:
             sense = None
         return sense
     
+    def get_region(self, config):
+        if "is_region" in config and isinstance(config["is_region"], (int, float)):
+            is_region = config["is_region"]
+        else:
+            is_region = 0
+        return is_region
+    
     def get_video_path(self, data):
         """
         获取测试视频路径
@@ -568,6 +576,22 @@ def creat_img_result(input_data, img_tag_):
         img_result = out_file
     else:
         img_result = img2base64(img_tag_)
+    return img_result
+
+def draw_region_result(an_type, name, cfg, img_tag, input_data):
+    img_tag = img_chinese(img_tag, an_type + "_" + name , (10, 100), color=(255, 0, 0), size=30)
+    c = cfg["bbox"]; label = cfg["label"]
+    # 画出识别框
+    cv2.rectangle(img_tag, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
+    s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+    img_tag = img_chinese(img_tag, label, (c[0], c[1]), color=(0,0,255), size=s)
+
+    if os.path.exists(input_data["image"]): 
+        out_file = input_data["image"][:-4] + name + "_result.jpg"
+        cv2.imwrite(out_file, img_tag)
+        img_result = out_file
+    else:
+        img_result = img2base64(img_tag)
     return img_result
     
 

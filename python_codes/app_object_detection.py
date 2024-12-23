@@ -9,7 +9,7 @@ from lib_img_registration import roi_registration
 import config_object_name
 from config_object_name import convert_label, defect_LIST, DEFAULT_STATE
 import numpy as np
-from lib_help_base import GetInputData, is_include, color_list, creat_img_result
+from lib_help_base import GetInputData, is_include, color_list, creat_img_result, draw_region_result
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 
 yolov8_ErCiSheBei = load_yolov8_model("/data/PatrolAi/yolov8/ErCiSheBei.pt") ## 二次设备状态
@@ -35,6 +35,7 @@ def inspection_object_detection(input_data):
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     roi = DATA.roi; label_list = DATA.label_list
     sense = DATA.sense
+    is_region = DATA.is_region
 
     ## 初始化out_data
     out_data = {"code": 0, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
@@ -89,7 +90,7 @@ def inspection_object_detection(input_data):
         model_type = "coco"
     elif an_type == "pressplate": 
         yolov8_model = yolov8_ErCiSheBei
-        labels = ["kgg_ybh", "kgg_ybf"]
+        labels = ["kgg_ybh", "kgg_ybf", "byyb"]
         model_type = "ErCiSheBei"
     elif an_type == "air_switch":
         yolov8_model = yolov8_ErCiSheBei
@@ -105,7 +106,7 @@ def inspection_object_detection(input_data):
         labels = ["fpq_h", "fpq_f", "fpq_jd"]
     elif an_type == "rotary_switch":
         yolov8_model = yolov8_ErCiSheBei
-        labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z"]
+        labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", "xnkg_y", "xnkg_yx", "xnkg_x", "xnkg_zx"]
         model_type = "ErCiSheBei"
     elif an_type == "door":
         yolov8_model = yolov8_ErCiSheBei
@@ -203,6 +204,14 @@ def inspection_object_detection(input_data):
             out_data["code"] = 0
         else:
             out_data["code"] = 1
+    
+    ## 主从逻辑中，每个roi框都画一张图
+    if is_region:
+        for name in out_data["data"]:
+            for i in range(len(out_data["data"][name])):
+                cfg = out_data["data"][name][i]
+                img_result = draw_region_result(an_type, name, cfg, img_tag, input_data)
+                out_data["data"][name][i]["img"] = img_result
     
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]

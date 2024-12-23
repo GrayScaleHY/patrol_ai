@@ -312,7 +312,7 @@ def cfgs2segs(cfgs):
         ## 查找mask中1元素的位置。
         mask = cfg["mask"]
         w = np.where(mask==1)
-        pointers = np.array([[w[1][i], w[0][i]] for i in range(len(w[0]))])
+        pointers = np.array([[w[1][j], w[0][j]] for j in range(len(w[0]))])
         if len(pointers) == 0:
             cfgs[i]["seg"] = [0,0,10,10]
             continue
