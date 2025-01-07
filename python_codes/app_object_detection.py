@@ -35,7 +35,6 @@ def inspection_object_detection(input_data):
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     roi = DATA.roi; label_list = DATA.label_list
     sense = DATA.sense
-    is_region = DATA.is_region
 
     ## 初始化out_data
     out_data = {"code": 0, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
@@ -127,7 +126,9 @@ def inspection_object_detection(input_data):
     roi_tag, _ = roi_registration(img_ref, img_tag, roi)
     for name, c in roi_tag.items():
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
-        cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        # cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        s = int((c[2] - c[0]) / 10) # 根据框子大小决定字号和线条粗细。
+        img_tag_ = img_chinese(img_tag_, name, (c[0], c[1]), color=(255,0,255), size=s)
 
     ## 模型推理
     conf_thres = 0.3
@@ -206,12 +207,7 @@ def inspection_object_detection(input_data):
             out_data["code"] = 1
     
     ## 主从逻辑中，每个roi框都画一张图
-    if is_region:
-        for name in out_data["data"]:
-            for i in range(len(out_data["data"][name])):
-                cfg = out_data["data"][name][i]
-                img_result = draw_region_result(an_type, name, cfg, img_tag, input_data)
-                out_data["data"][name][i]["img"] = img_result
+    out_data = draw_region_result(out_data, input_data, roi_tag)
     
     ## 老版本的接口输出，"data"由字典改为list
     no_roi = [name.startswith("old_roi") for name in out_data["data"]]
@@ -237,13 +233,22 @@ if __name__ == '__main__':
     # input_data = json.load(f)
     # f.close()
     input_data = {
-    "checkpoint": "巡视点位01",  
-
-    "image":"/data/PatrolAi/patrol_ai/python_codes/images/014237_001_10101_16392_3698003230.jpg", 
-   
-    "type": "biaoshipai"
-
-    }
+    "checkpoint": "切换把手方向识别",
+    "image": "/data/PatrolAi/test_images/切换把手方向识别_tag.jpg",
+    "config": {
+        "bboxes": {"roi":{
+            "切换把手0000": [
+                0.33,
+                0.31,
+                0.65,
+                0.86
+            ]}
+        },
+        "is_region": 1,
+        "img_ref": "/data/PatrolAi/test_images/切换把手方向识别_ref.jpg"
+    },
+    "type": "rotary_switch"
+}
     
     out_data = inspection_object_detection(input_data)
     save_dir, name_head = get_save_head(input_data)

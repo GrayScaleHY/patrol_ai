@@ -11,7 +11,7 @@ import copy
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
 from lib_img_registration import registration, convert_coor
-from lib_help_base import GetInputData, creat_img_result
+from lib_help_base import GetInputData, creat_img_result,draw_region_result
 
 # yolov8_mubiaokuang = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_crop.pt")  # 数字表记寻框模型
 # yolov8_shuzishibie = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_rec.pt")  # 数字表记数字识别模型
@@ -225,6 +225,9 @@ def inspection_digital_rec(input_data):
         out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
         return out_data
+    
+    ## 主从逻辑中，每个roi框都画一张图
+    out_data = draw_region_result(out_data, input_data, roi_tag)
 
     out_data["msg"] = "Success!"
     # 判断是否位列表式请求

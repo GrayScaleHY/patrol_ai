@@ -578,21 +578,56 @@ def creat_img_result(input_data, img_tag_):
         img_result = img2base64(img_tag_)
     return img_result
 
-def draw_region_result(an_type, name, cfg, img_tag, input_data):
-    img_tag = img_chinese(img_tag, an_type + "_" + name , (10, 100), color=(255, 0, 0), size=30)
-    c = cfg["bbox"]; label = cfg["label"]
-    # 画出识别框
-    cv2.rectangle(img_tag, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
-    s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
-    img_tag = img_chinese(img_tag, label, (c[0], c[1]), color=(0,0,255), size=s)
+def draw_region_result(out_data, input_data, roi_tag):
+    """
+    每个区域返回一张结果展示图
+    """
+    DATA = GetInputData(input_data)
+    is_region = DATA.is_region
+    checkpoint = DATA.checkpoint
+    img_tag = DATA.img_tag
+    an_type = DATA.type
+    
+    if not is_region:
+        return out_data
+    
+    for name in out_data["data"]:
+        img_tag_ = img_tag.copy()
+        ## 画上点位名称
+        img_tag_ = img_tag.copy()
+        img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
+        c = roi_tag[name]
+        cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
+        # cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+        s = int((c[2] - c[0]) / 10) # 根据框子大小决定字号和线条粗细。
+        img_tag_ = img_chinese(img_tag_, name, (c[0], c[1]), color=(255,0,255), size=s)
+        for cfg in out_data["data"][name]:
+            if "bbox" in cfg:
+                b = cfg["bbox"]
+            else:
+                b = c
+            # 画出识别框
+            cv2.rectangle(img_tag_, (int(b[0]), int(b[1])),(int(b[2]), int(b[3])), (0,0,255), thickness=2)
 
-    if os.path.exists(input_data["image"]): 
-        out_file = input_data["image"][:-4] + name + "_result.jpg"
-        cv2.imwrite(out_file, img_tag)
-        img_result = out_file
-    else:
-        img_result = img2base64(img_tag)
-    return img_result
+            s = int((b[2] - b[0]) / 6) # 根据框子大小决定字号和线条粗细。
+            if "label" in cfg:
+                label = cfg["label"]
+            elif "values" in cfg:
+                label = cfg["values"]
+            else:
+                label = ""
+            img_tag_ = img_chinese(img_tag_, label, (b[0], b[1]), color=(0,0,255), size=s)
+        
+        for i in range(len(out_data["data"][name])):
+            if os.path.exists(input_data["image"]): 
+                out_file = input_data["image"][:-4] + "_" + name + "_result.jpg"
+                cv2.imwrite(out_file, img_tag_)
+                img_result = out_file
+            else:
+                img_result = img2base64(img_tag_)
+            out_data["data"][name][i]["img"] = img_result
+    
+    return out_data
     
 
 def rm_patrolai(out_json, save_dict, out_dir):
