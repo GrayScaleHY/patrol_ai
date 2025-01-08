@@ -619,8 +619,8 @@ def draw_region_result(out_data, input_data, roi_tag):
             img_tag_ = img_chinese(img_tag_, label, (b[0], b[1]), color=(0,0,255), size=s)
         
         for i in range(len(out_data["data"][name])):
-            if len(out_data["data"][name][i]) == 0:
-                continue
+            # if len(out_data["data"][name][i]) == 0:
+            #     continue
             if os.path.exists(input_data["image"]): 
                 out_file = input_data["image"][:-4] + "_" + name + "_result.jpg"
                 cv2.imwrite(out_file, img_tag_)
