@@ -595,7 +595,7 @@ def draw_region_result(out_data, input_data, roi_tag):
         img_tag_ = img_tag.copy()
         ## 画上点位名称
         img_tag_ = img_tag.copy()
-        img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
+        img_tag_ = img_chinese(img_tag_, an_type + "_" + name , (10, 100), color=(255, 0, 0), size=30)
         c = roi_tag[name]
         cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (255,0,255), thickness=1)
         # cv2.putText(img_tag_, name, (int(c[0]), int(c[1])+10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
@@ -619,12 +619,15 @@ def draw_region_result(out_data, input_data, roi_tag):
             img_tag_ = img_chinese(img_tag_, label, (b[0], b[1]), color=(0,0,255), size=s)
         
         for i in range(len(out_data["data"][name])):
+            if len(out_data["data"][name][i]) == 0:
+                continue
             if os.path.exists(input_data["image"]): 
                 out_file = input_data["image"][:-4] + "_" + name + "_result.jpg"
                 cv2.imwrite(out_file, img_tag_)
                 img_result = out_file
             else:
                 img_result = img2base64(img_tag_)
+            
             out_data["data"][name][i]["img"] = img_result
     
     return out_data
