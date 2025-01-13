@@ -604,10 +604,10 @@ def draw_region_result(out_data, input_data, roi_tag):
         for cfg in out_data["data"][name]:
             if "bbox" in cfg:
                 b = cfg["bbox"]
+                # 画出识别框
+                cv2.rectangle(img_tag_, (int(b[0]), int(b[1])),(int(b[2]), int(b[3])), (0,0,255), thickness=2)
             else:
                 b = c
-            # 画出识别框
-            cv2.rectangle(img_tag_, (int(b[0]), int(b[1])),(int(b[2]), int(b[3])), (0,0,255), thickness=2)
 
             s = int((b[2] - b[0]) / 6) # 根据框子大小决定字号和线条粗细。
             if "label" in cfg:
@@ -631,6 +631,23 @@ def draw_region_result(out_data, input_data, roi_tag):
             out_data["data"][name][i]["img"] = img_result
     
     return out_data
+
+def traverse_and_modify(obj):
+    """
+    如果字典中的val是字符串且长度大于200，则改为字符串改为base64_image.
+    """
+    if isinstance(obj, dict):
+        new_obj = {}
+        for key, value in obj.items():
+            new_value = traverse_and_modify(value)
+            new_obj[key] = new_value
+        return new_obj
+    elif isinstance(obj, list):
+        return [traverse_and_modify(item) for item in obj]
+    elif isinstance(obj, str) and len(obj) > 200: # 如果字符长度大于20
+        return "base64_image"  # 字符变为base64_image
+    else:
+        return obj
     
 
 def rm_patrolai(out_json, save_dict, out_dir):

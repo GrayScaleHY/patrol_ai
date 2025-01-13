@@ -20,7 +20,7 @@ import threading
 from config_object_name import AI_FUNCTION, convert_ai_function
 from app_jmjs import patrolai_jmjs
 from config_object_name import jmjs_dict
-from lib_help_base import GetInputData
+from lib_help_base import GetInputData, traverse_and_modify
 from app_adjust_camera import adjust_camera
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
@@ -55,12 +55,8 @@ def adjust_camera_v2_server():
     json.dump(res, f, ensure_ascii=False)  # 保存输入信息json文件
     f.close()
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 @app.route('/inspection_counter/', methods=['POST'])
@@ -77,12 +73,8 @@ def inspection_digital_server():
     res = inspection_digital_rec(data)
     save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 @app.route('/inspection_track/', methods=['POST'])
@@ -99,12 +91,8 @@ def inspection_track_server():
     res = patrol_match(data)
     # save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 
@@ -122,12 +110,8 @@ def inspection_level_gauge_server():
     res = inspection_level_gauge(data)
     save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 ## 仪表指针读数
@@ -144,12 +128,8 @@ def inspection_pointer_server():
     res = inspection_pointer(data)
     save_output_data(res, save_dir, name_head)
 
-    print("----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 ## 二维码识别，文本标识牌识别
@@ -167,12 +147,8 @@ def inspection_qrcode_server():
     res = inspection_qrcode(data)
     save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 ## 目标检测
@@ -203,12 +179,8 @@ def inspection_object():
     res = inspection_object_detection(data)
     save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 @app.route('/inspection_rec_defect/', methods=['POST']) # 识别缺陷
@@ -232,12 +204,8 @@ def inspection_rec_server():
 
     save_output_data(res, save_dir, name_head)
 
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 # 判别算法
@@ -253,11 +221,8 @@ def inspection_identify_defect_server():
     res = inspection_identify_defect(data)
     save_output_data(res, save_dir, name_head)
     
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s,":",res[s])
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 # 预置位偏移
@@ -275,12 +240,8 @@ def inspection_position_server():
     res = check_position(data)
     save_output_data(res, save_dir, name_head)
     
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s, ":", res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
     return jsonify(res)
 
 # 预置位偏移
@@ -298,12 +259,8 @@ def inspection_registration_server():
     res = registration_ptz(data)
     save_output_data(res, save_dir, name_head)
     
-    print("-----------------------------------------------")
-    for s in res:
-        if s != "img_result":
-            print(s, ":", res[s])
-    print("total spend time:", time.time() - start_time)
-    print("----------------------------------------------")
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+    
     return jsonify(res)
 
 # ## 刀闸分合识别
