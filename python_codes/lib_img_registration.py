@@ -360,7 +360,11 @@ def roi_registration(img_ref, img_tag, roi_ref):
         r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
         r = [int(r_) for r_ in r]
         roi_tag[name] = [max(0, r[0]), max(0, r[1]), min(W, r[2]), min(H, r[3])]
-
+        roi_ = roi_tag[name]
+        if roi_[2] <= roi_[0] or roi_[3] <= roi_[1]:
+            roi_tag[name] = roi_ref[name]
+            M = None
+        
     return roi_tag, M
 
 if __name__ == '__main__':
