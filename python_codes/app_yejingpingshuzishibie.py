@@ -11,7 +11,7 @@ import copy
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
 from lib_img_registration import registration, convert_coor
-from lib_help_base import GetInputData, creat_img_result,draw_region_result
+from lib_help_base import GetInputData, creat_img_result,draw_region_result,reg_crop
 
 # yolov8_mubiaokuang = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_crop.pt")  # 数字表记寻框模型
 # yolov8_shuzishibie = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_rec.pt")  # 数字表记数字识别模型
@@ -73,6 +73,7 @@ def inspection_digital_rec(input_data):
     ## 提取输入请求信息
     input_msg = GetInputData(input_data)
     roi = input_msg.roi
+    reg_box=input_msg.regbox
     img_ref = input_msg.img_ref
     img_tag = input_msg.img_tag
     dp = get_dp(input_msg.config)
@@ -92,18 +93,9 @@ def inspection_digital_rec(input_data):
 
     yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
 
-    # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag.jpg"), img_tag)
-
-    if len(roi) != 0 and img_ref is not None:  ## 如果配置了感兴趣区域，则画出感兴趣区域
-        img_ref_ = img_ref.copy()
-        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref.jpg"), img_ref_)
-        for roi_index in roi:
-            cv2.rectangle(img_ref_, (int(roi[roi_index][0]), int(roi[roi_index][1])),
-                          (int(roi[roi_index][2]), int(roi[roi_index][3])), (255, 0, 255), thickness=1)
-            cv2.putText(img_ref_, "roi", (int(roi[roi_index][0]), int(roi[roi_index][1]) - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, (255, 0, 255),
-                        thickness=1)
-        # cv2.imwrite(os.path.join(save_path, TIME_START + "img_ref_cfg.jpg"), img_ref_)
+    # img_ref截取regbox区域用于特征匹配
+    if len(reg_box) != 0:
+        img_ref = reg_crop(img_ref, *reg_box)
 
         ## 如果没有配置roi，则自动识别表盘作为roi
     if len(roi) == 0:
@@ -150,16 +142,21 @@ def inspection_digital_rec(input_data):
     bbox_cfg = inference_yolov8(yolo_crop, img_tag)
     # 未检测到目标
     if len(bbox_cfg) < 1:
-        out_data["msg"] = out_data["msg"] + "Can not find digital; "
+        '''out_data["msg"] = out_data["msg"] + "Can not find digital; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         out_data['data']['values'] = None
         # cv2.imwrite(os.path.join(save_path, TIME_START + "img_tag_cfg.jpg"), img_tag_)
-        return out_data
+        return out_data'''
+        coor_list = []
+        for roi_tag_item in roi_tag_list:
+            coor_list.append([int(item) for item in roi_tag_list[roi_tag_item]])
+        #print("coor_list", coor_list)
 
         # 检测出的位置按y坐标排序，做640*640填充，二次识别
-    coor_list = [item['coor'] for item in bbox_cfg]
+    else:
+        coor_list = [item['coor'] for item in bbox_cfg]
     bboxes_list_sort = sorted(coor_list, key=lambda x: x[-1], reverse=False)
     # print("bboxes_list:",bboxes_list)
     roi_name = "no_roi"

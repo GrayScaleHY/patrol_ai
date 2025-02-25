@@ -28,6 +28,7 @@ class GetInputData:
         self.video_path = self.get_video_path(data)
         self.img_ref = self.get_img_ref(self.config) # 模板图
         self.roi = self.get_roi(self.config, self.img_ref)  # roi框
+        self.regbox=self.get_regbox(self.config)
         self.pointers = self.get_pointers(self.config, self.img_ref)  # 刻度点坐标信息
         self.bboxes = self.get_bboxes(self.config, self.img_ref) # 目标框坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
@@ -161,6 +162,20 @@ class GetInputData:
             roi[name] = [int(float(_roi[0])*W), int(float(_roi[1])*H), int(float(_roi[2])*W), int(float(_roi[3])*H)]
         
         return roi
+
+    def get_regbox(self,config):
+        """
+            获取纠偏区域框
+            return:
+                [xmin, ymin, xmax, ymax]或[]
+        """
+        try:
+            if config["bboxes"]["reg"]==[]:
+                return []
+        except :
+            return []
+        return config["bboxes"]["reg"]
+
     
     def get_osd(self, config, img_ref):
         """
@@ -763,6 +778,13 @@ def rm_result_patrolai():
         f.close()
 
         time.sleep(36000)
-        
+
+def reg_crop(img_ref,xmin,ymin,xmax,ymax):
+    h, w = img_ref.shape[:2]
+    img_empty = np.zeros((h, w, 3), np.uint8)
+    img_empty[ymin:ymax, xmin:xmax] = img_ref[ymin:ymax, xmin:xmax]
+    return img_empty
+
+
 if __name__ == '__main__':
     rm_result_patrolai()

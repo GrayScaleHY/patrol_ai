@@ -10,7 +10,7 @@ from lib_img_registration import roi_registration, convert_coor
 from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
-from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie,img_fill
+from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie,img_fill,reg_crop
 import config_object_name
 
 yolov8_yeweiji = load_yolov8_model("/data/PatrolAi/yolov8/yeweiji.pt") # 加载液位计模型
@@ -108,6 +108,7 @@ def inspection_level_gauge(input_data):
     img_tag = DATA.img_tag
     img_ref = DATA.img_ref
     roi = DATA.roi
+    reg_box=DATA.regbox
     osd = DATA.osd
     pointers = DATA.pointers  # {"0": [1500, 2100],"1":[1680, 780]}
     dp = DATA.dp
@@ -138,6 +139,11 @@ def inspection_level_gauge(input_data):
     for o_ in osd:
         cv2.rectangle(img_tag_, (int(o_[0]), int(o_[1])),(int(o_[2]), int(o_[3])), (255, 0, 255), thickness=1)
         cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
+
+    #img_ref截取regbox区域用于特征匹配
+    if len(reg_box) != 0:
+        img_ref=reg_crop(img_ref,*reg_box)
+
 
     roi_tag_dict, M = roi_registration(img_ref, img_tag, roi)
     if M is None:

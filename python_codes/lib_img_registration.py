@@ -341,7 +341,7 @@ def roi_registration(img_ref, img_tag, roi_ref):
     """
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
-        roi_ref = {"no_roi": [0,0,W,H]}
+        roi_ref = {"no_roi": [0,0,img_ref.shape[0],img_ref.shape[1]]}
     
     if img_ref is None:
         return roi_ref, None

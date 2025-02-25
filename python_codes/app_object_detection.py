@@ -9,7 +9,7 @@ from lib_img_registration import roi_registration
 import config_object_name
 from config_object_name import convert_label, defect_LIST, DEFAULT_STATE
 import numpy as np
-from lib_help_base import GetInputData, is_include, color_list, creat_img_result, draw_region_result
+from lib_help_base import GetInputData, is_include, color_list, creat_img_result, draw_region_result,reg_crop
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
 
 yolov8_ErCiSheBei = load_yolov8_model("/data/PatrolAi/yolov8/ErCiSheBei.pt") ## 二次设备状态
@@ -34,6 +34,7 @@ def inspection_object_detection(input_data):
     checkpoint = DATA.checkpoint; an_type = DATA.type
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
     roi = DATA.roi; label_list = DATA.label_list
+    reg_box=DATA.regbox
     sense = DATA.sense
 
     ## 初始化out_data
@@ -121,6 +122,11 @@ def inspection_object_detection(input_data):
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
         return out_data
+
+    #img_ref截取regbox区域用于特征匹配
+    if len(reg_box) != 0:
+        img_ref=reg_crop(img_ref,*reg_box)
+
 
     ## 求出目标图像的感兴趣区域
     roi_tag, _ = roi_registration(img_ref, img_tag, roi)
