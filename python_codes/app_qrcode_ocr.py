@@ -7,7 +7,7 @@ from lib_image_ops import base642img, img2base64, img_chinese
 from lib_img_registration import roi_registration
 from lib_qrcode import decoder, decoder_wechat
 from lib_inference_ocr import inference_ocr
-from lib_help_base import GetInputData, is_include, creat_img_result
+from lib_help_base import GetInputData, is_include, creat_img_result,reg_crop
 
 
 def decoder_qrcode_ocr(img, roi, infer_type="ocr"):
@@ -59,7 +59,9 @@ def inspection_qrcode(input_data):
     DATA = GetInputData(input_data)
     checkpoint = DATA.checkpoint; an_type = DATA.type
     img_tag = DATA.img_tag; img_ref = DATA.img_ref
-    roi = DATA.roi; osd = DATA.osd
+    roi = DATA.roi
+    osd = DATA.osd
+    reg_box=DATA.regbox
 
     ## 初始化
     out_data = {"code": 1, "data":{}, "img_result": input_data["image"], "msg": "Request; "} 
@@ -67,6 +69,10 @@ def inspection_qrcode(input_data):
     ## 画上点位名称
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
+
+    #img_ref截取regbox区域用于特征匹配
+    if len(reg_box) != 0:
+        img_ref=reg_crop(img_ref,*reg_box)
 
     ## 求出目标图像的感兴趣区域
     roi_tag, _ = roi_registration(img_ref, img_tag, roi)

@@ -5,16 +5,17 @@ import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
-from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, intersection_pointers
+from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, \
+    intersection_pointers
 from lib_img_registration import registration, convert_coor
-from lib_help_base import color_area, GetInputData, creat_img_result
+from lib_help_base import color_area, GetInputData, creat_img_result,reg_crop
 import math
 
-yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt") # 表记检测
-yolov8_pointer = load_yolov8_model("/data/PatrolAi/yolov8/pointer.pt") # 指针分割
+yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt")  # 表记检测
+yolov8_pointer = load_yolov8_model("/data/PatrolAi/yolov8/pointer.pt")  # 指针分割
+
 
 def is_include(sub_box, par_box, srate=0.8):
-
     sb = sub_box
     pb = par_box
     sb = [min(sb[0], sb[2]), min(sb[1], sb[3]),
@@ -36,8 +37,8 @@ def is_include(sub_box, par_box, srate=0.8):
     ymin = max(pb[1], sb[1])
     xmax = min(pb[2], sb[2])
     ymax = min(pb[3], sb[3])
-    s_include = (xmax-xmin) * (ymax-ymin)
-    s_box = (sb[2]-sb[0]) * (sb[3]-sb[1])
+    s_include = (xmax - xmin) * (ymax - ymin)
+    s_box = (sb[2] - sb[0]) * (sb[3] - sb[1])
     if s_include / s_box >= srate:
         return True
     else:
@@ -69,7 +70,7 @@ def conv_coor(coordinates, M, d_ref=(0, 0), d_tag=(0, 0)):
         coor = coors_float[scale]
         coor = [coor[0] - d_ref[0], coor[1] - d_ref[1]]  # 调整坐标
         coor = convert_coor(coor, M)  # 坐标转换
-        coor_tag = [coor[0] + d_tag[0], coor[1]+d_tag[1]]  # 调整回目标坐标
+        coor_tag = [coor[0] + d_tag[0], coor[1] + d_tag[1]]  # 调整回目标坐标
         coors_tag[scale] = coor_tag
     return coors_tag
 
@@ -95,6 +96,7 @@ def cal_base_angle(coordinates, segment):
     val = angle2sclae(out_cfg, seg_ang)
     return val
 
+
 def cal_base_scale(coordinates, segment, meter_type="normal"):
     """
     使用刻度计算指针读数。
@@ -118,7 +120,7 @@ def cal_base_scale(coordinates, segment, meter_type="normal"):
     # 根据与表盘中心的距离更正segment的头尾
     xo = coordinates["center"][0]
     yo = coordinates["center"][1]
-    if (segment[0]-xo)**2+(segment[1]-yo)**2 > (segment[2]-xo)**2+(segment[3]-yo)**2:
+    if (segment[0] - xo) ** 2 + (segment[1] - yo) ** 2 > (segment[2] - xo) ** 2 + (segment[3] - yo) ** 2:
         segment = [segment[2], segment[3], segment[0], segment[1]]
 
     scales = []
@@ -129,19 +131,19 @@ def cal_base_scale(coordinates, segment, meter_type="normal"):
     scales.sort()
     if len(scales) < 2:
         return None
-    for i in range(len(scales)-1):
+    for i in range(len(scales) - 1):
         arc = coordinates["center"] + \
-            coordinates[scales[i]] + coordinates[scales[i+1]]
+              coordinates[scales[i]] + coordinates[scales[i + 1]]
         coor = intersection_pointers(segment, arc)
         # coor = intersection_arc(segment, arc)
         if coor is not None:
             break
     if coor is None:
         return None
-    
+
     seg = coordinates["center"] + list(coor)
     scale_1 = scales[i]
-    scale_2 = scales[i+1]
+    scale_2 = scales[i + 1]
     angle_1 = segment2angle(coordinates["center"], coordinates[scale_1])
     angle_2 = segment2angle(coordinates["center"], coordinates[scale_2])
     config = [{str(angle_1): scale_1, str(angle_2): scale_2}]
@@ -155,6 +157,7 @@ def cal_base_scale(coordinates, segment, meter_type="normal"):
 
     return val
 
+
 def add_head_end_ps(pointers):
     """
     在刻度盘首位增加一个更小刻度。
@@ -167,7 +170,7 @@ def add_head_end_ps(pointers):
     s_min = psi_str[psi_float.index(min(psi_float))]
     p_min = pointers[s_min]
     s_min = float(s_min)
-    l_min = math.sqrt((p_min[0]-p_center[0])**2 + (p_min[1]-p_center[1])**2)
+    l_min = math.sqrt((p_min[0] - p_center[0]) ** 2 + (p_min[1] - p_center[1]) ** 2)
     s_min_new = str(s_min - 0.0000001)
     if p_min[0] < p_center[0]:
         pointers[s_min_new] = [p_min[0], int(math.ceil(p_min[1] + l_min / 10))]
@@ -185,7 +188,7 @@ def add_head_end_ps(pointers):
     s_max = psi_str[psi_float.index(max(psi_float))]
     p_max = pointers[s_max]
     s_max = float(s_max)
-    l_max = math.sqrt((p_max[0]-p_center[0])**2 + (p_max[1]-p_center[1])**2)
+    l_max = math.sqrt((p_max[0] - p_center[0]) ** 2 + (p_max[1] - p_center[1]) ** 2)
     s_max_new = str(s_max + 0.0000001)
     if p_max[0] > p_center[0]:
         pointers[s_max_new] = [p_max[0], int(math.ceil(p_max[1] + l_max / 10))]
@@ -219,7 +222,7 @@ def select_pointer(img, seg_cfgs, length, width, color):
         segs.append(seg)
 
     if length is not None:
-        lengths = [(a[2]-a[0])**2 + (a[3]-a[1])**2 for a in segs]
+        lengths = [(a[2] - a[0]) ** 2 + (a[3] - a[1]) ** 2 for a in segs]
         if length == 0:
             return lengths.index(min(lengths))
         elif length == 2:
@@ -229,7 +232,7 @@ def select_pointer(img, seg_cfgs, length, width, color):
             return lengths.index(min(lengths))
 
     elif width is not None:
-        widths = [min(a[2]-a[0], a[3]-a[1]) for a in segs]
+        widths = [min(a[2] - a[0], a[3] - a[1]) for a in segs]
         if length == 0:
             return widths.index(min(widths))
         elif length == 2:
@@ -259,13 +262,13 @@ def select_pointer(img, seg_cfgs, length, width, color):
             print(color_)
             if int(color) == 0:
                 c_area = (color_["black"] + 1) / \
-                    (sum([color_[_c] for _c in color_list]) + 1)
+                         (sum([color_[_c] for _c in color_list]) + 1)
             elif int(color) == 1:
                 c_area = (color_["white"] + 1) / \
-                    (sum([color_[_c] for _c in color_list]) + 1)
+                         (sum([color_[_c] for _c in color_list]) + 1)
             elif int(color) == 2:
                 c_area = (color_["red"] + color_["red2"] + 1) / \
-                    (sum([color_[_c] for _c in color_list]) + 1)
+                         (sum([color_[_c] for _c in color_list]) + 1)
             if c_area > area_max:
                 area_max = c_area
                 i_max = i
@@ -294,8 +297,8 @@ def pointer_detect(img_tag, number):
     for j, c in enumerate(bboxes):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
 
-        cfgs = inference_yolov8(yolov8_pointer,img, same_iou_thres=0.85, resize=1280) # 指针分割推理
-        cfgs = cfgs2segs(cfgs) 
+        cfgs = inference_yolov8(yolov8_pointer, img, same_iou_thres=0.85, resize=1280)  # 指针分割推理
+        cfgs = cfgs2segs(cfgs)
 
         for i in range(len(cfgs)):
 
@@ -306,14 +309,13 @@ def pointer_detect(img_tag, number):
             s = cfgs[i]["seg"]
             score = cfgs[i]["score"]
             b = cfgs[i]["coor"]
-            box = [b[0]+c[0], b[1]+c[1], b[2]+c[0], b[3]+c[1]]
-            seg = [s[0]+c[0], s[1]+c[1], s[2]+c[0], s[3]+c[1]]
+            box = [b[0] + c[0], b[1] + c[1], b[2] + c[0], b[3] + c[1]]
+            seg = [s[0] + c[0], s[1] + c[1], s[2] + c[0], s[3] + c[1]]
             cfg = {"seg": seg, "box": box, "score": score, "mask": mask_raw}
             if j == 0:
                 seg_cfgs_all.append(cfg)
             else:
                 seg_cfgs_part.append(cfg)
-    
 
     # 挑选最接近数量的指针为最终结果
     if len(seg_cfgs_all) >= number:
@@ -343,7 +345,7 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
     """
     if len(seg_cfgs) == 0:
         return [], None
-    
+
     ## 通过val_size读数大小来筛选指针。
     if val_size is not None:
         vals = []
@@ -354,10 +356,10 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
             if val != None:
                 vals.append(val)
                 seg_cfgs_real.append(seg_cfg)
-                
+
         if len(vals) < 1:
             return [], None
-        
+
         i_min = vals.index(min(vals))
         i_max = vals.index(max(vals))
         if len(seg_cfgs_real) < 3:
@@ -366,13 +368,16 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
             i_mid = [i for i in range(len(seg_cfgs_real)) if i != i_min and i != i_max][0]
 
         if val_size == 0:
-            seg = seg_cfgs_real[i_min]["seg"]; val = vals[i_min]
+            seg = seg_cfgs_real[i_min]["seg"];
+            val = vals[i_min]
         elif val_size == 2:
-            seg = seg_cfgs_real[i_max]["seg"]; val = vals[i_max]
+            seg = seg_cfgs_real[i_max]["seg"];
+            val = vals[i_max]
         else:
-            seg = seg_cfgs_real[i_mid]["seg"]; val = vals[i_mid]
+            seg = seg_cfgs_real[i_mid]["seg"];
+            val = vals[i_mid]
         return [seg], val
-    
+
     ## 双指针动作次数表
     if meter_type == "blq_zzscsb" or meter_type == "nszb_zzscsb":
         if meter_type == "nszb_zzscsb":
@@ -401,8 +406,8 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
 
     return segs, val
 
-def inspection_pointer(input_data):
 
+def inspection_pointer(input_data):
     # 提取输入请求信息
     DATA = GetInputData(input_data)
     checkpoint = DATA.checkpoint
@@ -412,6 +417,7 @@ def inspection_pointer(input_data):
     pointers_ref = DATA.pointers
     number = DATA.number
     roi = DATA.roi
+    reg_box = DATA.regbox
     osd = DATA.osd
     dp = DATA.dp
     length = DATA.length
@@ -441,7 +447,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
     # 检测指针
@@ -452,7 +458,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
     # 画出所有指针
@@ -461,9 +467,13 @@ def inspection_pointer(input_data):
         cv2.line(img_tag_, (int(seg[0]), int(seg[1])),
                  (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
+    # img_ref截取regbox区域用于特征匹配
+    if len(reg_box) != 0:
+        img_ref = reg_crop(img_ref, *reg_box)
+
     # 求偏移矩阵
     M = registration(img_ref, img_tag)
-    
+
     # 求出测试图的感兴趣区域
     if len(roi) > 0 and M is not None:
         for name, _roi in roi.items():
@@ -492,7 +502,7 @@ def inspection_pointer(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
     # 使用映射变换矫正目标图，并且转换坐标点。
@@ -505,11 +515,11 @@ def inspection_pointer(input_data):
 
     if "center" not in pointers_tag:
         out_data["msg"] = out_data["msg"] + \
-            "Can not find center in pointers_tag; "
+                          "Can not find center in pointers_tag; "
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
     # 将指针按score从大到小排列，筛选指针
@@ -520,14 +530,14 @@ def inspection_pointer(input_data):
     # 根据seg_cfgs求val
     segs, val = segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, meter_type)
     for seg in segs:
-        cv2.line(img_tag_, (int(seg[0]), int(seg[1])),(int(seg[2]), int(seg[3])), (0, 255, 0), 2)
+        cv2.line(img_tag_, (int(seg[0]), int(seg[1])), (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
 
     if val == None:
         out_data["msg"] = out_data["msg"] + "Can not find ture pointer; "
         out_data["code"] = 1
         img_tag_ = img_chinese(
             img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
     if meter_type == "blq_zzscsb" or meter_type == "nszb_zzscsb":
@@ -546,11 +556,11 @@ def inspection_pointer(input_data):
     H, W = img_tag.shape[:2]
     s = W / 800
     cv2.putText(img_tag_, str(val), (int(seg[2]), int(
-        seg[3])-5), cv2.FONT_HERSHEY_SIMPLEX, math.ceil(s), (0, 255, 0), thickness=math.ceil(s*2))
+        seg[3]) - 5), cv2.FONT_HERSHEY_SIMPLEX, math.ceil(s), (0, 255, 0), thickness=math.ceil(s * 2))
     img_tag_ = img_chinese(
         img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-    
-    out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
+
+    out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
 
     return out_data
 
@@ -558,6 +568,7 @@ def inspection_pointer(input_data):
 if __name__ == '__main__':
     import glob
     from lib_help_base import save_input_data, save_output_data, get_save_head
+
     # # for img_tag_file in glob.glob("12-06-11-48-55_img_tag*.jpg"):
     # img_tag_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
     # img_ref_file = "/data/PatrolAi/patrol_ai/python_codes/test/test_img/边缘_绕阻温度表1.png"
@@ -587,7 +598,7 @@ if __name__ == '__main__':
     # input_data = {"image": img_tag, "config": config, "type": "pointer"}
     json_file = "/data/PatrolAi/result_patrol/0129074824_35kVIII-1L电抗器436断路器SF6表_input_data.json"
     print(json_file)
-    f = open(json_file,"r", encoding='utf-8')
+    f = open(json_file, "r", encoding='utf-8')
     input_data = json.load(f)
     f.close()
     out_data = inspection_pointer(input_data)
