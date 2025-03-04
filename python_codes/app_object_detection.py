@@ -124,7 +124,7 @@ def inspection_object_detection(input_data):
         return out_data
 
     #img_ref截取regbox区域用于特征匹配
-    if len(reg_box) != 0:
+    if reg_box and len(reg_box) != 0:
         img_ref=reg_crop(img_ref,*reg_box)
 
 

@@ -468,7 +468,7 @@ def inspection_pointer(input_data):
                  (int(seg[2]), int(seg[3])), (255, 0, 255), 1)
 
     # img_ref截取regbox区域用于特征匹配
-    if len(reg_box) != 0:
+    if reg_box and len(reg_box) != 0:
         img_ref = reg_crop(img_ref, *reg_box)
 
     # 求偏移矩阵

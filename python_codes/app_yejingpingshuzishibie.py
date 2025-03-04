@@ -94,7 +94,7 @@ def inspection_digital_rec(input_data):
     yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
 
     # img_ref截取regbox区域用于特征匹配
-    if len(reg_box) != 0:
+    if reg_box and len(reg_box) != 0:
         img_ref = reg_crop(img_ref, *reg_box)
 
         ## 如果没有配置roi，则自动识别表盘作为roi

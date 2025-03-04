@@ -141,7 +141,7 @@ def inspection_level_gauge(input_data):
         cv2.putText(img_tag_, "osd", (int(o_[0]), int(o_[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), thickness=1)
 
     #img_ref截取regbox区域用于特征匹配
-    if len(reg_box) != 0:
+    if reg_box and len(reg_box) != 0:
         img_ref=reg_crop(img_ref,*reg_box)
 
 

@@ -781,6 +781,10 @@ def rm_result_patrolai():
 
 def reg_crop(img_ref,xmin,ymin,xmax,ymax):
     h, w = img_ref.shape[:2]
+    xmin=int(float(xmin) * w)
+    ymin=int(float(ymin) * h)
+    xmax=int(float(xmax) * w)
+    ymax=int(float(ymax) * h)
     img_empty = np.zeros((h, w, 3), np.uint8)
     img_empty[ymin:ymax, xmin:xmax] = img_ref[ymin:ymax, xmin:xmax]
     return img_empty

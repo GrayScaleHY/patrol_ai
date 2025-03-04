@@ -25,6 +25,7 @@ from app_adjust_camera import adjust_camera
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 from app_shuzishibie_video import inspection_digital_rec_video
+from app_sticker import inspection_sticker_detection
 
 t = threading.Thread(target=rm_result_patrolai,args=())
 t.start()
@@ -279,6 +280,24 @@ def inspection_registration_server():
     save_dir, name_head = get_save_head(data)
     save_input_data(data, save_dir, name_head, draw_img=draw_img)
     res = inspection_digital_rec_video(data)
+    save_output_data(res, save_dir, name_head)
+
+    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
+    return jsonify(res)
+
+@app.route('/inspection_sticker/', methods=['POST'])
+def inspection_registration_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+
+    start_time = time.time()
+    # 根据input_data和当前时刻获取保存文件夹和文件名头
+    save_dir, name_head = get_save_head(data)
+    save_input_data(data, save_dir, name_head, draw_img=draw_img)
+    res = inspection_sticker_detection(data)
     save_output_data(res, save_dir, name_head)
 
     print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
