@@ -341,12 +341,13 @@ def roi_registration(img_ref, img_tag, roi_ref):
     """
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
-        if img_ref:
+        if img_ref is not None:
             roi_ref = {"no_roi": [0,0,img_ref.shape[0],img_ref.shape[1]]}
         else:
             roi_ref = {"no_roi": [0, 0, H, W]}
-    if img_ref is None:
-        return roi_ref, None
+            return roi_ref, None
+
+
 
     M = registration(img_ref, img_tag) # 求偏移矩阵
 
