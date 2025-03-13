@@ -188,7 +188,7 @@ def inspection_object_detection(input_data):
                 out_data["data"][name] = [{}]
 
     ## 指示灯若没有识别到目标物，是否也默认给定识别结果
-    if an_type in DEFAULT_STATE and DEFAULT_STATE[an_type] is not None:
+    if DEFAULT_STATE["abnormal_code"]==0 and an_type in DEFAULT_STATE and DEFAULT_STATE[an_type] is not None:
         for name, _cfgs in out_data["data"].items():
             if len(_cfgs[0]) == 0:
                 c = roi_tag[name]
