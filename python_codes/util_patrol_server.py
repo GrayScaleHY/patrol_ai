@@ -275,7 +275,7 @@ def inspection_registration_server():
 
 
 @app.route('/inspection_shuzi_video/', methods=['POST'])
-def inspection_registration_server():
+def inspection_shuzi_video_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
@@ -293,7 +293,7 @@ def inspection_registration_server():
     return jsonify(res)
 
 @app.route('/inspection_sticker/', methods=['POST'])
-def inspection_registration_server():
+def inspection_sticker_server():
     if request.method != 'POST':
         res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
         return jsonify(res)
