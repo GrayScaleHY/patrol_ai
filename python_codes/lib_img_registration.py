@@ -3,20 +3,6 @@ import cv2
 import numpy as np
 import torch
 import math
-from imreg import similarity
-
-try:
-    import cupy as cp ## pip install cupy-cuda114
-    is_cupy = True
-except:
-    is_cupy = False
-    print("warning: no cupy pkg !")
-
-try:
-    import kornia as K # pip install kornia
-    import kornia.feature as KF
-except:
-    print("warning: no kornia pkg !")
 
 try:
     '''
@@ -25,34 +11,39 @@ try:
     '''
     from lightglue import LightGlue, SuperPoint
     from lightglue.utils import  rbd
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda")
+    extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+    matcher = LightGlue(features="superpoint").eval().to(device)
+    registration_opt = "lightglue"
 except:
+    import kornia as K # pip install kornia
+    import kornia.feature as KF
     print("warning: no lightglue pkg !")
-
-try:
     matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
     registration_opt = "loftr"
-except:
-    try:
-        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        device = torch.device("cuda")
-        extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
-        matcher = LightGlue(features="superpoint").eval().to(device)
-        registration_opt = "lightglue"
-    except:
-        try:
-            import sys
-            sys.path.insert(0,'../SuperGluePretrainedNetwork')
-            from models.matching import Matching
-            from models.utils import frame2tensor
-            torch.set_grad_enabled(False)
-            device='cuda'
-            config = {'superpoint': {'nms_radius': 4,'keypoint_threshold': 0.005,'max_keypoints': -1},
-                        'superglue': {'weights': "indoor",'sinkhorn_iterations': 20,'match_threshold': 0.6}}
-            matching = Matching(config).eval().to(device) # 初始化模型
-            registration_opt = "superglue"
-        except:
-            print("Warning: Not gpu memory enough to load LoFTR module !")
-            registration_opt = "fft"
+# try:
+#     import sys
+#     sys.path.insert(0,'../SuperGluePretrainedNetwork')
+#     from models.matching import Matching
+#     from models.utils import frame2tensor
+#     torch.set_grad_enabled(False)
+#     device='cuda'
+#     config = {'superpoint': {'nms_radius': 4,'keypoint_threshold': 0.005,'max_keypoints': -1},
+#                 'superglue': {'weights': "indoor",'sinkhorn_iterations': 20,'match_threshold': 0.6}}
+#     matching = Matching(config).eval().to(device) # 初始化模型
+#     registration_opt = "superglue"
+# except:
+#     from imreg import similarity
+
+# try:
+#     import cupy as cp ## pip install cupy-cuda114
+#     registration_opt = "fft"
+#     is_cupy = True
+# except:
+#     is_cupy = False
+#     print("Warning: Not gpu memory enough to load LoFTR module !")
+#     registration_opt = "fft"
 
 def numpy_image_to_torch(image: np.ndarray) -> torch.Tensor:
     """Normalize the image tensor and reorder the dimensions."""
@@ -96,6 +87,8 @@ def lightglue_registration(img_ref, img_tag, max_size=1280):
     if len(mkpts0) < 3 or len(mkpts1) < 3:
         return None
     M, mask = cv2.estimateAffinePartial2D(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
+    # M, mask = cv2.estimate(mkpts0, mkpts1, method=cv2.RANSAC, ransacReprojThreshold=5)
+    # M, mask = cv2.findHomography(mkpts0, mkpts1, cv2.RANSAC, 8)
 
     if M is None:
         return None
@@ -339,6 +332,7 @@ def roi_registration(img_ref, img_tag, roi_ref):
     return:
         roi_tag: 纠偏后的roi框, {"roi_1": [xmin, ymin, xmax, ymax]}
     """
+    
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
         if img_ref is not None:
@@ -346,8 +340,9 @@ def roi_registration(img_ref, img_tag, roi_ref):
         else:
             roi_ref = {"no_roi": [0, 0, H, W]}
             return roi_ref, None
-
-
+    
+    if img_ref is None:
+        return roi_ref, None
 
     M = registration(img_ref, img_tag) # 求偏移矩阵
 
@@ -371,31 +366,29 @@ def roi_registration(img_ref, img_tag, roi_ref):
     return roi_tag, M
 
 if __name__ == '__main__':
-    import time
-    from lib_sift_match import convert_coor
-    tag_file = "/data/PatrolAi/result_patrol/pointer/0322140730_1号主变A相东侧油温_tag.jpg"
-    ref_file = "/data/PatrolAi/result_patrol/pointer/0322140730_1号主变A相东侧油温_ref.jpg"
+    ref_file = "images/ref.jpg"
+    tag_file = "images/tag.jpg"
 
-    coor = []
-
-    img_tag = cv2.imread(tag_file)
     img_ref = cv2.imread(ref_file)
-    H, W = img_tag.shape[:2]
-    print("W:", W, "H:", H)
-    # img_tag = cv2.resize(img_tag, (int(W / 2), int(H / 2)))
-    img_ref = cv2.resize(img_ref, (int(W / 2), int(H / 3)))
+    img_tag = cv2.imread(tag_file)
 
-    start = time.time()
-    M = loftr_registration(img_ref, img_tag)
-    print("all loftr spend time:", time.time() - start)
-    print("M:", M)
+    ## 根据图片匹配算法求两张图片之间的偏移矩阵
+    M = registration(img_ref, img_tag)
 
-    # seg = [400, 100, 500, 200]
-    # cv2.line(img_ref, (int(seg[0]), int(seg[1])),
-    #              (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
-    # seg[:2] = convert_coor(seg[:2], M)
-    # seg[2:4] = convert_coor(seg[2:4], M)
-    # cv2.line(img_tag, (int(seg[0]), int(seg[1])),
-    #              (int(seg[2]), int(seg[3])), (0, 255, 0), 2)
-    # cv2.imwrite("img_tag.jpg", img_tag)
-    # cv2.imwrite("img_ref.jpg", img_ref)
+    print("偏移矩阵M", M)
+
+    ## 将ref图上的目标框匹配到tag图上
+
+    box_ref = [23,825,120,878]
+
+    # 将box_ref叠加到ref图上
+    cv2.rectangle(img_ref, (int(box_ref[0]), int(box_ref[1])),
+                        (int(box_ref[2]), int(box_ref[3])), (0, 255, 0), 2)
+    cv2.imwrite(ref_file[:-4] + "_box.jpg", img_ref)
+
+    # 求出box_ref框对应在tag图上的box_tag框，并叠加显示
+    box_tag = list(convert_coor(box_ref[:2], M)) + list(convert_coor(box_ref[2:4], M))
+    cv2.rectangle(img_tag, (int(box_tag[0]), int(box_tag[1])),
+                        (int(box_tag[2]), int(box_tag[3])), (0, 255, 0), 2)
+    cv2.imwrite(tag_file[:-4] + "_box.jpg", img_tag)
+    

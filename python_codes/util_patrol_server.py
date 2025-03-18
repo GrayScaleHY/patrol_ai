@@ -22,11 +22,16 @@ from app_jmjs import patrolai_jmjs
 from config_object_name import jmjs_dict
 from lib_help_base import GetInputData, traverse_and_modify
 from app_adjust_camera import adjust_camera
-
-## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 from app_shuzishibie_video import inspection_digital_rec_video
 from app_sticker import inspection_sticker_detection
 
+import logging
+import sys
+from logging.handlers import TimedRotatingFileHandler
+from auto_set_position import get_parameters, get_parametersV2, calculate_ptz_coordinates, calculate_ptz_coordinatesV2, \
+    calculate_ptz_coordinatesV3, registration_ptz_
+
+## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
 t.start()
 
@@ -344,6 +349,71 @@ def inspection_state():
         return jsonify(res)
     else:
         res = {"code": 0}
+    return jsonify(res)
+
+@app.route('/get_ptz_parameters/', methods=['POST'])
+def get_ptz_parameters():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    t1 = time.time()
+    data = json.loads(request.get_data(as_text=True))
+    print(f'data: {data}')
+
+    res, ret_msg = get_parameters(data['imgs_inf'])
+    print(f'res: {res}')
+    print(f'ret_msg: {ret_msg}')
+    print(f'cost time: {time.time()-t1}')
+
+    return jsonify(res, ret_msg)
+
+@app.route('/adjust_cameraV2/', methods=['POST'])
+def adjust_cameraV2():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    
+    t1 = time.time()
+    data = json.loads(request.get_data(as_text=True))
+
+    print(f'data:{data}')
+    res = calculate_ptz_coordinatesV2(data)
+    print(f'res:{res}')
+    print(f'cost time:{time.time()-t1}')
+
+    return jsonify(res)
+
+
+@app.route('/adjust_cameraV3/', methods=['POST'])
+def adjust_cameraV3():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    
+    t1 = time.time()
+    data = json.loads(request.get_data(as_text=True))
+    # print(f'data:{data}')
+
+    res = calculate_ptz_coordinatesV3(data)
+    print(f'res:{res}')
+    print(f'cost time:{time.time()-t1}')
+    
+    return jsonify(res)
+
+@app.route('/registration_ptz/', methods=['POST'])
+def registration_ptz():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    
+    data = json.loads(request.get_data(as_text=True))
+    t1 = time.time()
+    print(f'data:{data}')
+
+    res = registration_ptz_(data)
+    print(f'res:{res}')
+    print(f'cost time:{time.time()-t1}')
+
     return jsonify(res)
 
 #算法版本获取接口
