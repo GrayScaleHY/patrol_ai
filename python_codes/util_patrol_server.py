@@ -18,6 +18,7 @@ from app_position_shift import check_position, registration_ptz
 import time
 import threading
 from config_object_name import AI_FUNCTION, convert_ai_function
+from app_led_video import patrolai_led_video
 from app_jmjs import patrolai_jmjs
 from config_object_name import jmjs_dict
 from lib_help_base import GetInputData, traverse_and_modify
@@ -341,6 +342,22 @@ def inspection_registration_server():
 #             print(s,":",res[s])
 #     print("----------------------------------------------")
 #     return jsonify(res)
+
+## led灯视频分析
+@app.route('/inspection_led_video/', methods=['POST'])
+def patrolai_led_video_server():
+    if request.method != 'POST':
+        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+        return jsonify(res)
+    data = json.loads(request.get_data(as_text=True))
+    res = patrolai_led_video(data)
+    print("patrolai_led_video result:")
+    print("-----------------------------------------------")
+    for s in res:
+        if s != "img_result":
+            print(s, ":", res[s])
+    print("----------------------------------------------")
+    return jsonify(res)
 
 @app.route('/inspection_state/', methods=['POST'])
 def inspection_state():
