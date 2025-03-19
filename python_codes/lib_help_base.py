@@ -484,6 +484,9 @@ def get_save_head(input_data):
     name_head = time.strftime("%m%d%H%M%S") + "_"
     if "checkpoint" in input_data and isinstance(input_data["checkpoint"], str):
         name_head = name_head + input_data["checkpoint"] + "_"
+        if "/" in name_head:
+            name_head = name_head.replace("/", "")
+
     return save_dir, name_head
 
 
