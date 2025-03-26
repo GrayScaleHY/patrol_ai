@@ -10,7 +10,7 @@ from lib_help_base import dp_append, img_fill, GetInputData, creat_img_result,  
 from app_yejingpingshuzishibie import  yolov8_jishukuang, yolov8_jishushibie
 
 
-def inspection_pic_fromvideo(frame, img_ref, roi,dp):
+def inspection_pic_fromvideo(frame, img_ref, roi,dp,dp_dict):
     '''
         frame_dict为两层字典结构：
         {   "code":0  #判断非空
@@ -88,9 +88,15 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp):
                     value_list=[k[0] for k in value_list if k[0].isdigit()]
                     if len(value_list) == 0:
                         continue
-                    if dp != 0:
-                        value_list = dp_append(value_list, dp)
-                    value="".join(value_list)
+                    if dp_dict == {}:
+                        if dp != 0:
+                            value_list = dp_append(value_list, dp)
+                        value = "".join(value_list)
+                    else:
+                        dp = int(dp_dict[roi_name])
+                        if dp != 0:
+                            value_list = dp_append(value_list, dp)
+                        value = "".join(value_list)
                     frame_dict[roi_name]["phase"]=[phase,value]
                     frame_dict[roi_name]["coor"]=label_list[0]["bbox"]
                     frame_dict["code"]=0
@@ -105,11 +111,15 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp):
             value_list = label_list[1]['value']    #[[item['label'], item['coor']],...]
             value_list = sorted(value_list, key=lambda x: x[1][0], reverse=False)
             value_list = [k[0] for k in value_list if k[0].isdigit()]
-            if len(value_list)==0:
-                continue
-            if dp != 0:
-                value_list = dp_append(value_list, dp)
-            value = "".join(value_list)
+            if dp_dict == {}:
+                if dp != 0:
+                    value_list = dp_append(value_list, dp)
+                value = "".join(value_list)
+            else:
+                dp = int(dp_dict[roi_name])
+                if dp != 0:
+                    value_list = dp_append(value_list, dp)
+                value = "".join(value_list)
             frame_dict[roi_name]["phase"] =[phase,value]
             frame_dict[roi_name]["coor"] = label_list[1]["bbox"]
             frame_dict["code"] = 0
@@ -128,6 +138,7 @@ def inspection_digital_rec_video(input_data):
     img_ref = DATA.img_ref
     video_path = DATA.video_path
     dp = DATA.dp
+    dp_dict = DATA.dp_dict
 
     if not os.path.exists(video_path):
         out_data["msg"] = out_data["msg"] + video_path + " not exists !"
@@ -156,7 +167,7 @@ def inspection_digital_rec_video(input_data):
         ret, frame = cap.read()  # 逐帧读取
         if frame is not None and count % step == 0:
             # 识别结果，返回结果列表
-            frame_dict = inspection_pic_fromvideo(frame,img_ref,roi,dp)
+            frame_dict = inspection_pic_fromvideo(frame,img_ref,roi,dp,dp_dict)
             if frame_dict["code"]==1:
                 count += 1
                 frame_last = frame
