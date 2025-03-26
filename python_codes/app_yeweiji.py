@@ -188,7 +188,7 @@ def inspection_level_gauge(input_data):
         # print("bboxes_list:",bboxes_list)
         value_list=[]
         for coor in bboxes_list_sort:
-            img_empty = img_fill(img_tag, coor[0], coor[1], coor[2], coor[3], 640)
+            img_empty = img_fill(img_tag, 640, *coor)
             # 二次识别
             bbox_cfg_result = inference_yolov8(yolov8_jishushibie, img_empty)
             bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
