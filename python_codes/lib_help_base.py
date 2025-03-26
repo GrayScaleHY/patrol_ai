@@ -33,11 +33,13 @@ class GetInputData:
         self.bboxes = self.get_bboxes(self.config, self.img_ref) # 目标框坐标信息
         self.osd = self.get_osd(self.config, self.img_ref) # osd框
         self.dp = self.get_dp(self.config)
+        self.dp_dict = self.get_dpdict(self.config)
         self.number, self.length, self.width, self.color, self.val_size, self.meter_type = self.get_pointer_cfg(self.config) # 多指针的性质
         self.status_map = self.get_status_map(self.config)
         self.label_list = self.get_label_list(self.config)
         self.sense = self.get_sense(self.config)
         self.is_region = self.get_region(self.config)
+
         
     def get_checkpoint(self, data):
         """
@@ -263,6 +265,16 @@ class GetInputData:
         else:
             dp = 3
         return dp
+
+    def get_dpdict(self, config):
+        """
+        获取数值小数点位数列表
+        """
+        if "dp_dict" in config and isinstance(config["dp_dict"], dict):
+            dp_dict = config["dp_dict"]
+        else:
+            dp_dict = {}
+        return dp_dict
     
     def get_pointer_cfg(self, config):
         """
@@ -683,6 +695,7 @@ def rm_patrolai(out_json, save_dict, out_dir):
     rm_list.append(file_head + "tag_cfg.jpg")
     rm_list.append(file_head + "ref.jpg")
     rm_list.append(file_head + "ref_cfg.jpg")
+    rm_list.append(file_head + "tag.mp4")
 
     f = open(out_json, "r", encoding='utf-8')
     out_data = json.load(f)
@@ -791,6 +804,37 @@ def reg_crop(img_ref,xmin,ymin,xmax,ymax):
     img_empty = np.zeros((h, w, 3), np.uint8)
     img_empty[ymin:ymax, xmin:xmax] = img_ref[ymin:ymax, xmin:xmax]
     return img_empty
+
+
+def img_fill(img, size,x1, y1, x2, y2 ):
+    x_crop = x2 - x1
+    y_crop = y2 - y1
+    img = img[y1:y2, x1:x2]
+    if x_crop > 450:
+        img = cv2.resize(img, (450, int(y_crop * 450 / x_crop)))
+        y_crop = int(y_crop * 450 / x_crop)
+        x_crop = 450
+    if y_crop > 450:
+        img = cv2.resize(img, (int(x_crop * 450 / y_crop), 450))
+        x_crop = int(x_crop * 450 / y_crop)
+        y_crop = 450
+        # print(x_crop)
+
+    img_empty = np.zeros((size, size, 3), np.uint8)
+    img_empty[size // 5:size // 5 + y_crop, size // 5:size // 5 + x_crop] += img
+    return img_empty
+
+
+def dp_append(label, dp):
+    if dp >= len(label):
+        label.insert(0, "0.")
+    else:
+        label.insert(len(label) - dp, ".")
+    return label
+
+
+
+
 
 
 if __name__ == '__main__':
