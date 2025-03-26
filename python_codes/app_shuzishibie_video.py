@@ -6,8 +6,8 @@ from lib_image_ops import  img_chinese
 from lib_inference_yolov8 import  inference_yolov8
 from lib_rcnn_ops import check_iou
 from lib_img_registration import  roi_registration
-from lib_help_base import GetInputData, creat_img_result,  reg_crop
-from app_yejingpingshuzishibie import get_dp, img_fill, dp_append, yolov8_jishukuang, yolov8_jishushibie
+from lib_help_base import dp_append, img_fill, GetInputData, creat_img_result,  reg_crop,is_include
+from app_yejingpingshuzishibie import  yolov8_jishukuang, yolov8_jishushibie
 
 
 def inspection_pic_fromvideo(frame, img_ref, roi,dp):
@@ -25,15 +25,15 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp):
     yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
 
     #目标框映射获取
-    roi_tag_list, _ = roi_registration(img_ref, frame, roi)
+    roi_tag, _ = roi_registration(img_ref, frame, roi)
 
     #一阶段识别，判断是否在roi_tag中
     bbox_cfg = inference_yolov8(yolo_crop, frame)
     # 未检测到目标,按目标框检测
     if len(bbox_cfg) < 1:
         coor_list = []
-        for roi_tag_item in roi_tag_list:
-            coor_list.append([int(item) for item in roi_tag_list[roi_tag_item]])
+        for roi_tag_item in roi_tag:
+            coor_list.append([int(item) for item in roi_tag[roi_tag_item]])
     else:
         coor_list = [item['coor'] for item in bbox_cfg]
     #bboxes_list_sort = sorted(coor_list, key=lambda x: x[-1], reverse=False)
@@ -41,25 +41,22 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp):
     roi_name_dict = {}
     for coor in coor_list:
         roi_dict = {}
-        if len(roi_tag_list) == 0:
+        if len(roi_tag) == 0:
             roi_dict["bbox"] = coor
             mark = True
         else:
             # 去除roi框外，不做识别
-            x_middle = (coor[0] + coor[2]) / 2
-            y_middle = (coor[1] + coor[3]) / 2
             mark = False
-            for roi_tag in roi_tag_list:
-                if (x_middle < roi_tag_list[roi_tag][2] and x_middle > roi_tag_list[roi_tag][0]) and (
-                        y_middle < roi_tag_list[roi_tag][3] and y_middle > roi_tag_list[roi_tag][1]):
+            for roi_n in roi_tag:
+                if is_include(coor,roi_tag[roi_n],0.25):
                     mark = True
                     roi_dict["bbox"] = coor
-                    roi_name = roi_tag
+                    roi_name = roi_n
                     break
         if not mark:
             continue
         # 640*640填充
-        img_empty = img_fill(frame, coor[0], coor[1], coor[2], coor[3], 640)
+        img_empty = img_fill(frame, 640, *coor )
         # 二次识别
         bbox_cfg_result = inference_yolov8(yolo_rec, img_empty)
         bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
@@ -74,7 +71,7 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp):
 
     #roi_name_dict转化为frame_dict
 
-    for roi_name in roi_tag_list:
+    for roi_name in roi_tag:
         frame_dict[roi_name] = {}
         # 无框，下一个roi_name
         try:
@@ -130,7 +127,7 @@ def inspection_digital_rec_video(input_data):
     reg_box = DATA.regbox
     img_ref = DATA.img_ref
     video_path = DATA.video_path
-    dp = get_dp(DATA.config)
+    dp = DATA.dp
 
     if not os.path.exists(video_path):
         out_data["msg"] = out_data["msg"] + video_path + " not exists !"

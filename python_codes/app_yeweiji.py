@@ -7,10 +7,10 @@ from copy import deepcopy
 from lib_image_ops import img2base64, img_chinese
 import numpy as np
 from lib_img_registration import roi_registration, convert_coor
-from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result
+from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result,img_fill,reg_crop
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
-from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie,img_fill,reg_crop
+from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie
 import config_object_name
 
 yolov8_yeweiji = load_yolov8_model("/data/PatrolAi/yolov8/yeweiji.pt") # 加载液位计模型
