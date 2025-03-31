@@ -30,7 +30,7 @@ import logging
 import sys
 from logging.handlers import TimedRotatingFileHandler
 from auto_set_position import get_parameters, get_parametersV2, calculate_ptz_coordinates, calculate_ptz_coordinatesV2, \
-    calculate_ptz_coordinatesV3, registration_ptz_
+    calculate_ptz_coordinatesV3, registration_ptz_all
 
 ## 单独开个进程，定时删除result_patrolai文件夹中的文件。
 t = threading.Thread(target=rm_result_patrolai,args=())
@@ -427,7 +427,7 @@ def registration_ptz():
     t1 = time.time()
     print(f'data:{data}')
 
-    res = registration_ptz_(data)
+    res = registration_ptz_all(data)
     print(f'res:{res}')
     print(f'cost time:{time.time()-t1}')
 
