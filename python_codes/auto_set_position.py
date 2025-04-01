@@ -4,7 +4,7 @@ import logging
 import time
 import cv2
 from common import convert_pt,get_img,convert_coor,comput_pt,comput_z,func1, func2, CurveFitting, GetInputData, get_sub_img
-from lib_img_registration import lightglue_registration
+from lib_img_registration import lightglue_registration, eloftr_registration
 # from lib_img_registration import loftr_registration
 
 
@@ -99,7 +99,7 @@ def get_parametersV2(imgs_inf):
         rate_z = comput_z(M_z)
         scale_to_pre.append(rate_z)
     print(f'index_z:{index_z}')
-    print(f'scale_to_pre:scale_to_pre')
+    print(f'scale_to_pre:{scale_to_pre}')
 
     scale_to_z1 = [1]
     for i in range(1, len(scale_to_pre)):
@@ -374,6 +374,18 @@ def calculate_ptz_coordinatesV3(input_data):
     return out_data2
 
 
+def registration_ptz_all(input_data):
+    # 提取输入请求信息
+    DATA = GetInputData(input_data)
+    if DATA.use_fov:
+        print("registration V2")
+        return registration_ptzV2(input_data)
+    else:
+        print("registration V1")
+        return registration_ptz_(input_data)
+    
+
+
 def registration_ptz_(input_data):
     # 提取输入请求信息
     DATA = GetInputData(input_data)
@@ -448,6 +460,75 @@ def registration_ptz_(input_data):
     out_data["msg"] = "Success!"
 
     return out_data
+
+
+def registration_ptzV2(input_data):
+    DATA = GetInputData(input_data)
+    img_ref = DATA.img_ref
+    img_tag = DATA.img_tag
+    p = DATA.p
+    t = DATA.t
+    z = DATA.z
+    fov_h = DATA.fov_h  # 水平
+    fov_v = DATA.fov_v  # 垂直
+    direction_p = DATA.direction_p
+    direction_t = DATA.direction_t
+
+    print(f'fov_h:{fov_h}, fov_v:{fov_v}')
+
+    out_data = {}
+    # 求img_ref上的[0.5, 0.5]点对应到img_tag上是多少。
+    H, W = img_ref.shape[:2]
+    coor_ref = [int(W * 0.5), int(H * 0.5)]
+
+    # use osd
+    cv2.rectangle(img_ref, (0, 0), (int(W*4/10), int(H/20)), (0, 0, 0), thickness=-1)
+    cv2.rectangle(img_ref, (0, int(H*14/15)), (int(W/6), H), (0, 0, 0), thickness=-1)
+    M = eloftr_registration(img_ref, img_tag)
+    # M = lightglue_registration(img_ref, img_tag)
+
+    if M is None:
+        out_data["code"] = 500
+        out_data["ptz_new"] = None
+        out_data["msg"] = "Error"
+        return out_data
+    
+    coor_tag = convert_coor(coor_ref, M)
+    # x、y为tag图上的点距离中心点的距离
+    x = coor_tag[0] / img_tag.shape[1]
+    y = coor_tag[1] / img_tag.shape[0]
+
+    if x > 0.5: # 水平方向
+        delt_x = np.rad2deg(np.arctan((x - 0.5) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
+    else:
+        delt_x = -np.rad2deg(np.arctan((0.5 - x) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
+    
+    if y > 0.5: # 垂直方向
+        delt_y = np.rad2deg(np.arctan((y - 0.5) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
+    else:
+        delt_y = -np.rad2deg(np.arctan((0.5 - y) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
+    
+    print(f'delt_x:{delt_x}')  # 相对于图片中心点的x偏转角度
+    print(f'delt_y:{delt_y}')
+    if direction_p == 1:
+        new_p = p + delt_x
+    else:
+        new_p = p - delt_x
+    
+    if direction_t == 1:
+        new_t = t + delt_y
+    else:
+        new_t = t - delt_y
+    print(f'new_p:{new_p},new_t:{new_t}')
+
+
+    data = {"ptz_new" : [new_p, new_t, z * 2], "offset_angle" : [delt_x, delt_y], "offset_percent" : [abs(x), abs(y)]}
+    out_data = {"code": 200, "data": data, "msg":"Sucess!"}
+
+    return out_data
+
+
+
 
 
 if __name__ == '__main__':

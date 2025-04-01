@@ -4,24 +4,38 @@ import numpy as np
 import torch
 import math
 
+
 try:
-    '''
-    https://github.com/cvg/LightGlue/tree/main
-    python -m pip install -e .
-    '''
-    from lightglue import LightGlue, SuperPoint
-    from lightglue.utils import  rbd
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cuda")
-    extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
-    matcher = LightGlue(features="superpoint").eval().to(device)
-    registration_opt = "lightglue"
+    from src.loftr import LoFTR, full_default_cfg, reparameter
+    from copy import deepcopy
+
+    _default_cfg = deepcopy(full_default_cfg)
+    weights = "/data/PatrolAi/yolov8/eloftr_outdoor.ckpt"
+    matcher = LoFTR(config=_default_cfg)
+    matcher.load_state_dict(torch.load(weights)['state_dict'])
+    matcher = reparameter(matcher) # no reparameterization will lead to low performance
+    matcher = matcher.half().eval().to("cuda")
+    registration_opt = "eflotr"
+
 except:
-    import kornia as K # pip install kornia
-    import kornia.feature as KF
-    print("warning: no lightglue pkg !")
-    matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
-    registration_opt = "loftr"
+    try:
+        '''
+        https://github.com/cvg/LightGlue/tree/main
+        python -m pip install -e .
+        '''
+        from lightglue import LightGlue, SuperPoint
+        from lightglue.utils import  rbd
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda")
+        extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+        matcher = LightGlue(features="superpoint").eval().to(device)
+        registration_opt = "lightglue"
+    except:
+        import kornia as K # pip install kornia
+        import kornia.feature as KF
+        print("warning: no lightglue pkg !")
+        matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
+        registration_opt = "loftr"
 # try:
 #     import sys
 #     sys.path.insert(0,'../SuperGluePretrainedNetwork')
@@ -233,6 +247,41 @@ def loftr_registration(img_ref, img_tag, max_size=1280):
 
     return M
 
+
+def eloftr_registration(img_ref, img_tag):
+    """
+    ELoFTR: LoFTR升级版, cvpr2024论文EfficientLoFTR
+    args:
+        img_ref: 参考图
+        img_tag: 待矫正图
+    return:
+        M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
+    """
+    img_ref = cv2.cvtColor(img_ref, cv2.COLOR_BGR2GRAY)
+    img_tag = cv2.cvtColor(img_tag, cv2.COLOR_BGR2GRAY)
+
+    img_ref = cv2.resize(img_ref, (img_ref.shape[1]//32*32, img_ref.shape[0]//32*32))  # input size shuold be divisible by 32
+    img_tag = cv2.resize(img_tag, (img_tag.shape[1]//32*32, img_tag.shape[0]//32*32))
+
+    img0 = torch.from_numpy(img_ref)[None][None].half().to("cuda") / 255.
+    img1 = torch.from_numpy(img_tag)[None][None].half().to("cuda") / 255.
+
+
+    batch = {'image0': img0, 'image1': img1}
+
+    # Inference with EfficientLoFTR and get prediction
+    with torch.no_grad():
+        matcher(batch)
+        mkpts0 = batch['mkpts0_f'].cpu().numpy()
+        mkpts1 = batch['mkpts1_f'].cpu().numpy()
+        # mconf = batch['mconf'].cpu().numpy()
+
+    M, mask = cv2.estimateAffine2D(mkpts0, mkpts1)
+
+    return M
+
+
+
 def registration(img_ref, img_tag):
     """
     偏移矫正算法整合
@@ -242,6 +291,9 @@ def registration(img_ref, img_tag):
     return:
         M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
     """
+    if registration_opt == "eflotr":
+        print("registration with eloftr !")
+        return eloftr_registration(img_ref, img_tag) # 使用eloftr纠偏算法
     if registration_opt == "loftr":
         print("registration with LoFTR !")
         return loftr_registration(img_ref, img_tag) # 使用Loftr纠偏算法

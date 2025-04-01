@@ -415,7 +415,7 @@ class GetInputData:
         self.data = data
         self.center, self.rectangle_coords = self.get_rectangle_info()
         self.p, self.t, self.z = self.get_ptz()
-        self.fov_h, self.fov_v = self.get_fov()
+        self.fov_h, self.fov_v, self.use_fov = self.get_fov()
         self.direction_p, self.direction_t = self.get_direction()
         self.range_p, self.range_t, self.range_z = self.get_range()
         self.parameters = self.get_parameters()
@@ -485,13 +485,15 @@ class GetInputData:
     def get_fov(self):
         if "Horizontal" in self.data and isinstance(self.data["Horizontal"], float):
             fov_h = self.data["Horizontal"]
+            use_fov = True
         else:
+            use_fov = False
             fov_h = 57
         if "Vertical" in self.data and isinstance(self.data["Vertical"], float):
             fov_v = self.data["Vertical"]
         else:
             fov_v = 34
-        return fov_h, fov_v
+        return fov_h, fov_v, use_fov
     
     def get_direction(self):
         if "direction_p" in self.data and (isinstance(self.data["direction_p"], int) or isinstance(self.data["direction_p"], str)):
