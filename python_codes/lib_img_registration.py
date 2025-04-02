@@ -10,7 +10,7 @@ try:
     from copy import deepcopy
 
     _default_cfg = deepcopy(full_default_cfg)
-    weights = "/data/PatrolAi/yolov8/eloftr_outdoor.ckpt"
+    weights = "/checkpoint/eloftr_outdoor.ckpt"
     matcher = LoFTR(config=_default_cfg)
     matcher.load_state_dict(torch.load(weights)['state_dict'])
     matcher = reparameter(matcher) # no reparameterization will lead to low performance
