@@ -4,8 +4,7 @@ import logging
 import time
 import cv2
 from common import convert_pt,get_img,convert_coor,comput_pt,comput_z,func1, func2, CurveFitting, GetInputData, get_sub_img
-from lib_img_registration import lightglue_registration, eloftr_registration
-# from lib_img_registration import loftr_registration
+from lib_img_registration import registration
 
 
 def get_parameters(imgs_inf):
@@ -27,8 +26,8 @@ def get_parameters(imgs_inf):
         img2 = get_img(img_path[1])
         img3 = get_img(img_path[2])
 
-        M_p= lightglue_registration(img1, img2)
-        M_t= lightglue_registration(img1, img3)
+        M_p= registration(img1, img2)
+        M_t= registration(img1, img3)
         rate_p = comput_pt(M_p, pt, mode='p')
         rate_t = comput_pt(M_t, pt, mode='t')
         print(f'rate_p:{rate_p}')
@@ -58,7 +57,7 @@ def get_parameters(imgs_inf):
         img1 = get_img(img_z[i])
         img2 = get_img(img_z[i+1])
 
-        M_z = lightglue_registration(img1, img2)
+        M_z = registration(img1, img2)
         rate_z = comput_z(M_z)
         print(f'rate_z:{rate_z}')
 
@@ -95,7 +94,7 @@ def get_parametersV2(imgs_inf):
     for i in range(len(img_list)-1):
         img1 = get_img(img_list[i])
         img2 = get_img(img_list[i+1])
-        M_z = lightglue_registration(img1, img2)
+        M_z = registration(img1, img2)
         rate_z = comput_z(M_z)
         scale_to_pre.append(rate_z)
     print(f'index_z:{index_z}')
@@ -311,7 +310,7 @@ def calculate_ptz_coordinatesV3(input_data):
     while percent >= 1:
         print(f'percent:{percent}')
         sub_img = get_sub_img(img1, w, h, center_x, center_y, percent)
-        M = lightglue_registration(sub_img, img2)
+        M = registration(sub_img, img2)
         print(f'M:{M}')
         # cv2.imwrite('/data/home/ckx/adjust_camera/sub_img_' + str(percent) + '.jpg', sub_img)
         if M is not None and len(M) > 0:
@@ -404,7 +403,7 @@ def registration_ptz_(input_data):
     # cv2.circle(img_ref,coor_ref,3,(0,0,255), -1)
     # cv2.imwrite('/data/home/ckx/adjust_camera/ref_out.jpg', img_ref)
     print(f'coor_ref:{coor_ref}')
-    M = lightglue_registration(img_ref, img_tag)
+    M = registration(img_ref, img_tag)
     print(f'M:{M}')
 
     if M is None:
@@ -484,7 +483,7 @@ def registration_ptzV2(input_data):
     # use osd
     cv2.rectangle(img_ref, (0, 0), (int(W*4/10), int(H/20)), (0, 0, 0), thickness=-1)
     cv2.rectangle(img_ref, (0, int(H*14/15)), (int(W/6), H), (0, 0, 0), thickness=-1)
-    M = eloftr_registration(img_ref, img_tag)
+    M = registration(img_ref, img_tag)
     # M = lightglue_registration(img_ref, img_tag)
 
     if M is None:

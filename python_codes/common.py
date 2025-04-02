@@ -483,14 +483,18 @@ class GetInputData:
             return None, None, None
     
     def get_fov(self):
+        use_fov = True
         if "Horizontal" in self.data and isinstance(self.data["Horizontal"], float):
             fov_h = self.data["Horizontal"]
-            use_fov = True
+        elif "horizontal" in self.data and isinstance(self.data["horizontal"], float):
+            fov_h = self.data["horizontal"]
         else:
             use_fov = False
             fov_h = 57
         if "Vertical" in self.data and isinstance(self.data["Vertical"], float):
             fov_v = self.data["Vertical"]
+        elif "vertical" in self.data and isinstance(self.data["vertical"], float):
+            fov_v = self.data["vertical"]
         else:
             fov_v = 34
         return fov_h, fov_v, use_fov
