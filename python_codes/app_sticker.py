@@ -6,11 +6,9 @@ from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_img_registration import roi_registration
 import config_object_name
 from lib_help_base import GetInputData, is_include, color_list, creat_img_result, draw_region_result, reg_crop
-
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 ## 开关柜标签状态检测
-
-yolov8_sticker = load_yolov8_model("/data/PatrolAi/yolov8/sticker.pt")  ## 二次设备状态
-
 
 
 def inspection_sticker_detection(input_data):
@@ -34,8 +32,9 @@ def inspection_sticker_detection(input_data):
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint, (10, 100), color=(255, 0, 0), size=30)
 
     if an_type == "sticker":
-        yolov8_model = yolov8_sticker
+        yolov8_model=model_load(an_type)
         labels_dict = yolov8_model.names
+        conf = model_threshold_dict[an_type]
         labels = [labels_dict[id] for id in labels_dict]
         #model_type = "sticker"
     else:
@@ -58,8 +57,7 @@ def inspection_sticker_detection(input_data):
         img_tag_ = img_chinese(img_tag_, name, (c[0], c[1]), color=(255, 0, 255), size=s)
 
     ## 模型推理
-    conf_thres = 0.3
-    cfgs = inference_yolov8(yolov8_model, img_tag, focus_labels=labels, conf_thres=conf_thres)  # inference
+    cfgs = inference_yolov8(yolov8_model, img_tag, focus_labels=labels, conf_thres=conf)  # inference
     cfgs = check_iou(cfgs, iou_limit=0.5)  # 增加iou机制
 
 

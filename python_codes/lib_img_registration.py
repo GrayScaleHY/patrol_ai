@@ -3,39 +3,9 @@ import cv2
 import numpy as np
 import torch
 import math
+from config_model_list import registration_model_list
 
 
-try:
-    from src.loftr import LoFTR, full_default_cfg, reparameter
-    from copy import deepcopy
-
-    _default_cfg = deepcopy(full_default_cfg)
-    weights = "/data/PatrolAi/yolov8/eloftr_outdoor.ckpt"
-    matcher = LoFTR(config=_default_cfg)
-    matcher.load_state_dict(torch.load(weights)['state_dict'])
-    matcher = reparameter(matcher) # no reparameterization will lead to low performance
-    matcher = matcher.half().eval().to("cuda")
-    registration_opt = "eflotr"
-
-except:
-    try:
-        '''
-        https://github.com/cvg/LightGlue/tree/main
-        python -m pip install -e .
-        '''
-        from lightglue import LightGlue, SuperPoint
-        from lightglue.utils import  rbd
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        device = torch.device("cuda")
-        extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
-        matcher = LightGlue(features="superpoint").eval().to(device)
-        registration_opt = "lightglue"
-    except:
-        import kornia as K # pip install kornia
-        import kornia.feature as KF
-        print("warning: no lightglue pkg !")
-        matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
-        registration_opt = "loftr"
 # try:
 #     import sys
 #     sys.path.insert(0,'../SuperGluePretrainedNetwork')
@@ -59,6 +29,53 @@ except:
 #     print("Warning: Not gpu memory enough to load LoFTR module !")
 #     registration_opt = "fft"
 
+def eflotr_choice_set():
+    from src.loftr import LoFTR, full_default_cfg, reparameter
+    from copy import deepcopy
+
+    _default_cfg = deepcopy(full_default_cfg)
+    weights = "/checkpoint/eloftr_outdoor.ckpt"
+    matcher = LoFTR(config=_default_cfg)
+    matcher.load_state_dict(torch.load(weights)['state_dict'])
+    matcher = reparameter(matcher)  # no reparameterization will lead to low performance
+    matcher = matcher.half().eval().to("cuda")
+    registration_opt = "eflotr"
+    extractor=None
+    device=None
+    return matcher,registration_opt,extractor,device
+
+def lightglue_choice_set():
+    '''
+    https://github.com/cvg/LightGlue/tree/main
+    python -m pip install -e .
+    '''
+    from lightglue import LightGlue, SuperPoint
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda")
+    extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+    matcher = LightGlue(features="superpoint").eval().to(device)
+    registration_opt = "lightglue"
+    return matcher,registration_opt,extractor,device
+
+def loftr_choice_set():
+    import kornia.feature as KF
+    print("warning: no lightglue pkg !")
+    matcher = KF.LoFTR(pretrained='outdoor').cuda().half()
+    registration_opt = "loftr"
+    extractor=None
+    device=None
+    return matcher, registration_opt, extractor,device
+
+
+try:
+    matcher,registration_opt,extractor,device=eval(registration_model_list[1]+"_choice_set")()
+except:
+    try:
+        matcher,registration_opt,extractor,device=eval(registration_model_list[2]+"_choice_set")()
+    except:
+        matcher,registration_opt,extractor,device=eval(registration_model_list[3]+"_choice_set")()
+
+
 def numpy_image_to_torch(image: np.ndarray) -> torch.Tensor:
     """Normalize the image tensor and reorder the dimensions."""
     if image.ndim == 3:
@@ -76,6 +93,7 @@ def lightglue_registration(img_ref, img_tag, max_size=1280):
     https://colab.research.google.com/github/cvg/LightGlue/blob/main/demo.ipynb#scrollTo=6JA4sWG9PV7M
     """
     # 若图片最长边大于max_size，将图片resize到max_size内
+    from lightglue.utils import rbd
     shape_max = max(list(img_ref.shape[:2]) + list(img_tag.shape[:2]))
     resize_rate = math.ceil(shape_max / max_size)
     H, W = img_tag.shape[:2]
@@ -215,6 +233,7 @@ def loftr_registration(img_ref, img_tag, max_size=1280):
         M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
     """
     # 若图片最长边大于max_size，将图片resize到max_size内
+    import kornia as K  # pip install kornia
     shape_max = max(list(img_ref.shape[:2]) + list(img_tag.shape[:2]))
     resize_rate = math.ceil(shape_max / max_size)
     H, W = img_tag.shape[:2]

@@ -7,10 +7,10 @@ from lib_inference_yolov8 import  inference_yolov8
 from lib_rcnn_ops import check_iou
 from lib_img_registration import  roi_registration
 from lib_help_base import dp_append, img_fill, GetInputData, creat_img_result,  reg_crop,is_include
-from app_yejingpingshuzishibie import  yolov8_jishukuang, yolov8_jishushibie
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
-
-def inspection_pic_fromvideo(frame, img_ref, roi,dp,dp_dict):
+def inspection_pic_fromvideo(frame, img_ref, roi,dp,dp_dict,yolov8_model,conf):
     '''
         frame_dict为两层字典结构：
         {   "code":0  #判断非空
@@ -22,13 +22,13 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp,dp_dict):
     '''
     frame_dict={"code":1}
     phase_label=["Ia","Ib","Ic","Ua","Ub","Uc"]
-    yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
+    yolo_crop, yolo_rec = yolov8_model
 
     #目标框映射获取
     roi_tag, _ = roi_registration(img_ref, frame, roi)
 
     #一阶段识别，判断是否在roi_tag中
-    bbox_cfg = inference_yolov8(yolo_crop, frame)
+    bbox_cfg = inference_yolov8(yolo_crop, frame,conf_thres=conf)
     # 未检测到目标,按目标框检测
     if len(bbox_cfg) < 1:
         coor_list = []
@@ -58,7 +58,7 @@ def inspection_pic_fromvideo(frame, img_ref, roi,dp,dp_dict):
         # 640*640填充
         img_empty = img_fill(frame, 640, *coor )
         # 二次识别
-        bbox_cfg_result = inference_yolov8(yolo_rec, img_empty)
+        bbox_cfg_result = inference_yolov8(yolo_rec, img_empty,conf_thres=conf)
         bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
         if len(bbox_cfg_result)==[]:
             continue
@@ -163,11 +163,14 @@ def inspection_digital_rec_video(input_data):
     if_draw=True
     cap = cv2.VideoCapture(video_path)  ## 建立视频对象
     video_resultdict = {}
+
+    yolov8_model=model_load(an_type)
+    conf = model_threshold_dict[an_type]
     while (cap.isOpened()):
         ret, frame = cap.read()  # 逐帧读取
         if frame is not None and count % step == 0:
             # 识别结果，返回结果列表
-            frame_dict = inspection_pic_fromvideo(frame,img_ref,roi,dp,dp_dict)
+            frame_dict = inspection_pic_fromvideo(frame,img_ref,roi,dp,dp_dict,yolov8_model,conf)
             if frame_dict["code"]==1:
                 count += 1
                 frame_last = frame

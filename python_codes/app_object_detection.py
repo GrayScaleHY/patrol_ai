@@ -4,26 +4,18 @@ import cv2
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 from lib_rcnn_ops import check_iou
-from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_inference_yolov8 import inference_yolov8
 from lib_img_registration import roi_registration
 import config_object_name
 from config_object_name import convert_label, defect_LIST, DEFAULT_STATE
 import numpy as np
 from lib_help_base import GetInputData, is_include, color_list, creat_img_result, draw_region_result,reg_crop
 ## 表计， 二次设备，17类缺陷, 安全帽， 烟火
+from config_model_list import model_type_dict,model_label_dict,model_dict
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
-yolov8_ErCiSheBei = load_yolov8_model("/data/PatrolAi/yolov8/ErCiSheBei.pt") ## 二次设备状态
-yolov8_rec_defect = load_yolov8_model("/data/PatrolAi/yolov8/rec_defect.pt") # 送检18类缺陷,x6模型
-yolov8_daozha = load_yolov8_model("/data/PatrolAi/yolov8/daozha_v5detect.pt")  # 加载刀闸模型
-yolov8_led_color = load_yolov8_model("/data/PatrolAi/yolov8/led.pt") # led灯颜色状态模型
-# yolov8_count = load_yolov8_model("/data/PatrolAi/yolov8/count.pt")#大电流端子借用钥匙计数功能
-# yolov8_dztx = load_yolov8_model("/data/PatrolAi/yolov8/daozha_texie.pt")  # 刀闸分析模型
-# yolov8_coco = load_yolov8_model("/data/PatrolAi/yolov8/coco.pt") # coco模型
-# yolov8_action = load_yolov8_model("/data/PatrolAi/yolov8/action.pt") # 动作识别，倒地
-# yolov8_fire_smoke = load_yolov8_model("/data/PatrolAi/yolov8/fire_smoke.pt") # 烟火模型
-# yolov8_helmet = load_yolov8_model("/data/PatrolAi/yolov8/helmet.pt") # 安全帽模型
-# yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt") # 表盘
-# yolov8_biaoshipai = load_yolov8_model("/data/PatrolAi/yolov8/biaoshipai.pt") # 表盘
+
 
 def inspection_object_detection(input_data):
     """
@@ -44,28 +36,17 @@ def inspection_object_detection(input_data):
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, an_type + "_" + checkpoint , (10, 100), color=(255, 0, 0), size=30)
 
-    if an_type == "fire_smoke":
-        yolov8_model = yolov8_fire_smoke
-        labels_dict = yolov8_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "fire_smoke"
-    elif an_type == "helmet":
-        yolov8_model = yolov8_helmet
-        labels_dict = yolov8_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "helmet"
-    elif an_type == "biaoshipai":
-        yolov8_model = yolov8_biaoshipai
-        labels_dict = yolov8_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "biaoshipai"
-    elif an_type == "led_color":
-        yolov8_model = yolov8_led_color
-        labels_dict = yolov8_model.names
-        labels = [labels_dict[id] for id in labels_dict]
-        model_type = "led"
-    elif an_type == "rec_defect":
-        yolov8_model = yolov8_rec_defect
+    if an_type not in model_type_dict.keys():
+        out_data["msg"] = out_data["msg"] + "Type isn't object; "
+        out_data["code"] = 1
+        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
+        out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
+        return out_data
+
+    yolov8_model=model_load(an_type)
+    conf = model_threshold_dict[an_type]
+    model_type=model_type_dict[an_type]
+    if an_type == "rec_defect":
         labels = defect_LIST
         if len(label_list) > 0:
             labels = [convert_label(l, "rec_defect") for l in label_list]
@@ -73,55 +54,13 @@ def inspection_object_detection(input_data):
                 labels = labels + ["jsxs_ddjt", "jsxs_ddyx", "jsxs_jdyxx", "jsxs_ecjxh"]
             if "bjdsyc" in label_list:
                 labels = labels + ["bjdsyc_zz", "bjdsyc_sx", "bjdsyc_ywj", "bjdsyc_ywc"]
-        model_type = "rec_defect"
-    elif an_type == "disconnector_notemp":
-        yolov8_model = yolov8_daozha
-        labels_dict = yolov8_model.names
-        labels = ["he","fen","budaowei"]
-        model_type = "disconnector_texie"
-    elif an_type == "disconnector_texie":
-        yolov8_model = yolov8_dztx
-        labels_dict = yolov8_model.names
-        labels = ["he","fen","budaowei"]
-        model_type = "disconnector_texie"
-    elif an_type == "person":
-        yolov8_model = yolov8_coco
-        labels = ["person"]
-        model_type = "coco"
-    elif an_type == "pressplate": 
-        yolov8_model = yolov8_ErCiSheBei
-        labels = ["kgg_ybh", "kgg_ybf", "byyb"]
-        model_type = "ErCiSheBei"
-    elif an_type == "air_switch":
-        yolov8_model = yolov8_ErCiSheBei
-        labels = ["kqkg_hz", "kqkg_fz"]
-        model_type = "ErCiSheBei"
-    elif an_type == "led":
-        yolov8_model = yolov8_ErCiSheBei
-        labels = ["zsd_l", "zsd_m"]
-        model_type = "ErCiSheBei"
-    elif an_type == "fanpaiqi":
-        yolov8_model = yolov8_ErCiSheBei
-        model_type = "ErCiSheBei"
-        labels = ["fpq_h", "fpq_f", "fpq_jd"]
-    elif an_type == "rotary_switch":
-        yolov8_model = yolov8_ErCiSheBei
-        labels = ["xnkg_s", "xnkg_zs", "xnkg_ys", "xnkg_z", "xnkg_y", "xnkg_yx", "xnkg_x", "xnkg_zx"]
-        model_type = "ErCiSheBei"
-    elif an_type == "door":
-        yolov8_model = yolov8_ErCiSheBei
-        labels = ["xmbhyc", "xmbhzc"]
-        model_type = "ErCiSheBei"
-    elif an_type == "key":
-        yolov8_model = yolov8_count
-        labels = ["ys"]
-        model_type = "ErCiSheBei"
+    elif an_type in model_label_dict.keys():
+        labels=model_label_dict[an_type]
     else:
-        out_data["msg"] = out_data["msg"] + "Type isn't object; "
-        out_data["code"] = 1
-        img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
-        out_data["img_result"] = creat_img_result(input_data, img_tag_) # 返回结果图
-        return out_data
+        labels_dict = yolov8_model.names
+        labels = [labels_dict[id] for id in labels_dict]
+
+
 
     #img_ref截取regbox区域用于特征匹配
     if reg_box and len(reg_box) != 0:
@@ -137,17 +76,15 @@ def inspection_object_detection(input_data):
         img_tag_ = img_chinese(img_tag_, name, (c[0], c[1]), color=(255,0,255), size=s)
 
     ## 模型推理
-    conf_thres = 0.3
     if an_type == "rec_defect":
-        conf_thres = 0.3
         ## 根据灵敏度sense调整conf_thres阈值,sense越大，conf_thres越小
         if sense is not None:
             if sense > 5:
-                conf_thres = conf_thres - (((sense - 5) / 5) * conf_thres)
+                conf = conf - (((sense - 5) / 5) * conf)
             else:
-                conf_thres = ((5 - sense) / 5) * (1 - conf_thres) + conf_thres
+                conf = ((5 - sense) / 5) * (1 - conf) + conf
 
-    cfgs = inference_yolov8(yolov8_model, img_tag, focus_labels=labels, conf_thres=conf_thres) # inference
+    cfgs = inference_yolov8(yolov8_model, img_tag, focus_labels=labels, conf_thres=conf) # inference
     cfgs = check_iou(cfgs, iou_limit=0.5) # 增加iou机制
 
     ## labels 列表 和 color 列表

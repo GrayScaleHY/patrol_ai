@@ -4,16 +4,14 @@ import time
 import json
 from lib_image_ops import base642img, img2base64, img_chinese
 import numpy as np
-from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_inference_yolov8 import inference_yolov8
 from lib_analysis_meter import angle_scale, segment2angle, angle2sclae, intersection_arc, cfgs2segs, \
     intersection_pointers
 from lib_img_registration import registration, convert_coor
-from lib_help_base import color_area, GetInputData, creat_img_result,reg_crop
+from lib_help_base import color_area, GetInputData, creat_img_result, reg_crop
 import math
-
-yolov8_meter = load_yolov8_model("/data/PatrolAi/yolov8/meter.pt")  # 表记检测
-yolov8_pointer = load_yolov8_model("/data/PatrolAi/yolov8/pointer.pt")  # 指针分割
-
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
 def is_include(sub_box, par_box, srate=0.8):
     sb = sub_box
@@ -278,7 +276,7 @@ def select_pointer(img, seg_cfgs, length, width, color):
         return 0
 
 
-def pointer_detect(img_tag, number):
+def pointer_detect(img_tag, number, yolov8_model,conf):
     """
     args:
         img_tag: 图片
@@ -286,9 +284,10 @@ def pointer_detect(img_tag, number):
         seg_cfgs: 指针信息, 格式为[{"seg": seg, "box": box, "score": score}, ..]
         roi_tag: 感兴趣区域
     """
+    yolov8_meter, yolov8_pointer = yolov8_model
     # 识别图中的表盘
     h, w = img_tag.shape[:2]
-    cfgs = inference_yolov8(yolov8_meter, img_tag, resize=640)
+    cfgs = inference_yolov8(yolov8_meter, img_tag, resize=640,conf_thres=conf)
     bboxes = [[0, 0, w, h]] + [cfg["coor"] for cfg in cfgs]
 
     # 找到bboxes中的所有指针
@@ -297,7 +296,7 @@ def pointer_detect(img_tag, number):
     for j, c in enumerate(bboxes):
         img = img_tag[c[1]:c[3], c[0]:c[2]]
 
-        cfgs = inference_yolov8(yolov8_pointer, img, same_iou_thres=0.85, resize=1280)  # 指针分割推理
+        cfgs = inference_yolov8(yolov8_pointer, img, conf_thres=conf,same_iou_thres=0.85, resize=1280)  # 指针分割推理
         cfgs = cfgs2segs(cfgs)
 
         for i in range(len(cfgs)):
@@ -407,6 +406,7 @@ def segs2val(img_tag, pointers_tag, seg_cfgs, length, width, color, val_size, me
     return segs, val
 
 
+
 def inspection_pointer(input_data):
     # 提取输入请求信息
     DATA = GetInputData(input_data)
@@ -451,7 +451,9 @@ def inspection_pointer(input_data):
         return out_data
 
     # 检测指针
-    seg_cfgs, roi_tag = pointer_detect(img_tag, number)
+    yolov8_model=model_load(an_type)
+    conf = model_threshold_dict[an_type]
+    seg_cfgs, roi_tag = pointer_detect(img_tag, number, yolov8_model,conf)
 
     if len(seg_cfgs) == 0:
         out_data["msg"] = out_data["msg"] + "Can not find pointer in image; "
