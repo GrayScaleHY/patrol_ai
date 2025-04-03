@@ -2,7 +2,7 @@ import os
 import cv2
 import time
 import json
-# import math
+import math
 from lib_image_ops import base642img, img2base64, img_chinese
 # from lib_help_base import oil_high
 import numpy as np
@@ -12,22 +12,52 @@ from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
 from lib_img_registration import roi_registration
 from lib_help_base import GetInputData, creat_img_result, draw_region_result, reg_crop,dp_append, img_fill,is_include
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
-# yolov8_mubiaokuang = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_crop.pt")  # 数字表记寻框模型
-# yolov8_shuzishibie = load_yolov8_model("/data/PatrolAi/yolov8/shuzi_rec.pt")  # 数字表记数字识别模型
-yolov8_jishukuang = load_yolov8_model("/data/PatrolAi/yolov8/jishu_crop.pt")  # 计数表寻框模型
-yolov8_jishushibie = load_yolov8_model("/data/PatrolAi/yolov8/jishu_rec.pt")  # 计数表数字识别模型
+def center_cal(x1,y1,x2,y2):
+    return ((x1+x2)/2,(y1+y2)/2)
+
+
+def dis_cal(center_list):
+    dis_list=[]
+    for index in range(len(center_list)):
+        if index==len(center_list):
+            break
+        dis=math.sqrt(
+                        math.pow((center_list[index+1][0]-center_list[index][0]),2)+
+                        math.pow((center_list[index + 1][1] - center_list[index][1]), 2)
+                      )
+        dis_list.append(dis)
+    return dis_list
+
+def dp_self(label_list,dp):
+    if len(label_list)<=2:
+        dp=len(label_list)-1
+        return dp
+    coor_list=[item[1] for item in label_list]
+    center_list = [center_cal(*coor) for coor in coor_list]
+    dis_list = dis_cal(center_list)
+    dis_list_re = sorted(dis_list)
+    if dis_list_re[-1] / dis_list_re[0] > 1.5:
+        dp = dis_list.index(dis_list_re[-1])
+    return dp
+
 
 def label_withdp(label_list,roi_name,dp_dict,dp):
     label = []
     for item in label_list:
         label.append(str(item[0]))
     if dp_dict == {}:
+        if dp ==100:
+            dp=dp_self(label_list, dp)
         if dp != 0:
             label = dp_append(label, dp)
         label = "".join(label)
     else:
         dp = int(dp_dict[roi_name])
+        if dp ==100:
+            dp=dp_self(label_list, dp)
         if dp != 0:
             label = dp_append(label, dp)
         label = "".join(label)
@@ -51,19 +81,23 @@ def inspection_digital_rec(input_data):
     img_tag = DATA.img_tag
     dp = DATA.dp
     dp_dict = DATA.dp_dict
+    an_type = DATA.type
 
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
-    img_tag_ = img_chinese(img_tag_, TIME_START + input_data["type"], (10, 10), color=(255, 0, 0), size=60)
+    img_tag_ = img_chinese(img_tag_, TIME_START + an_type, (10, 10), color=(255, 0, 0), size=60)
 
-    if input_data["type"] != "digital" and input_data["type"] != "counter":
+    if an_type != "digital" and an_type != "counter":
         out_data["msg"] = out_data["msg"] + "type isn't digital or counter; "
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 70), color=(255, 0, 0), size=30)
         out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
-    yolo_crop, yolo_rec = yolov8_jishukuang, yolov8_jishushibie
+    #模型、阈值加载
+    yolo_crop, yolo_rec = model_load(an_type)
+    conf=model_threshold_dict[an_type]
+
 
     # img_ref截取regbox区域用于特征匹配
     if reg_box and len(reg_box) != 0:
@@ -80,7 +114,7 @@ def inspection_digital_rec(input_data):
         img_tag_ = img_chinese(img_tag_, name, (c[0], c[1]), color=(255, 0, 255), size=s)
 
     # 第一阶段区域识别，截取图像
-    bbox_cfg = inference_yolov8(yolo_crop, img_tag)
+    bbox_cfg = inference_yolov8(yolo_crop, img_tag,conf_thres=conf)
     # 未检测到目标
     if len(bbox_cfg) < 1:
         coor_list = []
@@ -118,7 +152,7 @@ def inspection_digital_rec(input_data):
         img_empty = img_fill(img_tag, 640, *coor)
 
         # 二次识别
-        bbox_cfg_result = inference_yolov8(yolo_rec, img_empty)
+        bbox_cfg_result = inference_yolov8(yolo_rec, img_empty,conf_thres=conf)
         bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
         if len(bbox_cfg_result) < 1:
             continue

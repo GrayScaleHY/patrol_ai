@@ -2,12 +2,13 @@ import os
 import time
 import cv2
 from lib_image_ops import base642img, img2base64, img_chinese
-from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
+from lib_inference_yolov8 import inference_yolov8
 from lib_img_registration import roi_registration
 import numpy as np
 from lib_help_base import GetInputData, is_include
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
-ErCiSheBei_model = load_yolov8_model("/data/PatrolAi/yolov8/ErCiSheBei.pt") ## 二次设备状态
 
 def patrolai_led_video(input_data):
     """
@@ -39,11 +40,13 @@ def patrolai_led_video(input_data):
     count = 0
     cfgs_v = []
     l_max = -1
+    yolov8_model=model_load(an_type)
+    conf=model_threshold_dict[an_type]
     while(cap.isOpened()):
         ret, frame = cap.read() # 逐帧读取
         if frame is not None and count % step == 0:
             img_tag = frame
-            cfgs = inference_yolov8(ErCiSheBei_model, img_tag, resize=640, focus_labels=labels, conf_thres=0.3) # inference
+            cfgs = inference_yolov8(yolov8_model, img_tag, resize=640, focus_labels=labels, conf_thres=conf) # inference
             cfgs_v.append(cfgs)
 
             ## zsd_l目标最多的图片作为展示图

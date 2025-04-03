@@ -10,11 +10,9 @@ from lib_img_registration import roi_registration, convert_coor
 from lib_help_base import GetInputData,color_list, is_include, save_output_data, get_save_head, save_output_data, creat_img_result,img_fill,reg_crop
 from lib_inference_yolov8 import load_yolov8_model, inference_yolov8
 from lib_rcnn_ops import check_iou
-from app_yejingpingshuzishibie import yolov8_jishukuang,yolov8_jishushibie
 import config_object_name
-
-yolov8_yeweiji = load_yolov8_model("/data/PatrolAi/yolov8/yeweiji.pt") # 加载液位计模型
-
+from lib_model_import import model_load
+from config_model_list import model_threshold_dict
 
 def conv_coor(coordinates, M, d_ref=(0, 0), d_tag=(0, 0)):
     """
@@ -164,6 +162,8 @@ def inspection_level_gauge(input_data):
     #     cv2.circle(img_tag_, (int(coor[0]), int(coor[1])), 1, (255, 0, 255), 8)
     #     cv2.putText(img_tag_, str(scale), (int(coor[0]), int(coor[1])),
     #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), thickness=1)
+    conf = model_threshold_dict[an_type]
+    yolov8_crop,yolov8_rec,yolov8_yeweiji=model_load(an_type)
 
     if an_type != "level_gauge":
         out_data["msg"] = out_data["msg"] + "type isn't level_gauge; "
@@ -172,7 +172,7 @@ def inspection_level_gauge(input_data):
         return out_data
     #数字识别液位计
     elif len(pointers_tag)==1:
-        bbox_cfg = inference_yolov8(yolov8_jishukuang, img_tag)
+        bbox_cfg = inference_yolov8(yolov8_crop, img_tag,conf_thres=conf)
         if len(bbox_cfg) < 2:
             out_data["msg"] = out_data["msg"] + "Can not find enough level scale; "
             out_data["code"] = 1
@@ -190,7 +190,7 @@ def inspection_level_gauge(input_data):
         for coor in bboxes_list_sort:
             img_empty = img_fill(img_tag, 640, *coor)
             # 二次识别
-            bbox_cfg_result = inference_yolov8(yolov8_jishushibie, img_empty)
+            bbox_cfg_result = inference_yolov8(yolov8_rec, img_empty,conf_thres=conf)
             bbox_cfg_result = check_iou(bbox_cfg_result, 0.2)
             # print("bbox_cfg_result:",bbox_cfg_result)
             # 按横坐标排序组合结果
@@ -241,7 +241,7 @@ def inspection_level_gauge(input_data):
         # out_data["img_result"] = img2base64(img_tag_)
         
     # 用yolov8检测油位
-    cfgs = inference_yolov8(yolov8_yeweiji, img_tag, resize=640) 
+    cfgs = inference_yolov8(yolov8_yeweiji, img_tag, resize=640,conf_thres=conf)
     cfgs = check_iou(cfgs, iou_limit=0.5)
     # print("cfgs:", cfgs)
 
