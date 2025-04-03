@@ -486,14 +486,14 @@ class GetInputData:
         use_fov = True
         if "Horizontal" in self.data and isinstance(self.data["Horizontal"], (int, float)) and type(self.data["Horizontal"]) is not bool:
             fov_h = self.data["Horizontal"]
-        elif "horizontal" in self.data and isinstance(self.data["horizontal"], (int, float)) and type(self.data["Horizontal"]) is not bool:
+        elif "horizontal" in self.data and isinstance(self.data["horizontal"], (int, float)) and type(self.data["horizontal"]) is not bool:
             fov_h = self.data["horizontal"]
         else:
             use_fov = False
             fov_h = 57
-        if "Vertical" in self.data and isinstance(self.data["Vertical"], (int, float)) and type(self.data["Horizontal"]) is not bool:
+        if "Vertical" in self.data and isinstance(self.data["Vertical"], (int, float)) and type(self.data["Vertical"]) is not bool:
             fov_v = self.data["Vertical"]
-        elif "vertical" in self.data and isinstance(self.data["vertical"], (int, float)) and type(self.data["Horizontal"]) is not bool:
+        elif "vertical" in self.data and isinstance(self.data["vertical"], (int, float)) and type(self.data["vertical"]) is not bool:
             fov_v = self.data["vertical"]
         else:
             fov_v = 34
