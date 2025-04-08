@@ -407,9 +407,9 @@ def roi_registration(img_ref, img_tag, roi_ref):
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
         if img_ref is not None:
-            roi_ref = {"no_roi": [0,0,img_ref.shape[0],img_ref.shape[1]]}
+            roi_ref = {"no_roi": [0,0,img_ref.shape[1],img_ref.shape[0]]}
         else:
-            roi_ref = {"no_roi": [0, 0, H, W]}
+            roi_ref = {"no_roi": [0, 0, W, H]}
             return roi_ref, None
     
     if img_ref is None:

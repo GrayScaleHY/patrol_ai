@@ -521,7 +521,7 @@ def registration_ptzV2(input_data):
     print(f'new_p:{new_p},new_t:{new_t}')
 
 
-    data = {"ptz_new" : [new_p, new_t, z * 2], "offset_angle" : [delt_x, delt_y], "offset_percent" : [abs(x), abs(y)]}
+    data = {"ptz_new" : [new_p, new_t, z * 2], "offset_angle" : [delt_x, delt_y], "offset_percent" : [abs(2*(x-0.5)), abs(2*(y-0.5))]}
     out_data = {"code": 200, "data": data, "msg":"Sucess!"}
 
     return out_data
