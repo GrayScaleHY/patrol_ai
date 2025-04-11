@@ -21,9 +21,7 @@ def center_cal(x1,y1,x2,y2):
 
 def dis_cal(center_list):
     dis_list=[]
-    for index in range(len(center_list)):
-        if index==len(center_list):
-            break
+    for index in range(len(center_list)-1):
         dis=math.sqrt(
                         math.pow((center_list[index+1][0]-center_list[index][0]),2)+
                         math.pow((center_list[index + 1][1] - center_list[index][1]), 2)
@@ -40,7 +38,7 @@ def dp_self(label_list,dp):
     dis_list = dis_cal(center_list)
     dis_list_re = sorted(dis_list)
     if dis_list_re[-1] / dis_list_re[0] > 1.5:
-        dp = dis_list.index(dis_list_re[-1])
+        dp = len(dis_list_re)-dis_list.index(dis_list_re[-1])
     return dp
 
 
