@@ -39,6 +39,8 @@ def dp_self(label_list,dp):
     dis_list_re = sorted(dis_list)
     if dis_list_re[-1] / dis_list_re[0] > 1.5:
         dp = len(dis_list_re)-dis_list.index(dis_list_re[-1])
+    else:
+        dp=0
     return dp
 
 
