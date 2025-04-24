@@ -267,7 +267,35 @@ def loftr_registration(img_ref, img_tag, max_size=1280):
     return M
 
 
-def eloftr_registration(img_ref, img_tag):
+def eloftr_resize(coor, ref_shape, tag_shape, max_size=1280):
+    """
+        针对eloftr存在32倍数偏差问题
+        将目标坐标点随着图像进行缩放
+        args:
+            coor: 输入坐标, (x, y) or [x, y]
+            ref_shape : ref图像的尺寸, (H, W)
+            tag_shape : tag图像的尺寸, (H, W)
+        return:
+            coor: 纠正缩放后坐标, (x, y)
+    """
+    shape_max = max(list(ref_shape) + list(tag_shape))
+    resize_rate = math.ceil(shape_max / max_size)
+    H_ref, W_ref = ref_shape
+    new_H = int(H_ref / resize_rate)//32 * 32
+    new_W = int(W_ref / resize_rate)//32 * 32
+    # 除以ref缩放因子
+    coor = (coor[0] / W_ref * new_W, coor[1] / H_ref * new_H)
+
+    H_tag, W_tag = tag_shape
+    new_H = int(H_tag / resize_rate)//32 * 32
+    new_W = int(W_tag / resize_rate)//32 * 32
+    # 乘上tag缩放因子
+    coor = (coor[0] * W_tag / new_W, coor[1] *H_tag / new_H)
+
+    return coor
+
+
+def eloftr_registration(img_ref, img_tag, max_size=1280):
     """
     ELoFTR: LoFTR升级版, cvpr2024论文EfficientLoFTR
     args:
@@ -279,8 +307,23 @@ def eloftr_registration(img_ref, img_tag):
     img_ref = cv2.cvtColor(img_ref, cv2.COLOR_BGR2GRAY)
     img_tag = cv2.cvtColor(img_tag, cv2.COLOR_BGR2GRAY)
 
-    img_ref = cv2.resize(img_ref, (img_ref.shape[1]//32*32, img_ref.shape[0]//32*32))  # input size shuold be divisible by 32
-    img_tag = cv2.resize(img_tag, (img_tag.shape[1]//32*32, img_tag.shape[0]//32*32))
+    # 若图片最长边大于max_size，将图片resize到max_size内
+    shape_max = max(list(img_ref.shape[:2]) + list(img_tag.shape[:2]))
+    resize_rate = math.ceil(shape_max / max_size)
+    
+    H, W = img_tag.shape[:2]
+    new_H = int(H / resize_rate)//32 * 32
+    new_W = int(W / resize_rate)//32 * 32
+    img_tag = cv2.resize(img_tag, (new_W, new_H))
+
+    H, W = img_ref.shape[:2]
+    new_H = int(H / resize_rate)//32 * 32
+    new_W = int(W / resize_rate)//32 * 32
+    img_ref = cv2.resize(img_ref, (new_W, new_H))
+
+    resize_rate_H = H / new_H
+    resize_rate_W = W / new_W
+    M_scale = np.array([[1, 1, resize_rate_W], [1, 1, resize_rate_H]])
 
     img0 = torch.from_numpy(img_ref)[None][None].half().to("cuda") / 255.
     img1 = torch.from_numpy(img_tag)[None][None].half().to("cuda") / 255.
@@ -296,9 +339,10 @@ def eloftr_registration(img_ref, img_tag):
         # mconf = batch['mconf'].cpu().numpy()
 
     M, mask = cv2.estimateAffine2D(mkpts0, mkpts1)
+    # M = np.dot(M, M_scale)
+    M *= M_scale
 
     return M
-
 
 
 def registration(img_ref, img_tag):
@@ -424,6 +468,9 @@ def roi_registration(img_ref, img_tag, roi_ref):
     for name in roi_ref:
         roi = roi_ref[name]
         coors = [(roi[0],roi[1]), (roi[2],roi[1]), (roi[2],roi[3]), (roi[0],roi[3])]
+        if registration_opt == "eflotr":
+            # 纠正eloftr 32倍数偏移
+            coors =  [list(eloftr_resize(coor, img_ref.shape[:2], img_tag.shape[:2])) for coor in coors]
         coors_ = [list(convert_coor(coor, M)) for coor in coors]
         c_ = np.array(coors_, dtype=int)
         r = [min(c_[:,0]), min(c_[:, 1]), max(c_[:,0]), max(c_[:,1])]
