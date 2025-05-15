@@ -25,7 +25,6 @@ from lib_help_base import GetInputData, traverse_and_modify
 from app_adjust_camera import adjust_camera
 from app_shuzishibie_video import inspection_digital_rec_video
 from app_sticker import inspection_sticker_detection
-from app_group import patrol_group
 
 import logging
 import sys
@@ -434,22 +433,26 @@ def registration_ptz():
 
     return jsonify(res)
 
-@app.route('/inspection_image_group/', methods=['POST'])
-def inspection_group_server():
-    if request.method != 'POST':
-        res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+try:
+    from app_group import patrol_group
+    @app.route('/inspection_image_group/', methods=['POST'])
+    def inspection_group_server():
+        if request.method != 'POST':
+            res = {'code': 1, 'msg': 'Only POST requests are supported!', 'data': []}
+            return jsonify(res)
+        data = json.loads(request.get_data(as_text=True))
+        
+        start_time = time.time()
+        save_dir, name_head = get_save_head(data)
+        save_input_data(data, save_dir, name_head, draw_img=False)
+        res = patrol_group(data)
+        # save_output_data(res, save_dir, name_head)
+
+        print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
+
         return jsonify(res)
-    data = json.loads(request.get_data(as_text=True))
-    
-    start_time = time.time()
-    save_dir, name_head = get_save_head(data)
-    save_input_data(data, save_dir, name_head, draw_img=False)
-    res = patrol_group(data)
-    # save_output_data(res, save_dir, name_head)
-
-    print(name_head, "spend time:", round(time.time() - start_time, 3), "out data:", traverse_and_modify(res))
-
-    return jsonify(res)
+except:
+    print("Can not open inspection_image_group server !")
 
 #算法版本获取接口
 @app.route('/Version/', methods=['POST'])
