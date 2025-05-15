@@ -295,7 +295,7 @@ def eloftr_resize(coor, ref_shape, tag_shape, max_size=1280):
     return coor
 
 
-def eloftr_registration(img_ref, img_tag, max_size=1280):
+def eloftr_registration(img_ref_, img_tag_, max_size=1280):
     """
     ELoFTR: LoFTR升级版, cvpr2024论文EfficientLoFTR
     args:
@@ -304,8 +304,8 @@ def eloftr_registration(img_ref, img_tag, max_size=1280):
     return:
         M: 偏移矩阵, 2*3矩阵，偏移后的点的计算公式：(x', y') = M * (x, y, 1)
     """
-    img_ref = cv2.cvtColor(img_ref, cv2.COLOR_BGR2GRAY)
-    img_tag = cv2.cvtColor(img_tag, cv2.COLOR_BGR2GRAY)
+    img_ref = cv2.cvtColor(img_ref_, cv2.COLOR_BGR2GRAY)
+    img_tag = cv2.cvtColor(img_tag_, cv2.COLOR_BGR2GRAY)
 
     # 若图片最长边大于max_size，将图片resize到max_size内
     shape_max = max(list(img_ref.shape[:2]) + list(img_tag.shape[:2]))
@@ -340,7 +340,18 @@ def eloftr_registration(img_ref, img_tag, max_size=1280):
 
     M, mask = cv2.estimateAffine2D(mkpts0, mkpts1)
     # M = np.dot(M, M_scale)
-    M *= M_scale
+    try:
+        M *= M_scale
+    except:
+        '''https://github.com/cvg/LightGlue/tree/main
+        python -m pip install -e .'''
+        from lightglue import LightGlue, SuperPoint
+        from lightglue.utils import  rbd
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda")
+        extractor = SuperPoint(max_num_keypoints=2048).eval().to(device)  # load the extractor
+        matcher = LightGlue(features="superpoint").eval().to(device)
+        M = lightglue_registration(img_ref_, img_tag_)     
 
     return M
 
