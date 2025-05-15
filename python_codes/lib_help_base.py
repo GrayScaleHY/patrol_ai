@@ -39,6 +39,7 @@ class GetInputData:
         self.label_list = self.get_label_list(self.config)
         self.sense = self.get_sense(self.config)
         self.is_region = self.get_region(self.config)
+        self.fineness = self.get_fineness(self.config)
 
         
     def get_checkpoint(self, data):
@@ -339,6 +340,13 @@ class GetInputData:
         else:
             sense = None
         return sense
+
+    def get_fineness(self, config):
+        if "fineness" in config and isinstance(config["fineness"], (int, float)) and config["fineness"] >= 0:
+            fineness = config["fineness"]
+        else:
+            fineness = 5
+        return fineness
     
     def get_region(self, config):
         if "is_region" in config and isinstance(config["is_region"], (int, float)):
