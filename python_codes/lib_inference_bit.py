@@ -1,5 +1,6 @@
 """
 孪生网络模型推理脚本
+pt模型转om模型说明: https://git.utapp.cn/yuanhui/BIT_CD/-/blob/bit_huawei/README.md
 """
 
 import numpy as np
@@ -11,36 +12,22 @@ import cv2
 # from datasets.data_utils import CDDataAugmentation
 # from models.basic_model import CDEvaluator
 from BIT_CD.datasets.data_utils import CDDataAugmentation
-from BIT_CD.models.basic_model import CDEvaluator
- 
-from types import SimpleNamespace
+# from BIT_CD.models.basic_model import CDEvaluator
+from ais_bench.infer.interface import InferSession
 
 def load_bit_model(model_file, device="0"):
     """
     加载BIT-CD模型
     args:
         model_file: 模型路径
-        device: 是否使用显卡, egs: "0"、 "0,1,2,3"、 "cpu"
+        device: 是否使用显卡, egs: 0
     """
-    # parser = ArgumentParser()
-    # args_new = parser.parse_args()
-    args_new = SimpleNamespace()
-    args_new.n_class = 2
-    if device == "cpu":
-        args_new.gpu_ids = []
-    else:
-        args_new.gpu_ids = [int(i) for i in device.split(",")]
-    args_new.checkpoint_dir = os.path.dirname(model_file)
-    args_new.checkpoint_name = os.path.basename(model_file)
-    args_new.output_folder = args_new.checkpoint_dir
-    args_new.net_G = "base_transformer_pos_s4_dd8"
-    model = CDEvaluator(args_new)
-    model.load_checkpoint(args_new.checkpoint_name)
-    model.eval()
-
+    if model_file.endswith(".pt"):
+        model_file = model_file[:-3] + ".om"
+    model = InferSession(int(device), model_file)
     return model
 
-def inference_bit(model, img_a, img_b, resize=256):
+def inference_bit(model, img_a, img_b, resize=512):
     """
     BIT_CD模型推理
     args:
@@ -61,29 +48,38 @@ def inference_bit(model, img_a, img_b, resize=256):
     [img_a, img_b], [img_l] = augm.transform([img_a, img_b], [img_l], to_tensor=True)
     img_a = torch.unsqueeze(img_a, dim=0) 
     img_b = torch.unsqueeze(img_b, dim=0) 
+    
+    img_a = torch.unsqueeze(img_a, dim=0) 
+    img_b = torch.unsqueeze(img_b, dim=0)
 
-    batch = {"A": img_a, "B": img_b}
-
+    batch = torch.cat([img_a, img_b])
+    
     ## 推理
-    img_diff = model._forward_pass(batch)
-    img_diff = img_diff.cpu().numpy()[0][0].astype(np.uint8)
+    input_img = batch.numpy().astype(np.float32)
+    img_diff = model.infer([input_img])
+    
+    img_diff = torch.tensor(img_diff[0])
+    img_diff = torch.argmax(img_diff, dim=1, keepdim=True)
+    img_diff = img_diff * 255
+    img_diff = img_diff.numpy()
+
+    img_diff = img_diff[0][0].astype(np.uint8)
     
     return img_diff
 
 if __name__ == '__main__':
-    model_file = "/data/PatrolAi/bit_cd/bit_cd.pt"
-    img_tag = "/data/PatrolAi/result_patrol/0002_1.jpg"
-    img_ref = "/data/PatrolAi/result_patrol/0002_normal.jpg"
-    out_file = "/data/PatrolAi/result_patrol/panbie_resu.png"
     import time
+    model_file = "/data/PatrolAi/bit_cd/bit_cd.om"
+    model = load_bit_model(model_file, device=0)
 
-    model = load_bit_model(model_file, device="0")
+    img_tag = "/data/PatrolAi/result_saved/0002_1.jpg"
+    img_ref = "/data/PatrolAi/result_saved/0002_normal.jpg"
+    out_file = "/data/PatrolAi/result_saved/panbie_result1.jpg"  
+    
     img_a = cv2.imread(img_tag)
     img_b = cv2.imread(img_ref)
-    
-    
     start = time.time()
-    img_diff = inference_bit(model, img_a, img_b, resize=256)
+    img_diff = inference_bit(model, img_a, img_b, resize=512)
     print("spend time:", time.time() - start)
 
     cv2.imwrite(out_file, img_diff)
