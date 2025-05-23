@@ -4,7 +4,7 @@
 ### 巡检算法服务的部署
 注意，部署服务器必须配备英伟达显卡。
 ##### 1. 准备部署文件
-(1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。链接公司内网，将192.168.100.42加入到dns中，登录共享盘，内网链接为[https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/](https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/)，下载PatrolAi.zip和ut_patrol_ai.tar.gz两个部署包。  
+(1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。链接公司内网，将```192.168.100.42```加入到dns中，登录共享盘，内网链接为[https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/](https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/)，下载PatrolAi.zip和ut_patrol_ai.tar.gz两个部署包。  
 (2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
 ```
   /data/
