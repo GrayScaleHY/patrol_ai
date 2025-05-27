@@ -4,10 +4,10 @@
 ### 巡检算法服务的部署
 注意，部署服务器必须配备英伟达显卡。
 ##### 1. 准备部署文件
-(1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。链接公司内网，将```192.168.100.42```加入到dns中，登录共享盘，内网链接为[https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/](https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/)，下载PatrolAi.zip和ut_patrol_ai.tar.gz两个部署包。  
-(2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
+(1). 下载两个部署压缩包PatrolAi.zip和ut_patrol_ai.tar.gz。链接公司内网，将```192.168.100.42```加入到dns中，登录共享盘，内网链接为[https://seafile.utai.cn/d/36d2937bfab14064a489/](https://seafile.utai.cn/d/36d2937bfab14064a489/)，下载PatrolAi.zip和ut_patrol_ai.tar.gz两个部署包。  
+(2). 服务器上新建文件夹/export, 将两个压缩包上传到/export目录下，终端输入```cd /export && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
 ```
-  /data/
+  /export/
     PatrolAi/
     PatrolAi.zip
     ut_patrol_ai.tar.gz
@@ -38,7 +38,7 @@
 ##### 3. 安装docker (若已安装，跳过)
 输入以下命令完成docker的安装。
 ```
-cd /data/PatrolAi/install/docker-24.0.7
+cd /export/PatrolAi/install/docker-24.0.7
 sudo chmod +x install_docker.sh
 sudo ./install_docker.sh
 ```
@@ -49,14 +49,14 @@ REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ##### 4. 安装nvidia-toolkit
 输入以下命令安装nvidia-toolkit
 ```
-cd /data/PatrolAi/install/docker-24.0.7
+cd /export/PatrolAi/install/docker-24.0.7
 sudo chmod +x install_nvidia_toolkit.sh
 sudo ./install_nvidia_toolkit.sh
 ```
 ##### 5. 加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
-cd /data
+cd /export
 sudo docker load --input ut_patrol_ai.tar.gz
 ```
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
@@ -67,7 +67,7 @@ REPOSITORY           TAG                                   IMAGE ID       CREATE
 ##### 6.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
-cd /data/PatrolAi
+cd /export/PatrolAi
 chmod +x run.sh
 ./run.sh
 ```
