@@ -2,10 +2,10 @@
 DEFAULT_STATE = {
     "abnormal_code": 1, # 识别异常是的code，若code=0,则验收时不会产生异常
     "led": "指示灯灭", # 指示灯默认状态
-    "fanpaiqi": "识别异常", # 翻牌器默认状态
-    "disconnector_notemp": "识别异常", # 默认刀闸识别
-    "disconnector_texie": "识别异常",  # 刀闸特写识别
-    "door": "箱门正常", # 箱门闭合状态
+    "fanpaiqi": None, # 翻牌器默认状态
+    "disconnector_notemp": None, # 默认刀闸识别
+    "disconnector_texie": None,  # 刀闸特写识别
+    "door": None, # 箱门闭合状态
     "air_switch": None, # 空气开关
     "pressplate": None, # 压板
 }
