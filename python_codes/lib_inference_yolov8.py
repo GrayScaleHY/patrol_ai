@@ -231,13 +231,18 @@ def load_yolov8_model(model_file):
         f = open(label_file, "r", encoding='utf-8')
         label_dict = json.load(f)
         f.close()
-        labels = label_dict["labels"]
+        labels_ = label_dict["labels"]
     else:
         # labels = [str(i) for i in range(100)]
-        labels = ["pointer"] + [str(i + 1) for i in range(100)]
+        labels_ = ["pointer"] + [str(i + 1) for i in range(100)]
 
-    yolov8_weights = [session, labels]
-    return yolov8_weights
+    labels = {}
+    for i in range(len(labels_)):
+        labels[i] = labels_[i]
+    session = InferSession(device_id, model_file)
+    session.names = labels
+
+    return session
 
 def inference_yolov8(yolov8_weights, 
                      img, 
@@ -271,7 +276,8 @@ def inference_yolov8(yolov8_weights,
     img = np.ascontiguousarray(image_np_expanded).astype(np.float32)
 
     # 模型推理
-    session, labels = yolov8_weights
+    session=yolov8_weights
+    labels = yolov8_weights.names
     outputs = session.infer([img])
 
     #后处理
