@@ -5,9 +5,9 @@
 注意，部署服务器必须配备华为atlas加速卡。
 ##### 1. 准备部署文件
 (1). 下载两个部署压缩包PatrolAi.zip和ascend_yolo_7.0.1.tar.gz。链接公司内网，将192.168.100.42加入到dns中，登录共享盘，内网链接为[https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/](https://seafile.utai.cn/d/3ce914e415ab4b1d89d4/)。下载PatrolAi.zip和ascend_yolo_7.0.1.tar.gz两个部署包。  
-(2). 服务器上新建文件夹/data, 将两个压缩包上传到/data目录下，终端输入```cd /data && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
+(2). 服务器上新建文件夹/export, 将两个压缩包上传到/export目录下，终端输入```cd /export && unzip PatrolAi.zip```进行解压缩包。若出现如下所示文件结构，表示部署文件准备完毕。
 ```
-  /data/
+  /export/
     PatrolAi/
     PatrolAi.zip
     ascend_yolo_7.0.1.tar.gz
@@ -35,7 +35,7 @@
 ```
 若未安装驱动，则执行以下命令完成安装
 ```
-cd /data/PatrolAi/install/cann-hdk
+cd /export/PatrolAi/install/cann-hdk
 chmod +x *
 adduser HwHiAiUser
 ./Ascend-hdk-310p-npu-driver_23.0.1_linux-aarch64.run --full
@@ -44,7 +44,7 @@ adduser HwHiAiUser
 ##### 3. 安装docker (若已安装，跳过)
 输入以下命令完成docker的安装。
 ```
-cd /data/PatrolAi/install/docker-24.0.7
+cd /export/PatrolAi/install/docker-24.0.7
 sudo chmod +x install_docker.sh
 sudo ./install_docker.sh
 ```
@@ -55,7 +55,7 @@ REPOSITORY   TAG                          IMAGE ID       CREATED       SIZE
 ##### 4. 加载巡检算法docker镜像
 输入以下命令加载docker镜像，注意，输入命令后需要等待较长时间，请耐心等待。
 ```
-cd /data
+cd /export
 sudo docker load --input ascend_yolo_7.0.1.tar.gz
 ```
 加载完成后，输入```sudo docker images```, 若出现以下docker镜像信息，表示docker加载成功。
@@ -66,7 +66,7 @@ utdnn/patrol_ai      ascend_yolo_7.0.1                    a63b0b8899ed   40 minu
 ##### 5.启动巡检算法服务
 输入以下命令启动巡检算法服务。
 ```
-cd /data/PatrolAi
+cd /export/PatrolAi
 chmod +x run.sh
 ./run.sh
 ```
