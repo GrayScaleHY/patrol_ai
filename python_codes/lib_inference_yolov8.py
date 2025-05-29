@@ -235,7 +235,7 @@ def load_yolov8_model(model_file):
         f.close()
         labels_ = label_dict["labels"]
     else:
-        # labels = [str(i) for i in range(100)]
+        labels = [str(i) for i in range(100)]
         labels_ = ["pointer"] + [str(i + 1) for i in range(100)]
 
     labels = {}
@@ -282,8 +282,6 @@ def inference_yolov8(yolov8_weights,
     labels = yolov8_weights.names
     outputs = session.infer([img])
 
-    import pdb
-    pdb.set_trace()
     #后处理
     preds = postprocess(outputs, re_size,raw_size, conf_thres=conf_thres,iou_thres=same_iou_thres)
     
@@ -310,28 +308,49 @@ def inference_yolov8(yolov8_weights,
         
     return cfgs
 
-def inference_yolov8_cls(yolov8_weights, img, resize=640):
-    ## 前处理
-    raw_size = img.shape[:2]
-    re_size = (resize, resize)
-    img, _, _ = letterbox(img, new_shape=re_size)
-    img = np.expand_dims(img, axis=0)
-    img = img[..., ::-1].transpose(0, 3, 1, 2)  # BGR tp RGB
-    image_np = np.array(img, dtype=np.float32)
-    image_np_expanded = image_np / 255.0
-    img = np.ascontiguousarray(image_np_expanded).astype(np.float32)
+def postprocess_classify(preds):
+        results = []
+        for i, pred in enumerate(preds):
+            results.append({"probs":pred})
+        return results
+
+def inference_yolov8_classify(yolov8_weights, img, resize=224):
+    
+    img = Image.fromarray(img)
+    
+    tfl = T.Resize(resize, interpolation=T.InterpolationMode.BILINEAR)
+    img = tfl(img)
+    tfl = T.CenterCrop(resize)
+    img = tfl(img)
+    
+    DEFAULT_MEAN = (0.0, 0.0, 0.0)
+    DEFAULT_STD = (1.0, 1.0, 1.0)
+    tr = T.Compose([T.ToTensor(),T.Normalize(torch.tensor(DEFAULT_MEAN),torch.tensor(DEFAULT_STD))])
+    image_np_expanded = tr(img)
+    
+    img = torch.stack([image_np_expanded],dim=0)
+    img = (img if isinstance(img, torch.Tensor) else torch.from_numpy(img)).float()
 
     # 模型推理
     session=yolov8_weights
     labels = yolov8_weights.names
     outputs = session.infer([img])
-    preds = outputs[0][0]
+
+    #后处理
+    preds = []
+    for i, pred in enumerate(outputs):
+        preds.append({"probs":outputs})
+    
+    if len(preds) == 0:
+        return []
+    
+    preds = preds[0]['probs'][0]
     top5i = torch.tensor(preds).argsort(0, descending=True)[:5].tolist()
-    class_name = labels[top5i[0]]#top5i[0]#
+    class_name = labels[top5i[0]]
     prob = preds[top5i[0]]
         
-    cfgs=[{'label':class_name,'score':prob}] 
-
+    cfgs=[{'label':class_name,'score':float(prob)}] 
+        
     return cfgs
 
 if __name__ == '__main__':
