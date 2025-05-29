@@ -6,18 +6,7 @@ import time
 import argparse
 from lib_inference_yolov8 import inference_yolov8, load_yolov8_model
 
-yolov8_model = load_yolov8_model("./yjsk/yolov8_clsbeijing20240410.pt")
-
-## 读取roi配置
-import json
-with open('./roi.json','r',encoding='utf-8') as file:
-  roi = json.load(file)
-print(roi)
-
-
-def get_video_id(basename):
-    """获取video_id"""
-    return int(basename[:-4].split('_')[0])
+yolov8_model = load_yolov8_model("/data/PatrolAi/yolov8/yjsk.pt")
 
 def disconnector_state(real_model, img_tag):
     """:
@@ -39,7 +28,7 @@ def disconnector_state(real_model, img_tag):
     else:
         state = "异常"
 
-    return state, score ,cfgs[0]["label2"] ,cfgs[0]["score2"]
+    return state, score
 
 def video_states(tag_video):
     """
@@ -54,14 +43,6 @@ def video_states(tag_video):
     step = 1 # 多少帧抽一帧
     context = 10 # 看开头或结尾几帧
 
-    video_basename = os.path.basename(tag_video)
-    idx = get_video_id(video_basename)
-    video_roi = [0,0,1,1]
-    if str(idx) in roi.keys():
-      video_roi = roi[str(idx)]
-    print("video idx:",idx)
-    print("video roi:",video_roi)
-    
     cap = cv2.VideoCapture(tag_video) ## 建立视频对象
     frame_number = cap.get(7)  # 视频文件的帧数
     if frame_number < context * 2:
@@ -78,15 +59,7 @@ def video_states(tag_video):
     while(cap.isOpened()):
         ret, img_tag = cap.read() # 逐帧读取
         
-        
         if ret==True and img_tag is not None:
-            
-            # print(img_tag.shape)
-            img_tag_ori = img_tag
-            w,h = img_tag.shape[:2]
-            img_tag = img_tag[int(video_roi[0]*w):int(video_roi[2]*w),int(video_roi[1]*h):int(video_roi[3]*h)]
-            # cv2.imwrite('test.png',img_tag)
-            
             if np.sum(img_tag) < 100:
                 continue
             
@@ -110,37 +83,25 @@ def video_states(tag_video):
     scores_start = []
     scores_end = []
     real_model = yolov8_model
-    
-    states_start2 = []
-    states_end2 = []
-    scores_start2 = []
-    scores_end2 = []
-    
-    
 
     for img_tag in start_frames: 
-        state, score, state2, score2 = disconnector_state(real_model, img_tag)
+        state, score = disconnector_state(real_model, img_tag)
         states_start.append(state)
         scores_start.append(score)
-        states_start2.append(state2)
-        scores_start2.append(score2)
-        
     
     for img_tag in end_frames:
-        state, score, state2, score2 = disconnector_state(real_model, img_tag)
+        state, score = disconnector_state(real_model, img_tag)
         states_end.append(state)
         scores_end.append(score)
-        states_end2.append(state2)
-        scores_end2.append(score2)
 
     counts = counts + end_counts
     print("frame indexs:", counts)
     print("states_start list:", states_start, "states_end list:", states_end)
     print("scores_start list:", scores_start, "scores_end list:", scores_end)
 
-    return states_start, states_end, states_start2, states_end2, scores_start2, scores_end2
+    return states_start, states_end, img_tag
 
-def final_state(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2, len_window=3):
+def final_state(states_start, states_end, len_window=4):
     """
     判断states列表的动状态。
     用固定大小的滑窗在states上滑动，当滑窗内的元素都相同，则表示为该时刻的状态，通过对比起始状态和结尾状态判断states的动状态。
@@ -168,138 +129,28 @@ def final_state(states_start, states_end, states_start2, states_end2, scores_sta
     start_count = [states_start.count(i) for i in ["分", "合", "异常", "无法识别状态"]]
     if start_count[0] > start_count[1]:
         state_start = "分"
-    elif start_count[0] < start_count[1]:
-        state_start = "合" 
-    
     else:
-        state_start = "异常"
+        state_start = "合"
 
     ## 根据state_start合state_end的组合判断该states的最终状态
     ## 其中 0 代表无法判别状态，1 代表合闸正常， 2 代表合闸异常，3 代表分闸正常，4 代表分闸异常
-    print(state_start,state_end)
-    if state_start == "合" and state_end == "分":
+    if state_end == "合" and state_start == "分":
         print("1, 合闸正常")
         return 1 # 合闸正常
-    elif state_start == "合" and state_end == "合":
-        print("4, 分闸异常")
-        return 4 # 分闸异常
-    elif state_start == "合" and state_end == "异常":
-        print("4, 分闸异常")
-        return 4 # 分闸异常
-        
-    elif state_start == "分" and state_end == "合":
-        print("3, 合闸正常")
-        return 3 # 合闸正常
-    elif state_start == "分" and state_end == "分":
-        print("2, 合闸异常")
-        return 2 # 合闸异常
-    elif state_start == "分" and state_end == "异常":
-        print("2, 合闸异常")
-        return 2 # 合闸异常
-        
-    elif state_start == "异常" and state_end == "合":
-        print("1, 合闸正常")
-        return 1 # 合闸异常
-    elif state_start == "异常" and state_end == "分":
-        print("3, 分闸正常")
-        return 3 # 分闸正常 
-            
-    else:
-        print("异常到异常")
-        return yc2yc(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2)
-            # return 2 # 无法判别状态
-
-def yc2yc(states_start, states_end, states_start2, states_end2,scores_start2, scores_end2):
-    """
-    判断异常到异常的情况
-    """
-    
-    ## 比较除了异常以外的状态个数
-    from collections import Counter
-    result=Counter(states_start)
-    if result['分'] > result['合']:
-      state_start = '分'
-    elif result['合'] > result['分']:
-      state_start = '合'
-    else:
-      state_start = '异常'
-      
-    result=Counter(states_end)
-    if result['分'] > result['合']:
-      state_end = '分'
-    elif result['合'] > result['分']:
-      state_end = '合'
-    else:
-      state_end = '异常'
-      
-    ## 和之前的判断逻辑一样的
-    print('异常到异常但是不是全异常')
-    
-    if state_start == "合" and state_end == "分":
-        print("1, 合闸正常")
-        return 1 # 合闸正常
-    elif state_start == "合" and state_end == "合":
-        print("4, 分闸异常")
-        return 4 # 分闸异常
-    elif state_start == "合" and state_end == "异常":
-        print("4, 分闸异常")
-        return 4 # 分闸异常
-        
-    elif state_start == "分" and state_end == "合":
-        print("3, 合闸正常")
-        return 3 # 合闸正常
-    elif state_start == "分" and state_end == "分":
-        print("2, 合闸异常")
-        return 2 # 合闸异常
-    elif state_start == "分" and state_end == "异常":
-        print("2, 合闸异常")
-        return 2 # 合闸异常
-        
-    elif state_start == "异常" and state_end == "合":
-        print("1, 合闸正常")
-        return 1 # 合闸异常
-    elif state_start == "异常" and state_end == "分":
-        print("3, 分闸正常")
-        return 3 # 分闸正常 
-            
-    else:
-        ## 如果还是全部异常
-        print("20个全部都是异常")
-        print(scores_start2,states_start2)
-        print(scores_end2,states_end2)
-        
-        start_score = max(scores_start2)
-        end_score = max(scores_end2)
-        start_score_idx = scores_start2.index(max(scores_start2))
-        end_score_idx = scores_end2.index(max(scores_end2))
-        
-        if start_score > end_score:
-          state_start = states_start2[start_score_idx]
-          state_end = '异常'
+    elif state_end == "分" and state_start == "合":
+        print("2, 分闸正常")
+        return 2 # 分闸正常
+    else: 
+        if state_start == "分":
+            print("3, 合闸异常")
+            return 3 # 合闸异常
+        elif state_start == "合":
+            print("4, 分闸异常")
+            return 4 # 分闸异常
         else:
-          state_start = '异常'
-          state_end = states_end2[end_score_idx]
-        
-        ## 和之前的判断逻辑一样的
-        if state_end == "he" and state_start == "fen":
-            print("1, 合闸正常")
-            return 1 # 合闸正常
-        elif state_end == "fen" and state_start == "he":
-            print("2, 分闸正常")
-            return 2 # 分闸正常
-        else: 
-            if state_start == "fen":
-                print("3, 合闸异常")
-                return 3 # 合闸异常
-            elif state_start == "he":
-                print("4, 分闸异常")
-                return 4 # 分闸异常
-            else:
-                print("4, 无法判别状态,随即猜测为分闸异常")
-                return 4
-            
-            
-            
+            print("2, 合闸异常")
+            return 2 # 无法判别状态
+    
 
 if __name__ == "__main__":
 
@@ -307,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--source',
         type=str,
-        default='./yjsk/test/',
+        default='./test/yjsk',
         help='source dir.')
     parser.add_argument(
         '--out_dir',
@@ -324,11 +175,6 @@ if __name__ == "__main__":
         type=str,
         default='1/1',
         help='part of data split.')
-    '''parser.add_argument(
-        '--roi',
-        type=str,
-        default='./roi.json',
-        help='roi of video to cut one object.')'''
     args, unparsed = parser.parse_known_args()
 
     # video_dir = "test/yjsk"
@@ -338,8 +184,6 @@ if __name__ == "__main__":
     out_dir = args.out_dir # 结果保存目录
     cfg_dir = args.cfgs # md5列表目录
     data_part = args.data_part # 分隔数据部分
-    # roi_path = args.roi
-    
 
     os.makedirs(out_dir, exist_ok=True)
     start_all = time.time()
@@ -373,8 +217,8 @@ if __name__ == "__main__":
         # if not os.path.exists(save_copy_file):
         #     shutil.copy(tag_video, save_copy_file)
         
-        states_start, states_end, states_start2, states_end2, scores_start2, scores_end2 = video_states(tag_video) # 求tag_video的状态列表
-        f_state = final_state(states_start, states_end, states_start2, states_end2, scores_start2, scores_end2,len_window=3) # 求最终状态
+        states_start, states_end = video_states(tag_video) # 求tag_video的状态列表
+        f_state = final_state(states_start, states_end, len_window=4) # 求最终状态
         print(f_state)
 
         ## 保存比赛的格式
