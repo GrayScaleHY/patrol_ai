@@ -136,9 +136,11 @@ def inspection_identify_defect(input_data):
 
     ## 将两张图片对齐
     M = registration(img_ref, img_tag)
-    img_ref, cut = correct_offset(img_ref, M, b=True)
-    img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
-    img_ref = img_ref[cut[1]:cut[3], cut[0]:cut[2], :]
+    img_ref_, cut = correct_offset(img_ref, M, b=True)
+    cut_iou = iou(cut, [0,0,img_tag.shape[1], img_tag.shape[0]])
+    if cut_iou > 0.6:
+        img_tag = img_tag[cut[1]:cut[3], cut[0]:cut[2], :]
+        img_ref = img_ref_[cut[1]:cut[3], cut[0]:cut[2], :]
 
     ## 检测差异区域
     cut_diff = diff_bit(img_ref, img_tag)  
