@@ -335,21 +335,15 @@ def inference_yolov8_classify(yolov8_weights, img, resize=224):
     session=yolov8_weights
     labels = yolov8_weights.names
     outputs = session.infer([img])
-
-    #后处理
-    preds = []
-    for i, pred in enumerate(outputs):
-        preds.append({"probs":outputs})
     
-    if len(preds) == 0:
-        return []
-    
-    preds = preds[0]['probs'][0]
+    preds = outputs[0][0]
     top5i = torch.tensor(preds).argsort(0, descending=True)[:5].tolist()
-    class_name = labels[top5i[0]]
+    #print(top5i[0])
+    class_name = labels[top5i[0]]#top5i[0]#
     prob = preds[top5i[0]]
         
-    cfgs=[{'label':class_name,'score':float(prob)}] 
+    cfgs=[{'label':class_name,'score':float(prob)}]
+
         
     return cfgs
 
