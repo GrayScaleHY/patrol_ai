@@ -5,6 +5,7 @@ from lib_help_base import GetInputData, creat_img_result
 from lib_image_ops import img2base64, img_chinese
 from lib_inference_bit import load_bit_model, inference_bit
 from lib_img_registration import registration, correct_offset
+from lib_rcnn_ops import iou
 
 bit_model = load_bit_model("/data/PatrolAi/bit_cd/bit_cd.pt")
 
