@@ -16,7 +16,7 @@ def disconnector_state(real_model, img_tag):
         state: 返回待分析图的当前状态,返回状态之一：无法判别状态、异常、分、 合]
         score: 分类得分
     """
-    cfgs = inference_yolov8(real_model, img_tag)
+    cfgs = inference_yolov8(real_model, img_tag,resize=224)
 
     label = cfgs[0]["label"]; score = cfgs[0]["score"]
 
