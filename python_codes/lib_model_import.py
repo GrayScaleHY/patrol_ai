@@ -1,7 +1,7 @@
 import os.path
 
 from lib_inference_yolov8 import load_yolov8_model
-from config_model_list import function_name_list, model_dict
+from config_model_list import function_name_list, model_dict,osd_choice
 from lib_help_base import GetInputData
 
 model_path = "/data/PatrolAi/yolov8/"
@@ -37,7 +37,8 @@ if "person" in function_name_list:
     yolov8_coco = load_yolov8_model(os.path.join(model_path, "coco.pt"))  # coco人员模型
 if "biaoshipai" in function_name_list:
     yolov8_biaoshipai = load_yolov8_model(os.path.join(model_path, "biaoshipai.pt"))
-
+if osd_choice:
+    osd_model=load_yolov8_model(os.path.join(model_path,"osd.pt")) #osd检测模型
 
 # yolov8_action = load_yolov8_model("/data/PatrolAi/yolov8/action.pt") # 动作识别，倒地
 

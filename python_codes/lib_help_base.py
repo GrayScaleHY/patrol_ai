@@ -841,9 +841,10 @@ def dp_append(label, dp):
     return label
 
 
-
-
-
+#osd区域置灰
+def osd_crop(img,coor):
+    img[coor[1]:coor[3],coor[0]:coor[2]]=125
+    return img
 
 if __name__ == '__main__':
     rm_result_patrolai()

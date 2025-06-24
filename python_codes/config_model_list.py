@@ -48,6 +48,7 @@ model_threshold_dict = {
     "helmet": 0.3,
     "person": 0.3,
     "biaoshipai": 0.3,
+    "osd":0.5,
 }
 
 # 模型标签筛选
@@ -88,6 +89,7 @@ model_dict = {
     "helmet": "yolov8_helmet",
     "person": "yolov8_coco",
     "biaoshipai": "yolov8_biaoshipai",
+    "osd":"osd_model"
 }
 
 model_type_dict = {
@@ -114,3 +116,6 @@ registration_model_list = {
     2: "lightglue",
     3: "loftr",
 }
+
+#纠偏是否屏蔽osd
+osd_choice=0

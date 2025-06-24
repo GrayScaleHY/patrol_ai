@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 import torch
 import math
-from config_model_list import registration_model_list
-
-
+from config_model_list import registration_model_list,osd_choice,model_threshold_dict
+from lib_help_base import osd_crop
+from lib_model_import import model_load
+from lib_inference_yolov8 import  inference_yolov8
 # try:
 #     import sys
 #     sys.path.insert(0,'../SuperGluePretrainedNetwork')
@@ -458,7 +459,12 @@ def roi_registration(img_ref, img_tag, roi_ref):
     return:
         roi_tag: 纠偏后的roi框, {"roi_1": [xmin, ymin, xmax, ymax]}
     """
-    
+    if osd_choice:
+        osd_model=model_load("osd")
+        bbox_cfg = inference_yolov8(osd_model, img_tag, conf_thres=model_threshold_dict["osd"])
+        for bbox in bbox_cfg:
+            img_tag=osd_crop(img_tag,bbox["coor"])
+
     H, W = img_tag.shape[:2]
     if len(roi_ref) == 0:
         if img_ref is not None:
