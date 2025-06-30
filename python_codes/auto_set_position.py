@@ -376,7 +376,7 @@ def calculate_ptz_coordinatesV3(input_data):
 def registration_ptz_all(input_data):
     # 提取输入请求信息
     DATA = GetInputData(input_data)
-    if DATA.use_fov:
+    if DATA.use_fov or ("image1" in input_data and GetInputData(input_data["image1"]).use_fov):
         print("registration V2")
         return registration_ptzV2(input_data)
     else:
@@ -464,27 +464,35 @@ def registration_ptz_(input_data):
 def registration_ptzV2(input_data):
     DATA = GetInputData(input_data)
     img_ref = DATA.img_ref
-    img_tag = DATA.img_tag
-    p = DATA.p
-    t = DATA.t
-    z = DATA.z
-    fov_h = DATA.fov_h  # 水平
-    fov_v = DATA.fov_v  # 垂直
     direction_p = DATA.direction_p
     direction_t = DATA.direction_t
-
-    print(f'fov_h:{fov_h}, fov_v:{fov_v}')
-
     out_data = {}
     # 求img_ref上的[0.5, 0.5]点对应到img_tag上是多少。
     H, W = img_ref.shape[:2]
     coor_ref = [int(W * 0.5), int(H * 0.5)]
 
-    # use osd
-    cv2.rectangle(img_ref, (0, 0), (int(W*4/10), int(H/20)), (0, 0, 0), thickness=-1)
-    cv2.rectangle(img_ref, (0, int(H*14/15)), (int(W/6), H), (0, 0, 0), thickness=-1)
-    M = registration(img_ref, img_tag)
-    # M = lightglue_registration(img_ref, img_tag)
+    # image1
+    DATA1 = GetInputData(DATA.image1)
+    img_tag = DATA1.img_tag
+    p, t, z = DATA1.p, DATA1.t, DATA1.z
+    fov_h = DATA1.fov_h  # 水平
+    fov_v = DATA1.fov_v  # 垂直
+
+    print(f'image1: fov_h:{fov_h}, fov_v:{fov_v}')
+
+    M = registration(img_ref, img_tag, "jiupian")
+    half_z = False
+    # 如果Z不变时物体偏出视野外，tag图换成1/2Z
+    if M is None:
+        # image2
+        half_z = True
+        DATA2 = GetInputData(DATA.image2)
+        img_tag = DATA2.img_tag
+        p, t, z = DATA2.p, DATA2.t, DATA2.z
+        fov_h = DATA2.fov_h  # 水平
+        fov_v = DATA2.fov_v  # 垂直
+        M = registration(img_ref, img_tag, "jiupian")
+        print(f'image2: fov_h:{fov_h}, fov_v:{fov_v}')
 
     if M is None:
         out_data["code"] = 500
@@ -494,19 +502,22 @@ def registration_ptzV2(input_data):
     
     coor_tag = convert_coor(coor_ref, M)
     # x、y为tag图上的点距离中心点的距离
-    x = coor_tag[0] / img_tag.shape[1]
-    y = coor_tag[1] / img_tag.shape[0]
+    dx = coor_tag[0] / img_tag.shape[1] - 0.5
+    dy = coor_tag[1] / img_tag.shape[0] - 0.5
 
-    if x > 0.5: # 水平方向
-        delt_x = np.rad2deg(np.arctan((x - 0.5) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
+    # 水平方向
+    delt_x = np.rad2deg(np.arctan(dx / 0.5 * np.tan( np.deg2rad(fov_h / 2))))
+    # 垂直方向
+    delt_y = np.rad2deg(np.arctan(dy / 0.5 * np.tan( np.deg2rad(fov_v / 2))))
+
+    if half_z:
+        dx = 2 * dx
+        dy = 2 * dy
+        z = 2 * z
     else:
-        delt_x = -np.rad2deg(np.arctan((0.5 - x) / 0.5 * np.tan( np.deg2rad(fov_h /2))))
-    
-    if y > 0.5: # 垂直方向
-        delt_y = np.rad2deg(np.arctan((y - 0.5) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
-    else:
-        delt_y = -np.rad2deg(np.arctan((0.5 - y) / 0.5 * np.tan( np.deg2rad(fov_v/ 2))))
-    
+        delt_x *= 2
+        delt_y *= 2
+
     print(f'delt_x:{delt_x}')  # 相对于图片中心点的x偏转角度
     print(f'delt_y:{delt_y}')
     if direction_p == 1:
@@ -520,14 +531,12 @@ def registration_ptzV2(input_data):
         new_t = t - delt_y
     print(f'new_p:{new_p},new_t:{new_t}')
 
-
-    data = {"ptz_new" : [new_p, new_t, z * 2], "offset_angle" : [delt_x, delt_y], "offset_percent" : [abs(2*(x-0.5)), abs(2*(y-0.5))]}
+    # tag图缩小一倍，因此相对于ref图的偏移量是tag偏移量的两倍
+    # abs(2 * (x - 0.5)), abs(2 * (y - 0.5))
+    data = {"ptz_new" : [new_p, new_t, z], "offset_angle" : [delt_x, delt_y], "offset_percent" : [abs(dx), abs(dy)]}
     out_data = {"code": 200, "data": data, "msg":"Sucess!"}
 
     return out_data
-
-
-
 
 
 if __name__ == '__main__':
