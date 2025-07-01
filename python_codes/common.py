@@ -425,9 +425,17 @@ class GetInputData:
         self.max_rate = self.get_max_rate()
         self.requestId = self.get_requestId()
         self.requsetUrl = self.get_requestHostIp_and_requestHostPort()
+        # 预置位纠偏
+        self.image1, self.image2 = self.get_image_data()
 
         # if "img_ref" in self.data and "img_tag" in self.data:
         #     self.save_json()
+
+    
+    def get_image_data(self):
+        if "image1" in self.data and "image2" in self.data:
+            return self.data["image1"], self.data["image2"]
+        return None, None
 
         
     def get_rectangle_info(self):
