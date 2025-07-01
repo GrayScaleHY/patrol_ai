@@ -14,6 +14,7 @@ from lib_help_base import GetInputData, is_include, color_list, creat_img_result
 from config_model_list import model_type_dict,model_label_dict,model_dict
 from lib_model_import import model_load
 from config_model_list import model_threshold_dict
+import math
 
 
 
@@ -41,6 +42,9 @@ def inspection_object_detection(input_data):
         out_data["code"] = 1
         img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
         out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
+        # "data": {"no_roi": [{"label": "0", "bbox": []}]}
+        # "data": {"no_roi": [{"label": "0", "label_en": "0", "bbox": [], "score": 0}]}
+        out_data["data"]["no_ori"] = [{"label": "0", "label_en": "0", "bbox": [], "score": 0}]
         return out_data
 
     yolov8_model=model_load(an_type)
@@ -132,7 +136,7 @@ def inspection_object_detection(input_data):
                 c = [int(c[0]), int(c[1]), int(c[2]), int(c[3])]
                 _cfg = [{"label": DEFAULT_STATE[an_type], "bbox": c, "score": 1.0}]
                 cv2.rectangle(img_tag_, (int(c[0]), int(c[1])),(int(c[2]), int(c[3])), (0,0,255), thickness=2)
-                s = int((c[2] - c[0]) / 6) # 根据框子大小决定字号和线条粗细。
+                s = math.ceil((c[2] - c[0]) / 6) + 1 # 根据框子大小决定字号和线条粗细。
                 img_tag_ = img_chinese(img_tag_, DEFAULT_STATE[an_type], (c[0], c[1]), color=(0,0,255), size=s)
                 out_data["data"][name] = _cfg
                 out_data["code"] = DEFAULT_STATE["abnormal_code"]
@@ -162,6 +166,11 @@ def inspection_object_detection(input_data):
         out_data["data"] = _cfgs
         if out_data["data"] == [{}]:
             out_data["data"] = []
+    
+    # 如果data为空，赋一个初值
+    for key in out_data["data"]:
+        if out_data["data"][key] == [{}]:
+            out_data["data"][key] = [{"label": "0", "label_en": "0", "bbox": [], "score": 0}]
     
     img_tag_ = img_chinese(img_tag_, out_data["msg"], (10, 130), color=(255, 0, 0), size=30)
 
