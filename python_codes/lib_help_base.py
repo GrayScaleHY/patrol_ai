@@ -264,7 +264,7 @@ class GetInputData:
         if "dp" in config and isinstance(config["dp"], int) and config["dp"] != -1:
             dp = int(config["dp"])
         else:
-            dp = 3
+            dp = 0
         return dp
 
     def get_dpdict(self, config):
