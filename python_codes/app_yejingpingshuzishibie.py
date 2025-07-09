@@ -83,6 +83,7 @@ def inspection_digital_rec(input_data):
     dp_dict = DATA.dp_dict
     an_type = DATA.type
 
+
     ## 将输入请求信息可视化
     img_tag_ = img_tag.copy()
     img_tag_ = img_chinese(img_tag_, TIME_START + an_type, (10, 10), color=(255, 0, 0), size=60)
@@ -94,6 +95,9 @@ def inspection_digital_rec(input_data):
         out_data["img_result"] = creat_img_result(input_data, img_tag_)  # 返回结果图
         return out_data
 
+
+    if an_type == "counter":
+        dp=0
     #模型、阈值加载
     yolo_crop, yolo_rec = model_load(an_type)
     conf=model_threshold_dict[an_type]
